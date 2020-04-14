@@ -1,5 +1,6 @@
 """
-list(part, eventType=None, channelId=None, forDeveloper=None, videoSyndicated=None, channelType=None, videoCaption=None, publishedAfter=None, onBehalfOfContentOwner=None, forContentOwner=None, regionCode=None, location=None, locationRadius=None, type=None, topicId=None, publishedBefore=None, videoDimension=None, videoLicense=None, maxResults=None, videoType=None, videoDefinition=None, pageToken=None, relatedToVideoId=None, relevanceLanguage=None, videoDuration=None, forMine=None, q=None, safeSearch=None, videoEmbeddable=None, videoCategoryId=None, order=None)
+list(part, eventType=None, channelId=None, forDeveloper=None, videoSyndicated=None, channelType=None, videoCaption=None, publishedAfter=None, onBehalfOfContentOwner=None, forContentOwner=None, regionCode=None, location=None, locationRadius=None, type=None, topicId=None, publishedBefore=None,
+     videoDimension=None, videoLicense=None, maxResults=None, videoType=None, videoDefinition=None, pageToken=None, relatedToVideoId=None, relevanceLanguage=None, videoDuration=None, forMine=None, q=None, safeSearch=None, videoEmbeddable=None, videoCategoryId=None, order=None)
 Returns a collection of search results that match the query parameters specified in the API request. By default, a search result set identifies matching video, channel, and playlist resources, but you can also configure queries to only retrieve a specific type of resource.
 
 Args:
@@ -102,9 +103,12 @@ Returns:
   An object of the form:
 
     {
-    "eventId": "A String", # Serialized EventId of the request which produced this response.
-    "nextPageToken": "A String", # The token that can be used as the value of the pageToken parameter to retrieve the next page in the result set.
-    "kind": "youtube#searchListResponse", # Identifies what kind of resource this is. Value: the fixed string "youtube#searchListResponse".
+    # Serialized EventId of the request which produced this response.
+    "eventId": "A String",
+    # The token that can be used as the value of the pageToken parameter to retrieve the next page in the result set.
+    "nextPageToken": "A String",
+    # Identifies what kind of resource this is. Value: the fixed string "youtube#searchListResponse".
+    "kind": "youtube#searchListResponse",
     "visitorId": "A String", # The visitorId identifies the visitor.
     "items": [ # A list of results that match the search criteria.
       { # A search result contains information about a YouTube video, channel, or playlist that matches the search parameters specified in an API request. While a search result points to a uniquely identifiable resource, like a video, it does not have its own persistent data.
@@ -137,19 +141,27 @@ Returns:
             },
           },
           "title": "A String", # The title of the search result.
-          "channelId": "A String", # The value that YouTube uses to uniquely identify the channel that published the resource that the search result identifies.
-          "publishedAt": "A String", # The creation date and time of the resource that the search result identifies. The value is specified in ISO 8601 (YYYY-MM-DDThh:mm:ss.sZ) format.
-          "liveBroadcastContent": "A String", # It indicates if the resource (video or channel) has upcoming/active live broadcast content. Or it's "none" if there is not any upcoming/active live broadcasts.
-          "channelTitle": "A String", # The title of the channel that published the resource that the search result identifies.
+          # The value that YouTube uses to uniquely identify the channel that published the resource that the search result identifies.
+          "channelId": "A String",
+          # The creation date and time of the resource that the search result identifies. The value is specified in ISO 8601 (YYYY-MM-DDThh:mm:ss.sZ) format.
+          "publishedAt": "A String",
+          # It indicates if the resource (video or channel) has upcoming/active live broadcast content. Or it's "none" if there is not any upcoming/active live broadcasts.
+          "liveBroadcastContent": "A String",
+          # The title of the channel that published the resource that the search result identifies.
+          "channelTitle": "A String",
           "description": "A String", # A description of the search result.
         },
-        "kind": "youtube#searchResult", # Identifies what kind of resource this is. Value: the fixed string "youtube#searchResult".
+        # Identifies what kind of resource this is. Value: the fixed string "youtube#searchResult".
+        "kind": "youtube#searchResult",
         "etag": "A String", # Etag of this resource.
         "id": { # A resource id is a generic reference that points to another YouTube resource. # The id object contains information that can be used to uniquely identify the resource that matches the search request.
           "kind": "A String", # The type of the API resource.
-          "channelId": "A String", # The ID that YouTube uses to uniquely identify the referred resource, if that resource is a channel. This property is only present if the resourceId.kind value is youtube#channel.
-          "playlistId": "A String", # The ID that YouTube uses to uniquely identify the referred resource, if that resource is a playlist. This property is only present if the resourceId.kind value is youtube#playlist.
-          "videoId": "A String", # The ID that YouTube uses to uniquely identify the referred resource, if that resource is a video. This property is only present if the resourceId.kind value is youtube#video.
+          # The ID that YouTube uses to uniquely identify the referred resource, if that resource is a channel. This property is only present if the resourceId.kind value is youtube#channel.
+          "channelId": "A String",
+          # The ID that YouTube uses to uniquely identify the referred resource, if that resource is a playlist. This property is only present if the resourceId.kind value is youtube#playlist.
+          "playlistId": "A String",
+          # The ID that YouTube uses to uniquely identify the referred resource, if that resource is a video. This property is only present if the resourceId.kind value is youtube#video.
+          "videoId": "A String",
         },
       },
     ],
@@ -157,10 +169,12 @@ Returns:
     },
     "regionCode": "A String",
     "etag": "A String", # Etag of this resource.
-    "prevPageToken": "A String", # The token that can be used as the value of the pageToken parameter to retrieve the previous page in the result set.
+    # The token that can be used as the value of the pageToken parameter to retrieve the previous page in the result set.
+    "prevPageToken": "A String",
     "pageInfo": { # Paging details for lists of resources, including total number of items available and number of resources returned in a single page.
       "totalResults": 42, # The total number of results in the result set.
-      "resultsPerPage": 42, # The number of results included in the API response.
+      # The number of results included in the API response.
+      "resultsPerPage": 42,
     },
   }
   """
@@ -179,6 +193,8 @@ import argparse
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
+import json
+import os
 
 # Set DEVELOPER_KEY to the API key value from the APIs & auth > Registered apps
 # tab of
@@ -198,7 +214,7 @@ def youtube_search(options):
     response = youtube.search().list(
         part='id, snippet',
         # eventType=None,
-        # channelId='UCF4Wxdo3inmxP-Y59wXDsFw',
+        # channelId='UCF4Wxdo3inmxP-Y59wXDsw',
         # forDeveloper=None,
         # videoSyndicated=None,
         # channelType=None,
@@ -218,7 +234,7 @@ def youtube_search(options):
         maxResults=options.max_results,
         # videoType=None,
         # videoDefinition=None,
-        # pageToken=None,
+        pageToken=options.page_token,
         # relatedToVideoId=None,
         # relevanceLanguage=None,
         # videoDuration=None,
@@ -230,23 +246,52 @@ def youtube_search(options):
         order=options.order,
         # fields='items(id(channelId, videoId), snippet(title, channelId, liveBroadcastContent, channelTitle, description))'
         # fields='items(snippet(channelTitle, title, description))'
-        fields='items(id(videoId))'
+        fields='nextPageToken, items(id(videoId))'
     ).execute()
 
     # Add each result to the appropriate list, and then display the lists of
     # matching videos, channels, and playlists.
-    print(response.get('items', []))
+    # print(response.get('items', []))
     # for result in response.get('items', []):
     #     print('\nChannel title:', result['snippet']['channelTitle'], '\nTitle: ',
     #           result['snippet']['title'], '\nDescription: ', result['snippet']['description'])
-    return
+    return response
+
+
+def youtube_search_recursive(args):
+    print('Args:', args)
+    response = youtube_search(args)
+    items = response.get('items', [])
+    print(items)
+    # fields='nextPageToken, items(id(videoId))'
+    # nextPageToken = response.get('nextPageToken')
+    # print(nextPageToken)
+    # flist = os.listdir('./results')
+    cnt = 0
+    while (len(response.get('items', [])) != 0):
+        print('\ncnt:', cnt)
+        fname = 'test' + str(cnt).zfill(4) + '.txt'
+        with open('./results/' + fname, 'w') as json_file:
+            json.dump(response, json_file)
+        args.page_token = response.get('nextPageToken')
+        print('\tPage token:', args.page_token)
+        # print('New args:', args)
+        if args.page_token == None:
+            print('\nNo page token. Break.')
+            break
+        cnt += 1
+        response = youtube_search(args)
+        # items = response.get('items', [])
+        # print(items)
+            
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--q', help='Search term', default='Google')
-    parser.add_argument('--max-results', help='Max results', default=25)
+    parser.add_argument('--max-results', help='Max results', default=50)
     parser.add_argument('--region-code', help='Region code', default=None)
+    parser.add_argument('--page-token', help='Page token', default=None)
     parser.add_argument('--order', help='Order', default=None)
     args = parser.parse_args()
 
@@ -254,5 +299,4 @@ if __name__ == '__main__':
     #     youtube_search(args)
     # except (HttpError, e):
     #     print('An HTTP error %d occurred:\n%s' % (e.resp.status, e.content))
-
-    youtube_search(args)
+    youtube_search_recursive(args)

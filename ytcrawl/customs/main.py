@@ -12,6 +12,7 @@ if __name__ == '__main__':
     parser.add_argument('--page-token', help='Page token', default=None)
     parser.add_argument('--order', help='Order', default=None)
     parser.add_argument('--channelId', help='Channel ID', default=None)
+    parser.add_argument('--f-channel-ids', help='List of Channel IDs', default=None)
 
     args = parser.parse_args()
 

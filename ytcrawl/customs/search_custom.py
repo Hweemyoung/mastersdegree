@@ -259,7 +259,7 @@ def youtube_search(options):
 
 
 def youtube_search_recursive(args):
-    with open('channel_ids_AI.txt') as f:
+    with open(args.f_channel_ids) as f:
         channels_list = json.load(f)[0].values()
 
     args.page_token = None

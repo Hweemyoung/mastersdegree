@@ -1,5 +1,6 @@
 import datetime
 
+
 def preprocess_datetime(items):
     target_columns = ['publishedAt']
     for part in items:
@@ -8,6 +9,7 @@ def preprocess_datetime(items):
                 # '2020-03-10T15:10:53.000Z'
                 date_string = items[part][target_column]
                 d = datetime.datetime.strptime(
+                    date_string, '%Y-%m-%dT%H:%M:%SZ') if len(date_string) == 20 else datetime.datetime.strptime(
                     date_string, '%Y-%m-%dT%H:%M:%S.%fZ')
                 items[part][target_column] = d.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -26,13 +28,14 @@ def preprocess_list(items):
 
     return items
 
+
 def preprocess_ascii(items):
     # target_columns = ['tags']
     for part in items:
         for column in items[part]:
-                val = items[part][column]
-                if type(val) == str:
-                    items[part][column] = deEmojify(val)
+            val = items[part][column]
+            if type(val) == str:
+                items[part][column] = deEmojify(val)
 
     return items
 
@@ -43,6 +46,7 @@ def wrap_columns(columns):
 
 def wrap_values(values):
     return list(map(lambda s: '\'' + s + '\'', values))
+
 
 def deEmojify(inputString):
     return inputString.encode('ascii', 'ignore').decode('ascii')

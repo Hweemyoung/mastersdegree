@@ -48,3 +48,6 @@ if __name__ == '__main__':
 
         db_videos_uploader.insert_into_videos(args, items)
     
+    # Close DB connection
+    db_videos_uploader.close()
+    

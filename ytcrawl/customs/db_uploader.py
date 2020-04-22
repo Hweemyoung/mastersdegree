@@ -19,6 +19,7 @@ class DBUploader:
     def insert(self, table_name, items, custom_fields={}):
         # Preprocess items
         items = self.preprocessor.preprocess(items)
+        print('Preprocessed:', items)
 
         # Get columns, values
         columns, values = self.get_columns_values(items, custom_fields)
@@ -69,6 +70,7 @@ class DBUploader:
                     columns += recur[0]
                     values += recur[1]
                 else:
+                    print('List:', iterable, '\tValue:', val)
                     raise TypeError('Cannot get column from non-iterative value in list.')
         else:
             raise TypeError('Iterable expected.')

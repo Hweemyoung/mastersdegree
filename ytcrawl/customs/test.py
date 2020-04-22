@@ -2,23 +2,6 @@ from preprocessor import Preprocessor
 from db_channels_uploader import DBChannelsUploader
 
 if __name__ == '__main__':
-    items = {
-        "snippet": {
-            "publishedAt": "2016-01-21T15:34:28.000Z"
-        },
-        "statistics": {
-            "viewCount": "19630682",
-            "commentCount": "0",
-            "subscriberCount": "191000",
-            "videoCount": "120"
-        },
-        "brandingSettings": {
-            "channel": {
-                "title": "DeepMind",
-                "description": "Artificial intelligence could be one of humanity's most useful inventions. DeepMind aims to build advanced AI to expand our knowledge and find new answers. By solving this one thing, we believe we could help people solve thousands of problems.\n\nWe’re a team of scientists, engineers, machine learning experts and more, working together to advance the state of the art in artificial intelligence. We use our technologies for widespread public benefit and scientific discovery, and collaborate with others on critical challenges, ensuring safety and ethics are the highest priority.\n\nWe have a track record of breakthroughs in fundamental AI research, published in journals like Nature, Science, and more. Our programs have learned to diagnose eye diseases as effectively as the world’s top doctors, to save 30% of the energy used to keep data centres cool, and to predict the complex 3D shapes of proteins - which could one day transform how drugs are invented. \n\nFind out more: deepmind.com",
-                "country": "GB"
-            }
-        }
-    }
-    db_chan = DBChannelsUploader()
-    db_chan.insert('channels', items)
+    preprocessor = Preprocessor()
+    items = {'snippet': {'title': 'Ray Kurzweil - The Age of Spiritual Machines - The Future of The 21st Century', 'tags': ['singularity', 'ai', 'artificial intelligence', 'deep learning', 'machine learning', 'deepmind', 'robots', 'robotics', 'self-driving cars', 'driverless cars', 'Ray Kurzweil'], 'channelTitle': 'The Artificial Intelligence Channel', 'publishedAt': '2018-07-01T17:16:05.000Z', 'description': 'Recorded January 21st, 1999\nRay Kurzweil spoke about his book The Age of Spiritual Machines about artificial intelligence and the future course of humanity. First published in hardcover on January 1, 1999 by Viking, it has received attention from The New York Times, The New York Review of Books and The Atlantic. In the book Kurzweil outlines his vision for how technology will progress during the 21st century.', 'channelId': 'UC5g-f-g4EVRkqL8Xs888BLA', 'defaultAudioLanguage': 'en'}, 'statistics': {'dislikeCount': '10', 'likeCount': '112', 'favoriteCount': '0', 'commentCount': '16', 'viewCount': '4824'}, 'contentDetails': {'duration': 'PT1H18M55S'}}
+    print(preprocessor.preprocess(items))

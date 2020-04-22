@@ -9,7 +9,7 @@ class Preprocessor:
         dict_cases = {
             'datetime': {'target_columns': ['publishedAt'],
                          'method': self.preprocess_datetime},
-            'list': {'target_columns': ['tags'],
+            'list': {'target_columns': ['tags', 'keywords'],
                      'method': self.preprocess_list}
         }
         items = self.preprocess_recursive(items, dict_cases)
@@ -19,8 +19,8 @@ class Preprocessor:
     def preprocess_recursive(self, iterable, dict_cases):
         if type(iterable) == dict:
             for key in iterable:
-                # if iterable[key] is iter
-                if type(iterable[key]) in (dict, list):
+                # if iterable[key] is dict
+                if type(iterable[key]) == dict:
                     iterable[key] = self.preprocess_recursive(
                         iterable[key], dict_cases)
                     continue
@@ -45,14 +45,8 @@ class Preprocessor:
                     continue
 
                 # if str: Make sure of ASCII
-                elif type(iterable[key]) == str:
+                elif type(value) == str:
                     iterable[i] = self.preprocess_ascii(iterable[i])
-
-                for case in dict_cases:
-                    if key in dict_cases[case]['target_columns']:
-                        iterable[i] = dict_cases[case]['method'](iterable[i])
-                        # Go on to next key in iterable
-                        break
 
         else:
             raise TypeError('Dict or list expected')

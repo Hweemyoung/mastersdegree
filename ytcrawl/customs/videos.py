@@ -20,7 +20,6 @@ import os
 import json
 import mysql.connector
 
-import preprocess_items
 
 from datetime import datetime
 from db_videos_uploader import DBVideosUploader

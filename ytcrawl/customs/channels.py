@@ -308,26 +308,28 @@ YOUTUBE_API_SERVICE_NAME = 'youtube'
 YOUTUBE_API_VERSION = 'v3'
 
 
-def youtube_channels(options):
+def youtube_channels(options=None):
     youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
                     developerKey=DEVELOPER_KEY)
 
     # Call the search.list method to retrieve results matching the specified
     # query term.
     response = youtube.channels().list(
-        part='id, brandingSettings',
+        part='statistics, brandingSettings, snippet',
         hl=None,
         mine=None,
         mySubscribers=None,
-        id=None,
+        id=options.channel_id,
+        # id='UCP7jMXSY2xbc3KCAE0MHQ',
         managedByMe=None,
         onBehalfOfContentOwner=None,
-        # forUsername='keeroyz,lexfridman,kaggledotcom',
-        forUsername='kaggledotcom',
+        forUsername=None,
+        # forUsername='lexfridman',
         pageToken=None,
         categoryId=None,
         maxResults=None,
-        fields="items(id)"
+        # fields='items(statistics(subscriberCount))'
+        fields="items(statistics(commentCount, subscriberCount, videoCount, viewCount), brandingSettings(channel(description, title, country, defaultLanguage, keywords)), snippet(publishedAt))"
         # fields='items(id,brandingSettings(channel(title,description,country,keywords)),snippet(publishedAt,defaultLanguage),statistics(commentCount,subscriberCount,videoCount,viewCount))'
     ).execute()
 
@@ -347,33 +349,6 @@ def youtube_channels(options):
 # Yannic Kilcher: UCZHmQk67mSJgfCCTn7xBfew
 # Leo Isikdogan: UC-YAxUbpa1hvRyfJBKFNcJA
 
-def youtube_search_recursive(args):
-    print('Args:', args)
-    response = youtube_channels(args)
-    items = response.get('items', [])
-    print(items)
-    # fields='nextPageToken, items(id(videoId))'
-    # nextPageToken = response.get('nextPageToken')
-    # print(nextPageToken)
-    # flist = os.listdir('./results')
-    cnt = 0
-    while (len(response.get('items', [])) != 0):
-        print('\ncnt:', cnt)
-        fname = 'test' + str(cnt).zfill(4) + '.txt'
-        with open('./results/' + fname, 'w') as json_file:
-            json.dump(response, json_file)
-        args.page_token = response.get('nextPageToken')
-        print('\tPage token:', args.page_token)
-        # print('New args:', args)
-        if args.page_token == None:
-            print('\nNo page token. Break.')
-            break
-        cnt += 1
-        response = youtube_channels(args)
-        # items = response.get('items', [])
-        # print(items)
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # parser.add_argument('--q', help='Search term', default='Google')
@@ -387,5 +362,10 @@ if __name__ == '__main__':
     #     youtube_channels(args)
     # except (HttpError, e):
     #     print('An HTTP error %d occurred:\n%s' % (e.resp.status, e.content))
-    response = youtube_channels(args)
-    print(response.get('items', []))
+    with open(args.f_channel_ids) as f:
+        channels_list = json.load(f)[0].values()
+    for channel_id in channels_list:
+        args.channel_id = channel_id
+        response = youtube_channels(args)
+
+    print(response)

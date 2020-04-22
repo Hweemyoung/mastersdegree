@@ -10,7 +10,7 @@
 "MITCSAIL": "UCBpxspUNl1Th33XbugiHJzw",
 "Eazl": "UCkDJOtcty2tgJt5HznOfOJQ",
 "Allen Institute for AI": "UCEqgmyWChwvt6MFGGlmUQCQ",
-"DeepMind": "UCP7jMXSY2xbc3KCAE0MHQ",
+"DeepMind": "UCP7jMXSY2xbc3KCAE0MHQ-A",
 "Robert Miles": "UCLB7AzTwc6VFZrBsO2ucBMg",
 "Applied AI Course": "UCJINtWke3-FMz2WuEltWDVQ",
 "The TWIML AI Podcast with Sam Charrington": "UC7kjWIK1H8tfmFlzZO-wHMw",

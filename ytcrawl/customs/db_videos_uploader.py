@@ -5,7 +5,7 @@ from datetime import datetime
 
 class DBVideosUploader(DBUploader):
     def q_exists(self, video_id, q):
-        sql = "SELECT `q` FROM videos WHERE `videoId`='%s' AND match(q) against('%s' in boolean mode);" % (
+        sql = "SELECT `q` FROM videos WHERE `videoId`='%s' AND match(q) against('\"%s\"' in boolean mode);" % (
             video_id, q)
         self.mycursor.execute(sql)
         result = self.mycursor.fetchall()
@@ -13,7 +13,7 @@ class DBVideosUploader(DBUploader):
         if exists:
             print('\nq already exists:', q)
         else:
-            print('\nq not exist:', q, '\t Updating q...')
+            print('\nq not exist:', q)
             self.update_q(video_id, q)
 
         return exists
@@ -22,12 +22,12 @@ class DBVideosUploader(DBUploader):
         sql = "SELECT `q` FROM videos WHERE `videoId`='%s';" % video_id
         self.mycursor.execute(sql)
         result = self.mycursor.fetchall()
-        print('result:', result)
         old_q = result[0][0] if len(result) else ''
         print('Updating q to:', old_q + ', %s' % new_q)
-        sql = "UPDATE videos SET q='%s' WHERE videoId='%s'" % (
+        sql = "UPDATE videos SET q='%s' WHERE videoId='%s';" % (
             old_q + ', %s' % new_q, video_id)
         self.mycursor.execute(sql)
+        self.conn.commit()
 
     def video_id_exists(self, video_id, args):
         sql = "SELECT 1 FROM videos WHERE videos.videoId='%s';" % (video_id)
@@ -54,3 +54,16 @@ class DBVideosUploader(DBUploader):
         # print('\nitems:', items)
 
         self.insert('videos', items, {'q': args.q})
+    
+    def update_duration(self):
+        preprocessor = Preprocessor()
+        sql = "SELECT idx, duration FROM videos;"
+        self.mycursor.execute(sql)
+        results = self.mycursor.fetchall()
+        print(type(results[0]), len(results[0]), results[0])
+        for row in results:
+            new_duration = preprocessor.preprocess_duration(row[1])
+            sql = "UPDATE videos SET duration='%s' WHERE idx=%d;"%(new_duration, row[0])
+            print(sql)
+            self.mycursor.execute(sql)
+            self.conn.commit()

@@ -38,7 +38,7 @@ YOUTUBE_API_VERSION = 'v3'
 
 def youtube_videos(options):
     youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
-                    developerKey=DEVELOPER_KEY)
+                    developerKey=options.api_key if options.api_key else DEVELOPER_KEY)
 
     fields = 'items(snippet(channelTitle, tags, title, defaultAudioLanguage, publishedAt, defaultLanguage, channelId, description), statistics(viewCount, dislikeCount, commentCount, likeCount, favoriteCount), contentDetails(duration))'
     response = youtube.videos().list(
@@ -56,16 +56,33 @@ def youtube_videos(options):
         maxHeight=None,
         videoCategoryId=None,
         # fields='items(id)'
-        # fields='items(snippet(channelTitle, tags, localized, title, defaultAudioLanguage, publishedAt, defaultLanguage, categoryId, channelId, thumbnails, description, liveBroadcastContent))
+        # fields='items(snippet(channelTitle, tags, localized, title, defaultAudioLanguage, publishedAt, defaultLanguage, categoryId, channelId, thumbnails, description, liveBroadcastContent))'
         # fields='items(statistics(viewCount, dislikeCount, commentCount, likeCount, favoriteCount))'
         # fields='items(contentDetails(definition, dimension, projection, caption, licensedContent, duration))'
         # fields='items(snippet(channelTitle, description, publishedAt), statistics(viewCount, dislikeCount, commentCount, likeCount, favoriteCount))'
-        fields=fields
+        fields=options.fields
     ).execute()
 
     # print(response.get('items', []))
 
     return response
+
+
+def filter_videos_by_viewcount(args, items):
+    # items == youtube_search_recursive()['items']
+    print('Filtering with viewCount.\nBefore:', len(items))
+    filtered_items = list()
+    for item in items:
+        args.video_id = item['id']['videoId']
+        args.part = 'statistics'
+        args.fields = 'items(statistics(viewCount))'
+        response = youtube_videos(args)
+        video_item = response.get('items', [])[0]
+        if int(video_item['statistics']['viewCount']) > int(args.view_over):
+            filtered_items.append(item)
+    # Replace items to filtered
+    print('After:', len(filtered_items))
+    return filtered_items
 
 
 if __name__ == '__main__':

@@ -310,7 +310,7 @@ YOUTUBE_API_VERSION = 'v3'
 
 def youtube_channels(options=None):
     youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
-                    developerKey=DEVELOPER_KEY)
+                    developerKey=options.api_key if options.api_key else DEVELOPER_KEY)
 
     # Call the search.list method to retrieve results matching the specified
     # query term.
@@ -362,9 +362,10 @@ if __name__ == '__main__':
     #     youtube_channels(args)
     # except (HttpError, e):
     #     print('An HTTP error %d occurred:\n%s' % (e.resp.status, e.content))
-    with open(args.f_channel_ids) as f:
-        channels_list = json.load(f)[0].values()
-    for channel_id in channels_list:
+    if type(args.list_channel_ids) == str:
+        with open(args.list_channel_ids) as f:
+            args.list_channel_ids = json.load(f)[0].values()
+    for channel_id in args.list_channel_ids:
         args.channel_id = channel_id
         response = youtube_channels(args)
 

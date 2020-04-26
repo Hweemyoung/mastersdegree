@@ -14,4 +14,5 @@
 "Robert Miles": "UCLB7AzTwc6VFZrBsO2ucBMg",
 "Applied AI Course": "UCJINtWke3-FMz2WuEltWDVQ",
 "The TWIML AI Podcast with Sam Charrington": "UC7kjWIK1H8tfmFlzZO-wHMw",
-"Mycroft AI": "UC1dlmB1lup9RwFQBSGnhA-g"}]
+"Mycroft AI": "UC1dlmB1lup9RwFQBSGnhA-g",
+"CodeEmporium": "UC5_6ZD6s8klmMu9TXEB_1IA"}]

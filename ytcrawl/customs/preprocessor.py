@@ -1,5 +1,6 @@
 import datetime
-
+import re
+from datetime import timedelta
 
 class Preprocessor:
     def __init__(self, items=None):
@@ -9,8 +10,10 @@ class Preprocessor:
         dict_cases = {
             'datetime': {'target_columns': ['publishedAt'],
                          'method': self.preprocess_datetime},
-            'list': {'target_columns': ['tags', 'keywords'],
-                     'method': self.preprocess_list}
+            'list': {'target_columns': ['tags'],
+                     'method': self.preprocess_list},
+            'duration': {'target_columns': ['duration'],
+                     'method': self.preprocess_duration}
         }
         items = self.preprocess_recursive(items, dict_cases)
 
@@ -81,3 +84,20 @@ class Preprocessor:
 
     def deEmojify(self, inputString):
         return inputString.encode('ascii', 'ignore').decode('ascii')
+
+    def preprocess_duration(self, duration):
+        regex = re.compile(
+            r'PT((?P<hours>\d+?)H)?((?P<minutes>\d+?)M)?((?P<seconds>\d+?)S)?')
+        parts = regex.match(duration)
+        if not parts:
+            raise SyntaxError('Cannot compile duration: %s'%duration)
+        parts = parts.groupdict()
+        for key in parts:
+            parts[key] = int(parts[key]) if parts[key] else 0
+        # time_params = {}
+        # for (name, param) in parts.iteritems():
+        # for (name, param) in iter(parts):
+        #     if param:
+        #         time_params[name] = int(param)
+        # return timedelta(**time_params)
+        return int(timedelta(**parts).total_seconds())

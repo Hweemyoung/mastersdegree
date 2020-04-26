@@ -207,14 +207,14 @@ YOUTUBE_API_VERSION = 'v3'
 
 def youtube_search(options):
     youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
-                    developerKey=DEVELOPER_KEY)
+                    developerKey=options.api_key if options.api_key else DEVELOPER_KEY)
 
     # Call the search.list method to retrieve results matching the specified
     # query term.
     response = youtube.search().list(
-        part='id, snippet',
+        part=options.part,
         # eventType=None,
-        channelId=options.channelId,
+        channelId=options.channel_id,
         # forDeveloper=None,
         # videoSyndicated=None,
         # channelType=None,
@@ -246,7 +246,8 @@ def youtube_search(options):
         # order=options.order,
         # fields='items(id(channelId, videoId), snippet(title, channelId, liveBroadcastContent, channelTitle, description))'
         # fields='items(snippet(channelTitle, title, description))'
-        fields='nextPageToken, items(id(videoId), snippet(channelTitle))'
+        # fields='nextPageToken, items(id(videoId), snippet(channelTitle))',
+        fields=options.fields
     ).execute()
 
     # Add each result to the appropriate list, and then display the lists of
@@ -259,37 +260,67 @@ def youtube_search(options):
 
 
 def youtube_search_recursive(args):
-    with open(args.f_channel_ids) as f:
-        channels_list = json.load(f)[0].values()
+    try:
+        args.list_channel_ids
+    except AttributeError:
+        print("args.list_channel_ids not defined. Searching w/o channelId.")
+        args.list_channel_ids = [None]
+    else:
+        if args.list_channel_ids == None:
+            args.list_channel_ids = [None]
+        elif args.list_channel_ids == 'fromdb':
+            from db_uploader import DBUploader
+            db_uploader = DBUploader()
+            sql = "SELECT channelId FROM channels;"
+            db_uploader.mycursor.execute(sql)
+            args.list_channel_ids = db_uploader.mycursor.fetchall()
+            
+            new_list = list()
+            for item in args.list_channel_ids:
+                new_list.append(item[0])
+            args.list_channel_ids = new_list
+
+        else:
+            try:
+                args.list_channel_ids.endswith('txt')
+            except AttributeError:
+                raise TypeError('args.list_channel_ids not understood.')
+            else:
+                with open(args.list_channel_ids) as f:
+                    args.list_channel_ids = json.load(f)[0].values()
+        
 
     args.page_token = None
     print('Initial args:', args)
 
-    dict_video_ids = dict()
-    dict_video_ids['q'] = args.q
-    dict_video_ids['items'] = list()
+    dict_responses = dict()
+    dict_responses['q'] = args.q
+    dict_responses['items'] = list()
 
     # Iterate for every chanId
-    for n, chan_id in enumerate(channels_list):
+    for n, chan_id in enumerate(args.list_channel_ids):
         print(n, 'th channel:', chan_id)
-        args.channelId = chan_id
+        args.channel_id = chan_id
 
         response = youtube_search(args)
         # Add new items to dict
-        dict_video_ids['items'] = dict_video_ids['items'] + response['items']
+        dict_responses['items'] = dict_responses['items'] + response['items']
 
-        # items = response.get('items', [])
-        # print(items)
-        # fields='nextPageToken, items(id(videoId))'
-        # nextPageToken = response.get('nextPageToken')
-        # print(nextPageToken)
-        # flist = os.listdir('./results')
         page = 0
         while (len(response.get('items', [])) != 0):
             print('\npage:', page)
-            # fname = chan_id + str(page).zfill(4) + '.txt'
-            # with open('./results/' + fname, 'w') as json_file:
-            #     json.dump(response, json_file)
+
+            if args.up_to:
+                remains = int(args.up_to) - int(args.max_results)
+                print('\tremains:', remains)
+                if remains > 0:
+                    args.up_to = str(remains)
+                    if remains < int(args.max_results):
+                        args.max_results = str(remains)
+                else:
+                    print('No remains:', remains, '\tBreak.')
+                    break
+
             args.page_token = response.get('nextPageToken')
             print('\tPage token:', args.page_token)
             # print('New args:', args)
@@ -298,12 +329,13 @@ def youtube_search_recursive(args):
                 break
             page += 1
             response = youtube_search(args)
-            dict_video_ids['items'] = dict_video_ids['items'] + response['items']
+            dict_responses['items'] = dict_responses['items'] + \
+                response['items']
             # items = response.get('items', [])
             # print(items)
-    
-    print('\ndict_video_ids:', dict_video_ids)
-    return dict_video_ids
+
+    print('dict_responses:', dict_responses)
+    return dict_responses
 
 
 if __name__ == '__main__':
@@ -322,4 +354,3 @@ if __name__ == '__main__':
     # except (HttpError, e):
     #     print('An HTTP error %d occurred:\n%s' % (e.resp.status, e.content))
     dict_video_ids = youtube_search_recursive(args)
-    

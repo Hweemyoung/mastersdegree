@@ -54,7 +54,7 @@ class DBVideosUploader(DBUploader):
         # print('\nitems:', items)
 
         self.insert('videos', items, {'q': args.q})
-    
+
     def update_duration(self):
         preprocessor = Preprocessor()
         sql = "SELECT idx, duration FROM videos;"
@@ -63,7 +63,8 @@ class DBVideosUploader(DBUploader):
         print(type(results[0]), len(results[0]), results[0])
         for row in results:
             new_duration = preprocessor.preprocess_duration(row[1])
-            sql = "UPDATE videos SET duration='%s' WHERE idx=%d;"%(new_duration, row[0])
+            sql = "UPDATE videos SET duration='%s' WHERE idx=%d;" % (
+                new_duration, row[0])
             print(sql)
             self.mycursor.execute(sql)
             self.conn.commit()

@@ -1,16 +1,22 @@
 from channels import youtube_channels
 from db_channels_uploader import DBChannelsUploader
+from db_videos_uploader import DBVideosUploader
+from db_papers_uploader import DBPapersUploader
+
 import argparse
 import os
 import json
+import urllib.request
+from bs4 import BeautifulSoup
+import re
 
-from db_videos_uploader import DBVideosUploader
 from search_custom import youtube_search_recursive
 from videos import youtube_videos, filter_videos_by_viewcount
 
+
 # Customize args: API key
 # api_key = 'AIzaSyCVMEUGxxsSw-BKH4c06PHKr_F4qjSdwJw'  # ytcrawl
-api_key = 'AIzaSyDuW2lWKYOc-tPjwcXso4LhR8_ZMEZOGKw' # ytcrawl1
+api_key = 'AIzaSyDuW2lWKYOc-tPjwcXso4LhR8_ZMEZOGKw'  # ytcrawl1
 # api_key = 'AIzaSyBahI8vJbinh7itJs2hJRNW4spp0B2Dqpk'  # ytcrawl2
 
 # channelIDs->VideoIDs->uploadVideos
@@ -234,6 +240,46 @@ def upload_channels_from_search():
 
     db_channels_uploader.close()
 
+# videos->get urls from description->upload papers
+
+
+def upload_papers_from_videos():
+    parser = argparse.ArgumentParser()
+
+    # Custom args
+    parser.add_argument('--f-channel-ids',
+                        help='List of Channel IDs', default=None)
+
+    args = parser.parse_args()
+
+    # Get urls from videos
+    db_papers_uploader = DBPapersUploader()
+    sql = "SELECT `idx`, `description` FROM videos WHERE description LIKE '%arxiv.org/abs/%' OR description LIKE '%arxiv.org/pdf/%';"
+    # sql = "SELECT `idx`, `description` FROM videos WHERE idx=23;"
+    db_papers_uploader.mycursor.execute(sql)
+    results = db_papers_uploader.mycursor.fetchall()
+    num_queried = len(results)
+    print('# of queried videos:', num_queried)
+
+    for i, row in enumerate(results):
+        print('Processing:', i+1, 'out of', num_queried, 'videos')
+        args.idx_video = row[0]
+        regex_urls = re.compile(
+            r'https?://arxiv.org/pdf/\d{3,5}.\d{3,5}.pdf|https?://arxiv.org/abs/\d{3,5}.\d{3,5}')
+        list_urls = regex_urls.findall(row[1])
+        num_urls = len(list_urls)
+        print('# of found urls:', num_urls)
+        for j, url in enumerate(list_urls):
+            print('\n\tProcessing:', j+1, 'out of', num_urls, 'urls:', url)
+            args.url = db_papers_uploader.url_pdf_to_abs(url)
+            # Check if paper exists
+            if not db_papers_uploader.paper_exists(args):
+                items = db_papers_uploader.get_items(args)
+                print(items)
+                db_papers_uploader.insert('papers', items)
+            else:
+                db_papers_uploader.num_existed += 1
+
 
 if __name__ == '__main__':
-    upload_videos_from_channel_ids(api_key)
+    upload_papers_from_videos()

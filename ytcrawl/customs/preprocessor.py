@@ -2,7 +2,13 @@ import datetime
 import re
 from datetime import timedelta
 
+
 class Preprocessor:
+    regex_abs = re.compile(r'https?://arxiv.org/abs/\d{3,5}.\d{3,5}')
+    regex_pdf = re.compile(r'https?://arxiv.org/pdf/\d{3,5}.\d{3,5}.pdf')
+    regex_http = re.compile(r'^http://')
+    regex_https = re.compile(r'^https://')
+
     def __init__(self, items=None):
         self.items = items
 
@@ -13,7 +19,7 @@ class Preprocessor:
             'list': {'target_columns': ['tags'],
                      'method': self.preprocess_list},
             'duration': {'target_columns': ['duration'],
-                     'method': self.preprocess_duration}
+                         'method': self.preprocess_duration}
         }
         items = self.preprocess_recursive(items, dict_cases)
 
@@ -58,16 +64,67 @@ class Preprocessor:
 
     def preprocess_datetime(self, value):
         if type(value) == str:
-            if len(value) == 19:
-                return value
-            elif len(value) == 20:
-                d = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            # Datetime
+            try:
+                # len(value) == 19
+                datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+            except ValueError:
+                pass
             else:
+                return value
+            try:
+                # len(value) == 20
+                d = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            except ValueError:
+                pass
+            else:
+                return d.strftime('%Y-%m-%d %H:%M:%S')
+            try:
                 d = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
-            return d.strftime('%Y-%m-%d %H:%M:%S')
+            except ValueError:
+                pass
+            else:
+                return d.strftime('%Y-%m-%d %H:%M:%S')
+            
+            # Date
+            try:
+                # len(value) == 10
+                datetime.datetime.strptime(value, '%Y-%m-%d')
+            except ValueError:
+                pass
+            else:
+                return value
+            
+            raise Exception('Datetime format not understood:', value)
+
+            # if len(value) == 19:
+                # d = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+                # return value
+            # elif len(value) == 20:
+                # d = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ')
+            # else:
+                # d = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+            # return d.strftime('%Y-%m-%d %H:%M:%S')
 
         else:
             raise TypeError('Type str expected, not given.')
+
+    def preprocess_duration(self, duration):
+        regex = re.compile(
+            r'PT((?P<hours>\d+?)H)?((?P<minutes>\d+?)M)?((?P<seconds>\d+?)S)?')
+        parts = regex.match(duration)
+        if not parts:
+            raise SyntaxError('Cannot compile duration: %s' % duration)
+        parts = parts.groupdict()
+        for key in parts:
+            parts[key] = int(parts[key]) if parts[key] else 0
+        # time_params = {}
+        # for (name, param) in parts.iteritems():
+        # for (name, param) in iter(parts):
+        #     if param:
+        #         time_params[name] = int(param)
+        # return timedelta(**time_params)
+        return int(timedelta(**parts).total_seconds())
 
     def preprocess_list(self, value):
         return ', '.join(value)
@@ -85,19 +142,40 @@ class Preprocessor:
     def deEmojify(self, inputString):
         return inputString.encode('ascii', 'ignore').decode('ascii')
 
-    def preprocess_duration(self, duration):
-        regex = re.compile(
-            r'PT((?P<hours>\d+?)H)?((?P<minutes>\d+?)M)?((?P<seconds>\d+?)S)?')
-        parts = regex.match(duration)
-        if not parts:
-            raise SyntaxError('Cannot compile duration: %s'%duration)
-        parts = parts.groupdict()
-        for key in parts:
-            parts[key] = int(parts[key]) if parts[key] else 0
-        # time_params = {}
-        # for (name, param) in parts.iteritems():
-        # for (name, param) in iter(parts):
-        #     if param:
-        #         time_params[name] = int(param)
-        # return timedelta(**time_params)
-        return int(timedelta(**parts).total_seconds())
+    def url_http_to_https(self, url):
+        # Convert only if url matches pdf
+        if bool(self.regex_https.match(url)):
+            # Pattern: https
+            pass
+        elif not bool(self.regex_http.match(url)):
+            raise SyntaxError(
+                'URL pattern not understood as http(s).')
+        else:
+            # Pattern: http
+            url = 'https' + url[4:]
+        return url
+
+    def url_pdf_to_abs(self, url):
+        # Convert only if url matches pdf
+        if bool(self.regex_abs.match(url)):
+            # Pattern: ABS
+            pass
+        elif not bool(self.regex_pdf.match(url)):
+            raise SyntaxError(
+                'URL pattern not understood as arXiv PDF.')
+        else:
+            # Pattern: PDF
+            url = url[:-4].replace('pdf', 'abs')
+        return url
+
+    def url_abs_to_pdf(self, url):
+        # Convert only if url matches abs
+        if bool(self.regex_pdf.match(url)):
+            # Pattern: ABS
+            pass
+        elif not bool(self.regex_abs.match(url)):
+            raise SyntaxError(
+                'URL pattern not understood as arXiv ABS.')
+        else:
+            url = url.replace('abs', 'pdf') + '.pdf'
+        return url

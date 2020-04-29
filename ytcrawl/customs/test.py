@@ -3,22 +3,24 @@ from db_channels_uploader import DBChannelsUploader
 from db_videos_uploader import DBVideosUploader
 from db_papers_uploader import DBPapersUploader
 
+from datetime import datetime
+
 import urllib.request
 from bs4 import BeautifulSoup
 import re
 
 if __name__ == '__main__':
     # db_papers_uploader = DBPapersUploader()
-    
+
     # a = 'http://arxiv.org/pdf/1503.01445.pdf'
     # print(db_papers_uploader.url_http_to_https(a))
-    
+
     # regex_http = re.compile(r'^https://')
     # print(bool(regex_http.match(a)))
 
     # regex = re.compile(r'https?://arxiv.org/pdf/\d{3,5}.\d{3,5}.pdf|https?://arxiv.org/abs/\d{3,5}.\d{3,5}')
     # a = 'http://arxiv.org/pdf/1503.01445.pdf'
-    
+
     # print(bool(regex.match(a)))
     #     results = regex.findall("""
     #     Machine learning provides us an incredible set of tools. If you have a difficult problem at hand, you don't need to hand craft an algorithm for it. It finds out by itself what is important about the problem and tries to solve it on its own. In this video, you'll see a number of incredible applications of different machine learning techniques (neural networks, deep learning, convolutional neural networks and more).
@@ -81,17 +83,36 @@ if __name__ == '__main__':
     #     """)
     #     print(results)
 
+    
+
+    # subheader = soup.find('div', {'class': 'subheader'})
+    # subheader = subheader.find('h1').find(text=True)
+    # vals = str(subheader).split(' > ')
+    # cols = ['subject_1', 'subject_2', 'subject_3']
+    # d = dict(zip(cols, vals))
+    # print(d)
+
     html = urllib.request.urlopen("https://arxiv.org/abs/1810.04805")
     soup = BeautifulSoup(html, 'html.parser')
-    heading = soup.find('h1', {'class': ['mathjax', 'title']})
-    print(heading)
-    print(type(heading))
-    title = heading.findAll(text=True)[1]
-    print(title)
-    print(type(title))
-    print(str(title))
-    # print(type(title.text))
 
+    abstract = soup.find('blockquote', {'class': 'abstract'})
+    abstract = abstract.find_all(text=True)
+    abstract = [text for text in abstract if text not in ('\n', 'Abstract:')]
+    # Remove \n
+    abstract = map(lambda text: text.replace('\n', ' '), abstract)
+    abstract = '\n'.join(abstract)
+    print(abstract)
 
-    
-    
+    # div_authors = soup.find('div', {'class': 'authors'})
+    # div_authors = div_authors.find_all(text=True)
+    # div_authors = [author for author in div_authors if author not in ('Authors:', ', ')]
+    # div_authors = ', '.join(div_authors)
+    # print(div_authors)
+
+    # div_dateline = soup.find('div', {'class': 'dateline'})
+    # print(div_dateline)
+    # print(type(div_dateline))
+    # regex_date = re.compile(r'\d{1,2} \w{3} \d{4}')
+    # published_date = regex_date.findall(str(div_dateline))[0]
+    # published_date = '02 Oct 2019'
+    # print(datetime.strptime(published_date, '%d %b %Y').strftime('%Y-%m-%d'))

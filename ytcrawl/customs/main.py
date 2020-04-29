@@ -7,6 +7,8 @@ import argparse
 import os
 import json
 import urllib.request
+from random import shuffle
+
 from bs4 import BeautifulSoup
 import re
 
@@ -261,6 +263,11 @@ def upload_papers_from_videos():
     num_queried = len(results)
     print('# of queried videos:', num_queried)
 
+    # Shuffle
+    print('Before shuffle:', results[0])
+    shuffle(results)
+    print('After shuffle:', results[0])
+
     for i, row in enumerate(results):
         print('Processing:', i+1, 'out of', num_queried, 'videos')
         args.idx_video = row[0]
@@ -269,16 +276,25 @@ def upload_papers_from_videos():
         list_urls = regex_urls.findall(row[1])
         num_urls = len(list_urls)
         print('# of found urls:', num_urls)
+        db_papers_uploader.num_crawled += num_urls
+
         for j, url in enumerate(list_urls):
             print('\n\tProcessing:', j+1, 'out of', num_urls, 'urls:', url)
-            args.url = db_papers_uploader.url_pdf_to_abs(url)
+            args.url = db_papers_uploader.url_http_to_https(db_papers_uploader.url_pdf_to_abs(url))
             # Check if paper exists
             if not db_papers_uploader.paper_exists(args):
                 items = db_papers_uploader.get_items(args)
                 print(items)
                 db_papers_uploader.insert('papers', items)
-            else:
-                db_papers_uploader.num_existed += 1
+                db_papers_uploader.num_inserted += 1
+    
+    print('\nDone')
+    print('# of queried videos:', num_queried)
+    print('# of crawled papers:', db_papers_uploader.num_crawled)
+    print('# of inserted papers:', db_papers_uploader.num_inserted)
+    print('# of existed papers:', db_papers_uploader.num_existed)
+    print('# of merge:', len(db_papers_uploader.list_merged))
+    print('Merged urls:', db_papers_uploader.list_merged)
 
 
 if __name__ == '__main__':

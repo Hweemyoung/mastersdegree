@@ -14,70 +14,84 @@ class DBPapersUploader(DBUploader):
     regex_http = re.compile(r'^http://')
     regex_https = re.compile(r'^https://')
 
+    regex_date = re.compile(r'\d{1,2} \w{3} \d{4}')  # 3 Oct 2019
+
+    num_crawled = 0
+    num_inserted = 0
     num_existed = 0
-    num_merged = 0
+    list_merged = list()
 
     def get_items(self, args):
         # args must include: idx_videos, url from videos
         # args.url could be either abs or pdf
-        cols = ['title', 'urls', 'idx_videos']
-        vals = list()
-        vals.append(self.get_title_from_arxiv(args.url))
-        vals.append(self.get_urls(args.url))
-        vals.append(args.idx_video)
         items = dict()
-        for col, val in zip(cols, vals):
-            items[col] = val
+        items['urls'] = self.get_urls(args.url)
+        items['idx_videos'] = args.idx_video
+        items['queriedAt'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        # title, publishedAt, ...
+        items.update(self.get_fields_from_arxiv(args.url))
         return items
 
-    def url_http_to_https(self, url):
-        # Convert only if url matches pdf
-        if bool(self.regex_https.match(url)):
-            # Pattern: https
-            pass
-        elif not bool(self.regex_http.match(url)):
-            raise SyntaxError(
-                'URL pattern not understood as http(s).')
-        else:
-            # Pattern: http
-            url = 'https' + url[4:]
-        return url
-
-    def url_pdf_to_abs(self, url):
-        # Convert only if url matches pdf
-        if bool(self.regex_abs.match(url)):
-            # Pattern: ABS
-            pass
-        elif not bool(self.regex_pdf.match(url)):
-            raise SyntaxError(
-                'URL pattern not understood as arXiv PDF.')
-        else:
-            # Pattern: PDF
-            url = url[:-4].replace('pdf', 'abs')
-        return url
-
-    def url_abs_to_pdf(self, url):
-        # Convert only if url matches abs
-        if bool(self.regex_pdf.match(url)):
-            # Pattern: ABS
-            pass
-        elif not bool(self.regex_abs.match(url)):
-            raise SyntaxError(
-                'URL pattern not understood as arXiv ABS.')
-        else:
-            url = url.replace('abs', 'pdf') + '.pdf'
-        return url
-
-    def get_title_from_arxiv(self, url):
+    def get_fields_from_arxiv(self, url):
+        # url could be either abs or pdf
         url = self.url_pdf_to_abs(url)
         html = urllib.request.urlopen(url)
         soup = BeautifulSoup(html, 'html.parser')
         html.close()
+
+        fields = dict()
+        # Get title
+        fields['title'] = self.get_title_from_arxiv_html(soup) # str
+        # Get authors
+        fields['authors'] = self.get_authors_from_arxiv_html(soup) # str
+        # Get abstract
+        fields['abstract'] = self.get_abstract_from_arxiv_html(soup) # str
+        # Get publishedAt
+        fields['publishedAt'] = self.get_publishedAt_from_arxiv_html(soup) # str
+        # Get subjects
+        fields.update(self.get_subjects_from_arxiv(soup)) # dict
+
+        return fields
+
+    def get_subjects_from_arxiv(self, soup):
+        subjects = soup.find('div', {'class': 'subheader'})
+        subjects = subjects.find('h1').find(text=True)
+        subjects = str(subjects).split(' > ')
+        cols = ['subject_1', 'subject_2', 'subject_3']
+        return dict(zip(cols, subjects))
+
+
+    def get_abstract_from_arxiv_html(self, soup):
+        abstract = soup.find('blockquote', {'class': 'abstract'})
+        abstract = abstract.find_all(text=True)
+        # Filter texts
+        abstract = [text for text in abstract if text not in (
+            '\n', 'Abstract:')]
+        # Remove \n
+        abstract = map(lambda text: text.replace('\n', ' '), abstract)
+        return '\n'.join(abstract)
+
+    def get_authors_from_arxiv_html(self, soup):
+        authors = soup.find('div', {'class': 'authors'})
+        authors = authors.find_all(text=True)
+        # Filter texts
+        authors = [author for author in authors if author not in (
+            'Authors:', ', ')]
+        return ', '.join(authors)
+
+    def get_title_from_arxiv_html(self, soup):
+        # Get title
         heading = soup.find('h1', {'class': ['mathjax', 'title']})
-        # print(heading)
         title = heading.findAll(text=True)[1]
         print('\ttitle:', title)
         return str(title)
+
+    def get_publishedAt_from_arxiv_html(self, soup):
+        # Get publishedAt
+        div_dateline = soup.find('div', {'class': 'dateline'})
+        published_date = self.regex_date.findall(str(div_dateline))[0]
+        # 2019-10-03
+        return datetime.strptime(published_date, '%d %b %Y').strftime('%Y-%m-%d')
 
     def get_urls(self, url):
         url_abs = self.url_http_to_https(self.url_pdf_to_abs(url))
@@ -145,7 +159,7 @@ class DBPapersUploader(DBUploader):
             raise Exception('Error occured while merging: %s merged into %d.' % (
                 args.url, len(result)))
 
-        self.num_merged += 1
+        self.list_merged.append(args.url)
 
         return result
 
@@ -175,3 +189,47 @@ class DBPapersUploader(DBUploader):
             '%s, %s' % (old_idx_videos, args.idx_video), args.idx_paper)
         self.mycursor.execute(sql)
         self.conn.commit()
+
+    def url_http_to_https(self, url):
+        # Convert only if url matches pdf
+        if bool(self.regex_https.match(url)):
+            # Pattern: https
+            pass
+        elif not bool(self.regex_http.match(url)):
+            raise SyntaxError(
+                'URL pattern not understood http nor https.')
+        else:
+            # Pattern: http
+            url = 'https' + url[4:]
+        return url
+
+    def url_pdf_to_abs(self, url):
+        # Convert only if url matches pdf
+        if bool(self.regex_abs.match(url)):
+            # Pattern: ABS
+            pass
+        elif not bool(self.regex_pdf.match(url)):
+            raise SyntaxError(
+                'URL pattern not understood as arXiv PDF.')
+        else:
+            # Pattern: PDF
+            url = url[:-4].replace('pdf', 'abs')
+        return url
+
+    def url_abs_to_pdf(self, url):
+        # Convert only if url matches abs
+        if bool(self.regex_pdf.match(url)):
+            # Pattern: ABS
+            pass
+        elif not bool(self.regex_abs.match(url)):
+            raise SyntaxError(
+                'URL pattern not understood as arXiv ABS.')
+        else:
+            url = url.replace('abs', 'pdf') + '.pdf'
+        return url
+
+    def get_missing_idx(self):
+        sql = "SELECT a.idx+1 AS start, MIN(b.idx) - 1 AS end FROM papers AS a, papers AS b WHERE a.idx < b.idx GROUP BY a.idx HAVING start < MIN(b.idx);"
+        self.mycursor.execute(sql)
+        results = self.mycursor.fetchall() # [(26, 26), (68, 72), ...]
+        return results

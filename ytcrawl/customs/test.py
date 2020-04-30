@@ -9,7 +9,44 @@ import urllib.request
 from bs4 import BeautifulSoup
 import re
 
+import csv
+import numpy as np
+import matplotlib.pyplot as plt
+
 if __name__ == '__main__':
+    # with open('table.csv', newline='') as f:
+    # table = csv.reader(f)
+    # print(list(table))
+
+    table = np.genfromtxt('table.csv', delimiter=',')
+    table = np.round(table, 2)
+    print(table)
+
+    fig, ax = plt.subplots()
+
+    intersection_matrix = table
+
+    ax.matshow(intersection_matrix, cmap=plt.cm.Reds)
+
+    cols = ['#contents', 'Duration', '#View',
+            '#Like', '#Dislike', '#Comment']
+    x_pos = np.arange(len(cols))
+    plt.xticks(x_pos, cols)
+    y_pos = np.arange(len(cols))
+    plt.yticks(y_pos, cols)
+
+    for i in range(len(cols)):
+        for j in range(len(cols)):
+            c = intersection_matrix[j, i]
+            ax.text(i, j, str(c), va='center', ha='center')
+
+    plt.show()
+# 
+    # plt.matshow(table)
+    
+# 
+    # plt.show()
+
     # db_papers_uploader = DBPapersUploader()
 
     # a = 'http://arxiv.org/pdf/1503.01445.pdf'
@@ -83,8 +120,6 @@ if __name__ == '__main__':
     #     """)
     #     print(results)
 
-    
-
     # subheader = soup.find('div', {'class': 'subheader'})
     # subheader = subheader.find('h1').find(text=True)
     # vals = str(subheader).split(' > ')
@@ -92,16 +127,16 @@ if __name__ == '__main__':
     # d = dict(zip(cols, vals))
     # print(d)
 
-    html = urllib.request.urlopen("https://arxiv.org/abs/1810.04805")
-    soup = BeautifulSoup(html, 'html.parser')
+    # html = urllib.request.urlopen("https://arxiv.org/abs/1810.04805")
+    # soup = BeautifulSoup(html, 'html.parser')
 
-    abstract = soup.find('blockquote', {'class': 'abstract'})
-    abstract = abstract.find_all(text=True)
-    abstract = [text for text in abstract if text not in ('\n', 'Abstract:')]
-    # Remove \n
-    abstract = map(lambda text: text.replace('\n', ' '), abstract)
-    abstract = '\n'.join(abstract)
-    print(abstract)
+    # abstract = soup.find('blockquote', {'class': 'abstract'})
+    # abstract = abstract.find_all(text=True)
+    # abstract = [text for text in abstract if text not in ('\n', 'Abstract:')]
+    # # Remove \n
+    # abstract = map(lambda text: text.replace('\n', ' '), abstract)
+    # abstract = '\n'.join(abstract)
+    # print(abstract)
 
     # div_authors = soup.find('div', {'class': 'authors'})
     # div_authors = div_authors.find_all(text=True)

@@ -1,8 +1,11 @@
 import mysql.connector
+from sql_handler import SQLHandler
 from preprocessor import Preprocessor
 
 
 class DBHandler:
+    sql_handler = SQLHandler()
+    
     def __init__(self, host='localhost', user='root', passwd='111111', database='ytcrawl0'):
         self.conn = mysql.connector.connect(
             host=host,

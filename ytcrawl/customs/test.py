@@ -2,6 +2,7 @@ from preprocessor import Preprocessor
 from db_channels_uploader import DBChannelsUploader
 from db_videos_uploader import DBVideosUploader
 from db_papers_uploader import DBPapersUploader
+from sql_handler import SQLHandler
 
 from datetime import datetime
 
@@ -14,38 +15,39 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
+    sql_handler = SQLHandler()
+    
+
     # with open('table.csv', newline='') as f:
     # table = csv.reader(f)
     # print(list(table))
 
-    table = np.genfromtxt('table.csv', delimiter=',')
-    table = np.round(table, 2)
-    print(table)
+    # table = np.genfromtxt('table.csv', delimiter=',')
+    # table = np.round(table, 2)
+    # print(table)
 
-    fig, ax = plt.subplots()
+    # fig, ax = plt.subplots()
 
-    intersection_matrix = table
+    # intersection_matrix = table
 
-    ax.matshow(intersection_matrix, cmap=plt.cm.Reds)
+    # ax.matshow(intersection_matrix, cmap=plt.cm.Reds)
 
-    cols = ['#contents', 'Duration', '#View',
-            '#Like', '#Dislike', '#Comment']
-    x_pos = np.arange(len(cols))
-    plt.xticks(x_pos, cols)
-    y_pos = np.arange(len(cols))
-    plt.yticks(y_pos, cols)
+    # cols = ['#contents', 'Duration', '#View',
+    #         '#Like', '#Dislike', '#Comment']
+    # x_pos = np.arange(len(cols))
+    # plt.xticks(x_pos, cols)
+    # y_pos = np.arange(len(cols))
+    # plt.yticks(y_pos, cols)
 
-    for i in range(len(cols)):
-        for j in range(len(cols)):
-            c = intersection_matrix[j, i]
-            ax.text(i, j, str(c), va='center', ha='center')
+    # for i in range(len(cols)):
+    #     for j in range(len(cols)):
+    #         c = intersection_matrix[j, i]
+    #         ax.text(i, j, str(c), va='center', ha='center')
 
-    plt.show()
-# 
-    # plt.matshow(table)
-    
-# 
     # plt.show()
+
+
+
 
     # db_papers_uploader = DBPapersUploader()
 

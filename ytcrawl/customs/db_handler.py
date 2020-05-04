@@ -2,7 +2,7 @@ import mysql.connector
 from preprocessor import Preprocessor
 
 
-class DBUploader:
+class DBHandler:
     def __init__(self, host='localhost', user='root', passwd='111111', database='ytcrawl0'):
         self.conn = mysql.connector.connect(
             host=host,

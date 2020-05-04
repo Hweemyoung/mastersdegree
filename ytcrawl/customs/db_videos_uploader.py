@@ -1,9 +1,9 @@
-from db_uploader import DBUploader
+from db_handler import DBHandler
 from preprocessor import Preprocessor
 from datetime import datetime
 
 
-class DBVideosUploader(DBUploader):
+class DBVideosUploader(DBHandler):
     def q_exists(self, video_id, q):
         sql = "SELECT `q` FROM videos WHERE `videoId`='%s' AND match(q) against('\"%s\"' in boolean mode);" % (
             video_id, q)

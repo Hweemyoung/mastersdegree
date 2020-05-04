@@ -153,7 +153,7 @@ def upload_videos_from_channel_ids(api_key):
 
 #     args = parser.parse_args()
 
-#     # DBUploader
+#     # DBHandler
 #     db_channels_uploader = DBChannelsUploader()
 
 #     # Get channels list
@@ -214,7 +214,7 @@ def upload_channels_from_search():
     dict_responses['items'] = filter_videos_by_viewcount(
         args, dict_responses['items'])
 
-    # DBUploader
+    # DBHandler
     db_channels_uploader = DBChannelsUploader()
 
     # Get list of channel Ids.

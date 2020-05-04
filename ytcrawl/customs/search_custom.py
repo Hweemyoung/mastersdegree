@@ -269,11 +269,11 @@ def youtube_search_recursive(args):
         if args.list_channel_ids == None:
             args.list_channel_ids = [None]
         elif args.list_channel_ids == 'fromdb':
-            from db_uploader import DBUploader
-            db_uploader = DBUploader()
+            from db_handler import DBHandler
+            db_handler = DBHandler()
             sql = "SELECT channelId FROM channels;"
-            db_uploader.mycursor.execute(sql)
-            args.list_channel_ids = db_uploader.mycursor.fetchall()
+            db_handler.mycursor.execute(sql)
+            args.list_channel_ids = db_handler.mycursor.fetchall()
             
             new_list = list()
             for item in args.list_channel_ids:

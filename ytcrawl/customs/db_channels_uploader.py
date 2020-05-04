@@ -1,8 +1,8 @@
-from db_uploader import DBUploader
+from db_handler import DBHandler
 from datetime import datetime
 
 
-class DBChannelsUploader(DBUploader):
+class DBChannelsUploader(DBHandler):
     def channel_id_exists(self, channel_id):
         sql = "SELECT 1 FROM channels WHERE channels.channelId='%s';" % (
             channel_id)

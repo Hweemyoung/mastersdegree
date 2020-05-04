@@ -1,4 +1,4 @@
-from db_uploader import DBUploader
+from db_handler import DBHandler
 from preprocessor import Preprocessor
 from datetime import datetime
 
@@ -8,7 +8,7 @@ import re
 from bs4 import BeautifulSoup
 
 
-class DBPapersUploader(DBUploader):
+class DBPapersUploader(DBHandler):
     regex_abs = re.compile(r'https?://arxiv.org/abs/\d{3,5}.\d{3,5}')
     regex_pdf = re.compile(r'https?://arxiv.org/pdf/\d{3,5}.\d{3,5}.pdf')
     regex_http = re.compile(r'^http://')

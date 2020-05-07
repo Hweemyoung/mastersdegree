@@ -14,8 +14,15 @@ import csv
 import numpy as np
 import matplotlib.pyplot as plt
 
+from selenium import webdriver
+
 if __name__ == '__main__':
-    sql_handler = SQLHandler()
+    chrome_driver = webdriver.Chrome('./chromedriver')
+    chrome_driver.get('https://www.altmetric.com/details/77318665/twitter/page:1')
+    print(chrome_driver.current_url)
+    
+    
+    # sql_handler = SQLHandler()
     
 
     # with open('table.csv', newline='') as f:

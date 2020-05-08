@@ -14,13 +14,11 @@ import csv
 import numpy as np
 import matplotlib.pyplot as plt
 
-from selenium import webdriver
+from altmetric_it import AltmetricIt
 
 if __name__ == '__main__':
-    chrome_driver = webdriver.Chrome('./chromedriver')
-    chrome_driver.get('https://www.altmetric.com/details/77318665/twitter/page:1')
-    print(chrome_driver.current_url)
-    
+    altmetric_it = AltmetricIt(max_times_find=10)
+    altmetric_it.get_twitter_from_url('https://arxiv.org/abs/1810.04805')
     
     # sql_handler = SQLHandler()
     

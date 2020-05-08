@@ -13,13 +13,17 @@ class SQLHandler:
     def __init__(self):
         pass
 
+    def set_command_set(self):
+        self.command_set = True
+        print('Command set:', self.command)
+        return self
+
     def select(self, table, columns='*'):
         if type(columns) in (list, tuple):
             columns = map(lambda column: '`' + column + '`', columns)
             columns = ', '.join(columns)
         self.command = "SELECT %s FROM %s" % (columns, table)
-        self.command_set = True
-        print('Command set:', self.command)
+        self.set_command_set()
         return self
 
     def update(self, table, columns=None, values=None, dict_columns_values=None):
@@ -34,8 +38,12 @@ class SQLHandler:
         key_val_pairs = ', '.join(key_val_pairs)
 
         self.command = "UPDATE %s SET %s" % (table, key_val_pairs)
-        self.command_set = True
-        print('Command set:', self.command)
+        self.set_command_set()
+        return self
+
+    def init_command(self):
+        self.command = None
+        self.command_set = False
         return self
 
     def init_list_where_clauses(self, index=None):
@@ -44,6 +52,7 @@ class SQLHandler:
             print('list_where_cluases[%d] popped:' % index, pop)
         else:
             self.list_where_clauses = []
+        return self
 
     def get_sql(self, mode_where='and'):
         if not self.command_set:

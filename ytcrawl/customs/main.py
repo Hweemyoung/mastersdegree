@@ -280,14 +280,15 @@ def upload_papers_from_videos():
 
         for j, url in enumerate(list_urls):
             print('\n\tProcessing:', j+1, 'out of', num_urls, 'urls:', url)
-            args.url = db_papers_uploader.url_http_to_https(db_papers_uploader.url_pdf_to_abs(url))
+            args.url = db_papers_uploader.url_http_to_https(
+                db_papers_uploader.url_pdf_to_abs(url))
             # Check if paper exists
             if not db_papers_uploader.paper_exists(args):
                 items = db_papers_uploader.get_items(args)
                 print(items)
                 db_papers_uploader.insert('papers', items)
                 db_papers_uploader.num_inserted += 1
-    
+
     print('\nDone')
     print('# of queried videos:', num_queried)
     print('# of crawled papers:', db_papers_uploader.num_crawled)
@@ -297,5 +298,55 @@ def upload_papers_from_videos():
     print('Merged urls:', db_papers_uploader.list_merged)
 
 
+def altmetric_url_from_papers():
+    from altmetric_it import AltmetricIt
+    from db_handler import DBHandler
+    from datetime import datetime
+    # parser = argparse.ArgumentParser()
+
+    # # Custom args
+    # parser.add_argument('--f-channel-ids',
+    #                     help='List of Channel IDs', default=None)
+
+    # args = parser.parse_args()
+
+    altmetric_it = AltmetricIt()
+    altmetric_it.crawl_altmetric_from_papers(overwrite='incompleted')
+
+    # db_handler = DBHandler()
+    # db_handler.sql_handler.select('papers', 'idx, urls')
+    # sql = db_handler.sql_handler.get_sql()
+    # db_handler.mycursor.execute(sql)
+    # list_urls = db_handler.mycursor.fetchall()
+    # # list_urls = list_urls[:2]
+    # num_papers = len(list_urls)
+    # list_failed = dict()
+    # print('# of paper urls:', num_papers)
+
+    # # Twitter
+    # list_failed['twitter'] = list()
+    # regex_abs = re.compile(r'https?://arxiv.org/abs/\d{3,5}.\d{3,5}')
+    # for i, field in enumerate(list_urls):
+    #     print('Processing: %d out of %d papers' % (i+1, num_papers))
+    #     _str_urls = field[1]
+    #     _url_abs = regex_abs.findall(_str_urls)[0]
+    #     _success = altmetric_it.get_twitter_from_url(
+    #         _url_abs, overwrite='incompleted')
+    #     if not _success:
+    #         print('---------------Job failed: %s' % altmetric_it.msg_error)
+    #         list_failed['twitter'].append({
+    #             'idx': field[0],
+    #             'url': _url_abs,
+    #             'msg_error': altmetric_it.msg_error
+    #         })
+    #     else:
+    #         print('---------------Job successful.')
+    #         print('\n')
+    
+    # with open('./altmetricit/log_fail_%s.txt' % datetime.now().strftime('%Y%m%d_%H%M%S'), 'w+') as f:
+    #     json.dump(list_failed, f)
+
+
+
 if __name__ == '__main__':
-    upload_papers_from_videos()
+    altmetric_url_from_papers()

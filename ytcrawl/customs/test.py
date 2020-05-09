@@ -17,8 +17,10 @@ import matplotlib.pyplot as plt
 from altmetric_it import AltmetricIt
 
 if __name__ == '__main__':
-    altmetric_it = AltmetricIt(max_times_find=10)
-    altmetric_it.get_twitter_from_url('https://arxiv.org/abs/1810.04805')
+from altmetric_it import AltmetricIt
+import json
+altmetric_it = AltmetricIt(max_times_find=10)
+altmetric_it.driver_get('https://www.ghjksdje.org')
     
     # sql_handler = SQLHandler()
     

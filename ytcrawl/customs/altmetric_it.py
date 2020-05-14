@@ -22,7 +22,6 @@ class AltmetricIt(DBHandler):
     regex_tweet_id = re.compile(r'tweet_id=\d{16,22}')
     regex_abs = re.compile(r'https?://arxiv.org/abs/\d{3,5}.\d{3,5}')
 
-    db_handler = DBHandler()
     msg_error = ''
     dict_failed = dict()
 
@@ -157,10 +156,10 @@ class AltmetricIt(DBHandler):
             _num_files, _num_failed))
 
     def crawl_altmetric_from_papers(self, overwrite='incompleted'):
-        self.db_handler.sql_handler.select('papers', 'idx, urls')
-        sql = self.db_handler.sql_handler.get_sql()
-        self.db_handler.mycursor.execute(sql)
-        list_urls = self.db_handler.mycursor.fetchall()
+        self.sql_handler.select('papers', 'idx, urls')
+        sql = self.sql_handler.get_sql()
+        self.mycursor.execute(sql)
+        list_urls = self.mycursor.fetchall()
         # list_urls = list_urls[:2]
         num_papers = len(list_urls)
         print('# of paper urls:', num_papers)
@@ -208,10 +207,10 @@ class AltmetricIt(DBHandler):
         return self.update_twitter_from_citation_id(_citation_id, overwrite=overwrite)
 
     def update_papers_set_altmetric_id(self):
-        self.db_handler.sql_handler.select('papers', 'idx, urls')
-        sql = self.db_handler.sql_handler.get_sql()
-        self.db_handler.mycursor.execute(sql)
-        list_urls = self.db_handler.mycursor.fetchall()
+        self.sql_handler.select('papers', 'idx, urls')
+        sql = self.sql_handler.get_sql()
+        self.mycursor.execute(sql)
+        list_urls = self.mycursor.fetchall()
         # list_urls = list_urls[:2]
         num_papers = len(list_urls)
         print('# of paper urls:', num_papers)
@@ -225,12 +224,12 @@ class AltmetricIt(DBHandler):
             _citation_id = self.get_altmetric_id(_url_abs)
             if _citation_id == False:
                 continue
-            self.db_handler.sql_handler.reset()
-            self.db_handler.sql_handler.update('papers', dict_columns_values={
-                                               'altmetric_id': _citation_id}).where('idx', int(field[0]))
-            sql = self.db_handler.sql_handler.get_sql()
-            self.db_handler.mycursor.execute(sql)
-            self.db_handler.conn.commit()
+            self.sql_handler.reset()
+            self.sql_handler.update('papers', dict_columns_values={
+                'altmetric_id': _citation_id}).where('idx', int(field[0]))
+            sql = self.sql_handler.get_sql()
+            self.mycursor.execute(sql)
+            self.conn.commit()
 
         self.driver.close()
 

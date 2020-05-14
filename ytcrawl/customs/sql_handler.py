@@ -41,6 +41,10 @@ class SQLHandler:
         self.set_command_set()
         return self
 
+    def reset(self):
+        self.init_command()
+        self.init_list_where_clauses()
+
     def init_command(self):
         self.command = None
         self.command_set = False

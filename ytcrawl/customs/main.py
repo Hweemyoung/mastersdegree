@@ -310,8 +310,9 @@ def altmetric_url_from_papers():
 
     # args = parser.parse_args()
 
-    altmetric_it = AltmetricIt()
-    altmetric_it.crawl_altmetric_from_papers(overwrite='incompleted')
+    altmetric_it = AltmetricIt(new_bookmarklet=True)
+    # altmetric_it.crawl_altmetric_from_papers(overwrite='incompleted')
+    altmetric_it.update_results('twitter', overwrite='incompleted')
 
     # db_handler = DBHandler()
     # db_handler.sql_handler.select('papers', 'idx, urls')

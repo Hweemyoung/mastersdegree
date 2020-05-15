@@ -15,7 +15,7 @@ class SQLHandler:
 
     def set_command_set(self):
         self.command_set = True
-        print('Command set:', self.command)
+        print('\tCommand set:', self.command)
         return self
 
     def select(self, table, columns='*'):
@@ -53,17 +53,19 @@ class SQLHandler:
     def init_list_where_clauses(self, index=None):
         if index != None:
             pop = self.list_where_clauses.pop(index)
-            print('list_where_cluases[%d] popped:' % index, pop)
+            print('\tlist_where_cluases[%d] popped:' % index, pop)
         else:
             self.list_where_clauses = []
         return self
 
-    def get_sql(self, mode_where='and'):
+    def get_sql(self, mode_where='and', reset=True):
         if not self.command_set:
             raise ValueError('Command not set.')
         self.last_sql = "%s WHERE %s;" % (
             self.command, self.get_where_from_list(self.list_where_clauses, mode_where))
-        print('sql:', self.last_sql)
+        print('\tsql:', self.last_sql)
+        if reset:
+            self.reset()
         return self.last_sql
 
     def where(self, column, value, mode='equal'):
@@ -89,7 +91,7 @@ class SQLHandler:
 
         if clause not in self.list_where_clauses:
             self.list_where_clauses.append(clause)
-        print('Current list_where_clauses:', self.list_where_clauses)
+        print('\tCurrent list_where_clauses:', self.list_where_clauses)
         return self
 
     def check_type(self, value, type_targets='str'):
@@ -110,5 +112,5 @@ class SQLHandler:
             where = '(' + conj.join(list_clauses) + ')'
         else:
             where = '1'
-        print('Where:', where)
+        print('\tWhere:', where)
         return where

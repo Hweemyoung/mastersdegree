@@ -347,7 +347,11 @@ def altmetric_url_from_papers():
     # with open('./altmetricit/log_fail_%s.txt' % datetime.now().strftime('%Y%m%d_%H%M%S'), 'w+') as f:
     #     json.dump(list_failed, f)
 
+def organize_twitter():
+    from twitter_organizer import TwitterOrganizer
+    twitter_organizer = TwitterOrganizer()
+    twitter_organizer.update_stats()
 
 
 if __name__ == '__main__':
-    altmetric_url_from_papers()
+    organize_twitter()

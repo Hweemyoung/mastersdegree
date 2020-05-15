@@ -1,0 +1,1 @@
+{"publishedAt": "2020-03-19", "queriedAt": "2020-05-14 11:15:59", "dt_end": "2020-05", "tab": "twitter", "twitter": {"count_followers": {"2020-03": 3023436, "2020-05": 749554, "2020-04": 471622}, "count_tweets": {"2020-03": 189, "2020-05": 43, "2020-04": 40}}, "interval": "month", "citation_id": "77905224", "dt_start": "2020-03"}

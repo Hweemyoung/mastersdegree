@@ -10,7 +10,9 @@ import re
 from random import randint
 
 
-class AltmetricIt(DBHandler):
+class AltmetricIt():
+    db_handler = DBHandler()
+
     dict_drivers = {
         'chrome': webdriver.Chrome
     }
@@ -156,10 +158,10 @@ class AltmetricIt(DBHandler):
             _num_files, _num_failed))
 
     def crawl_altmetric_from_papers(self, overwrite='incompleted'):
-        self.sql_handler.select('papers', 'idx, urls')
-        sql = self.sql_handler.get_sql()
-        self.mycursor.execute(sql)
-        list_urls = self.mycursor.fetchall()
+        self.db_handler.sql_handler.select('papers', 'idx, urls')
+        sql = self.db_handler.sql_handler.get_sql()
+        self.db_handler.mycursor.execute(sql)
+        list_urls = self.db_handler.mycursor.fetchall()
         # list_urls = list_urls[:2]
         num_papers = len(list_urls)
         print('# of paper urls:', num_papers)
@@ -207,10 +209,10 @@ class AltmetricIt(DBHandler):
         return self.update_twitter_from_citation_id(_citation_id, overwrite=overwrite)
 
     def update_papers_set_altmetric_id(self):
-        self.sql_handler.select('papers', 'idx, urls')
-        sql = self.sql_handler.get_sql()
-        self.mycursor.execute(sql)
-        list_urls = self.mycursor.fetchall()
+        self.db_handler.sql_handler.select('papers', 'idx, urls')
+        sql = self.db_handler.sql_handler.get_sql()
+        self.db_handler.mycursor.execute(sql)
+        list_urls = self.db_handler.mycursor.fetchall()
         # list_urls = list_urls[:2]
         num_papers = len(list_urls)
         print('# of paper urls:', num_papers)
@@ -224,12 +226,12 @@ class AltmetricIt(DBHandler):
             _citation_id = self.get_altmetric_id(_url_abs)
             if _citation_id == False:
                 continue
-            self.sql_handler.reset()
-            self.sql_handler.update('papers', dict_columns_values={
+            self.db_handler.sql_handler.reset()
+            self.db_handler.sql_handler.update('papers', dict_columns_values={
                 'altmetric_id': _citation_id}).where('idx', int(field[0]))
-            sql = self.sql_handler.get_sql()
-            self.mycursor.execute(sql)
-            self.conn.commit()
+            sql = self.db_handler.sql_handler.get_sql()
+            self.db_handler.mycursor.execute(sql)
+            self.db_handler.conn.commit()
 
         self.driver.close()
 

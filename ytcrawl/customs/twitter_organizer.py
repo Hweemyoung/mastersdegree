@@ -23,32 +23,54 @@ class TwitterOrganizer(DBHandler):
         'half': 6,
         'year': 12
     }
-
-    def __init__(self):
-        pass
-
-    def update_stats(self, target=None):
-        if target==None:
-            # Get .txt files
-            _list_fnames = [_fname for _fname in listdir(
-                './altmetricit/twitter') if _fname.endswith('.txt')]
-            _num_files = len(_list_fnames)
-            print('# of result files:', _num_files)
-
-            _num_failed = 0
-
-            for i, _fname in enumerate(_list_fnames):  # 65248654.txt
-                print('%d out of %d result files' % (i+1, _num_files))
-                _dict_stats = self.__get_stats_from_citation_id(_fname[:-4])
-                if _dict_stats == False:
-                    _num_failed += 1
-                else:
-                    self.__save_stats(_dict_stats)
+    dict_msg_err = dict()
+    msg_err = ''
+    def update_stats(self, list_citation_ids=None, overwrite='new'):
+        # Get .txt files
+        _list_fnames = [_fname for _fname in listdir(
+                './altmetricit/twitter') if _fname.endswith('.txt')] if list_citation_ids==None else map(lambda _citation_id: _citation_id+'.txt', list_citation_ids)
     
-    def __save_stats(self, dict_stats):
-        print('Saving dict_stats')
+        _num_files = len(_list_fnames)
+        print('# of result file candidates:', _num_files)
+
+        _num_failed = 0
+
+        for i, _fname in enumerate(_list_fnames):  # 65248654.txt
+            print('%d out of %d result files' % (i+1, _num_files))
+            _dict_stats = self.__get_stats_from_citation_id(_fname[:-4])
+            if _dict_stats == False:
+                _num_failed += 1
+                self.dict_msg_err[_fname[:-4]] = self.msg_err
+            else:
+                self.__save_stats(_dict_stats, overwrite=overwrite)
+        
+        print('Completed: update_stats\t# of jobs inqueued: %d\t# of failed jobs: %d\n'%(_num_files, _num_failed))
+        if len(self.dict_msg_err):
+            _fp = './stats/log_fail_%s.txt' % datetime.now().strftime('%Y%m%d_%H%M%S')
+            with open(_fp, 'w+') as f:
+                json.dump(self.dict_msg_err, f)
+            print('Saved dict_msg_err at: %s'%_fp)
+
+    
+    def __save_stats(self, dict_stats, overwrite):
+        if overwrite != True:
+            try:
+                with open('./stats/twitter/%s.txt' % dict_stats['citation_id'], 'r') as f:
+                    _queriedAt_old = json.load(f)['queriedAt']
+            except IOError:  # No such file or directory
+                pass
+            else:
+                if overwrite == False:
+                    return True
+                elif overwrite == 'new':
+                    if datetime.strptime(dict_stats['queriedAt'], self.dict_dt_format['datetime']) < datetime.strptime(_queriedAt_old, self.dict_dt_format['datetime']):
+                        return True
+
+        print('\tSaving dict_stats.')
         with open('./stats/twitter/%s.txt' % dict_stats['citation_id'], 'w+') as f:
             json.dump(dict_stats, f)
+        
+        return True
 
     def __add_months(self, datetime_source, months):
         month = datetime_source.month - 1 + months
@@ -64,24 +86,24 @@ class TwitterOrganizer(DBHandler):
         return self.__get_stats_from_dict_tweets(_dict_tweets)
         
     def __get_dict_tweets_from_citation_id(self, citation_id):
-        with open('./altmetricit/twitter/%s.txt' % citation_id) as f:
-            _dict_tweets = json.load(f)
-        if _dict_tweets['completed'] == '0':
+        try:
+            f = open('./altmetricit/twitter/%s.txt' % citation_id)
+        except IOError:  # No such file or directory
+            print('\tNo such file or directory.')
+            self.msg_err = 'No such file or directory.'
             return False
+        
+        _dict_tweets = json.load(f)
+        f.close()
+
+        if _dict_tweets['completed'] == '0':
+            self.msg_err = 'Crawling twitter incompleted.'
+            return False
+
         return _dict_tweets
 
     def __get_stats_from_dict_tweets(self, dict_tweets, interval='month'):
-        # _dict_stats = {
-            # 'citation_id': '34476745',
-            # 'tab': 'twitter',
-            # 'queriedAt': 'xxxx-xx-xx',
-            # 'interval': 'month',
-            # 'twitter': {
-                # 'count_tweets': {..., '2019-02': '0', '2019-03': '426', '2019-04': '2894', ...},
-                # 'count_followers': {...}
-            # }
-        # }
-        print('\tCitation_id: %s\tProcessing: %d tweets'%(dict_tweets['citation_id'], len(dict_tweets)))
+        print('\tCitation_id: %s\tProcessing: %d tweets'%(dict_tweets['citation_id'], len(dict_tweets['twitter'])))
 
         _dict_stats = dict()
 
@@ -91,15 +113,15 @@ class TwitterOrganizer(DBHandler):
         _sql = self.sql_handler.get_sql()
         self.mycursor.execute(_sql)
         _result = self.mycursor.fetchall()
-        _dict_stats['publishedAt'] = _result[0][0] if len(_result) else None
+        _dict_stats['publishedAt'] = _result[0][0].strftime(self.dict_dt_format['date']) if len(_result) else None # datetime.date
         
         # Copy from dict_tweets
         _dict_stats['citation_id'] = _citation_id
         _dict_stats['tab'] = dict_tweets['tab']
         _dict_stats['queriedAt'] = dict_tweets['queriedAt']
-        _dict_stats['interval'] = dict_tweets['interval']
         
         # New item
+        _dict_stats['interval'] = interval
         _dict_stats['twitter'] = dict()
         _dict_stats['twitter']['count_tweets'] = dict()
         _dict_stats['twitter']['count_followers'] = dict()
@@ -126,13 +148,15 @@ class TwitterOrganizer(DBHandler):
             
             # Add count
             _dict_stats['twitter']['count_tweets'][_key_dt] += 1
-            _dict_stats['twitter']['count_followers'][_key_dt] += int(_dict_tweet['followers'])
+            _dict_stats['twitter']['count_followers'][_key_dt] += int(_dict_tweet['followers'].replace(',', '')) if _dict_tweet['followers'] != '' else 0
         
         # Fill out empty DTs
         _dt_publish = datetime.strptime(_dict_stats['publishedAt'], self.dict_dt_format['date'])
         _dt_oldest = min(_dt_oldest, _dt_publish)
         _dt_newest = max(_dt_newest, _dt_publish)
         
+        _dict_stats['dt_start'] = _dt_oldest.strftime(self.dict_dt_format[interval])
+        _dict_stats['dt_end'] = _dt_newest.strftime(self.dict_dt_format[interval])
         _dict_stats = self.__fill_empty_dts(_dict_stats, _dt_oldest, _dt_newest, interval)
 
         return _dict_stats

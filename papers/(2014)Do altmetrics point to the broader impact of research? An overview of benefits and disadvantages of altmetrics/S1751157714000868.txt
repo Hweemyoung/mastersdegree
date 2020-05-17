@@ -1,0 +1,11 @@
+Lutz Bornmann,
+Do altmetrics point to the broader impact of research? An overview of benefits and disadvantages of altmetrics,
+Journal of Informetrics,
+Volume 8, Issue 4,
+2014,
+Pages 895-903,
+ISSN 1751-1577,
+https://doi.org/10.1016/j.joi.2014.09.005.
+(http://www.sciencedirect.com/science/article/pii/S1751157714000868)
+Abstract: Today, it is not clear how the impact of research on other areas of society than science should be measured. While peer review and bibliometrics have become standard methods for measuring the impact of research in science, there is not yet an accepted framework within which to measure societal impact. Alternative metrics (called altmetrics to distinguish them from bibliometrics) are considered an interesting option for assessing the societal impact of research, as they offer new ways to measure (public) engagement with research output. Altmetrics is a term to describe web-based metrics for the impact of publications and other scholarly material by using data from social media platforms (e.g. Twitter or Mendeley). This overview of studies explores the potential of altmetrics for measuring societal impact. It deals with the definition and classification of altmetrics. Furthermore, their benefits and disadvantages for measuring impact are discussed.
+Keywords: Societal impact; Broader impact; Altmetrics; Scientometrics

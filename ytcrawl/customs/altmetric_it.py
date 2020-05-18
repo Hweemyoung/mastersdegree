@@ -136,10 +136,10 @@ class AltmetricIt():
         }
         return _dict_find_methods[multiple][by]
 
-    def update_results(self, tab='twitter', overwrite='incompleted'):
+    def update_results(self, list_citation_ids=None, tab='twitter', overwrite='incompleted'):
         # Get .txt files
         _list_fnames = [_fname for _fname in listdir(
-            './altmetricit/%s' % tab) if _fname.endswith('.txt')]
+            './altmetricit/%s' % tab) if _fname.endswith('.txt')] if list_citation_ids==None else list(map(lambda _citation_id: _citation_id+'.txt', list_citation_ids))
         _num_files = len(_list_fnames)
         print('# of result files:', _num_files)
 

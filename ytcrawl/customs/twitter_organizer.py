@@ -28,7 +28,7 @@ class TwitterOrganizer(DBHandler):
     def update_stats(self, list_citation_ids=None, overwrite='new'):
         # Get .txt files
         _list_fnames = [_fname for _fname in listdir(
-                './altmetricit/twitter') if _fname.endswith('.txt')] if list_citation_ids==None else map(lambda _citation_id: _citation_id+'.txt', list_citation_ids)
+                './altmetricit/twitter') if _fname.endswith('.txt')] if list_citation_ids==None else list(map(lambda _citation_id: _citation_id+'.txt', list_citation_ids))
     
         _num_files = len(_list_fnames)
         print('# of result file candidates:', _num_files)
@@ -158,6 +158,7 @@ class TwitterOrganizer(DBHandler):
         _dict_stats['dt_start'] = _dt_oldest.strftime(self.dict_dt_format[interval])
         _dict_stats['dt_end'] = _dt_newest.strftime(self.dict_dt_format[interval])
         _dict_stats = self.__fill_empty_dts(_dict_stats, _dt_oldest, _dt_newest, interval)
+        _dict_stats = self.__cast_to_str(_dict_stats)
 
         return _dict_stats
 
@@ -177,11 +178,23 @@ class TwitterOrganizer(DBHandler):
                 dt_oldest = dt_oldest + timedelta(days=self.dict_interval[interval])
 
         return dict_stats
+    
+    def __cast_to_str(self, data):
+        if type(data) == list:
+            for i, val in enumerate(data):
+                data[i] = self.__cast_to_str(val)
+        elif type(data) == dict:
+            for _key in data:
+                data[_key] = self.__cast_to_str(data[_key])
+        elif type(data) == int:
+            data= str(data)
+        elif type(data) == str:
+            pass
+        else:
+            raise TypeError('Type in [list, dict, int, str] expected.', type(data), 'given.')
 
-        
-        
-        
-        
+        return data
 
-
-
+if __name__ == '__main__':
+    twitter_organizer = TwitterOrganizer()
+    twitter_organizer.update_stats(overwrite=True)

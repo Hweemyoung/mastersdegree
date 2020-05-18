@@ -312,7 +312,7 @@ def altmetric_url_from_papers():
 
     altmetric_it = AltmetricIt(new_bookmarklet=True)
     # altmetric_it.crawl_altmetric_from_papers(overwrite='incompleted')
-    altmetric_it.update_results('twitter', overwrite='incompleted')
+    altmetric_it.update_results(['49541835'], 'twitter', overwrite=True)
 
     # db_handler = DBHandler()
     # db_handler.sql_handler.select('papers', 'idx, urls')
@@ -350,8 +350,8 @@ def altmetric_url_from_papers():
 def organize_twitter():
     from twitter_organizer import TwitterOrganizer
     twitter_organizer = TwitterOrganizer()
-    twitter_organizer.update_stats()
+    twitter_organizer.update_stats(overwrite=True)
 
 
 if __name__ == '__main__':
-    organize_twitter()
+    altmetric_url_from_papers()

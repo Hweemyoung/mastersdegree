@@ -16,11 +16,23 @@ import matplotlib.pyplot as plt
 
 from altmetric_it import AltmetricIt
 
-if __name__ == '__main__':
-from altmetric_it import AltmetricIt
 import json
-altmetric_it = AltmetricIt(max_times_find=10)
-altmetric_it.driver_get('https://www.ghjksdje.org')
+
+def _check_arxiv_id_exists():
+    with open('./test.txt') as fp:
+        _dict = json.load(fp)
+    _list_citations = _dict['citations']
+    _list_i_no_arxiv_id = list()
+    for i, _dict_citation in enumerate(_list_citations):
+        if 'arxivId' not in _dict_citation:
+            _list_i_no_arxiv_id.append(i)
+        elif _dict_citation['arxivId'] == None:
+            _list_i_no_arxiv_id.append(i)
+        else:
+            print(_dict_citation['arxivId'])
+    print(_list_i_no_arxiv_id)
+
+_check_arxiv_id_exists()
     
     # sql_handler = SQLHandler()
     

@@ -32,7 +32,9 @@ def _check_arxiv_id_exists():
             print(_dict_citation['arxivId'])
     print(_list_i_no_arxiv_id)
 
-_check_arxiv_id_exists()
+with open('./test.txt') as fp:
+    _dict = json.load(fp)
+_dict['citations'][5316]
     
     # sql_handler = SQLHandler()
     

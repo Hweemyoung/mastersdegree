@@ -1,6 +1,7 @@
 from db_handler import DBHandler
 from preprocessor import Preprocessor
 from datetime import datetime
+from selenium import webdriver
 
 
 class DBVideosUploader(DBHandler):
@@ -66,5 +67,34 @@ class DBVideosUploader(DBHandler):
             sql = "UPDATE videos SET duration='%s' WHERE idx=%d;" % (
                 new_duration, row[0])
             print(sql)
+            self.mycursor.execute(sql)
+            self.conn.commit()
+
+    def set_iter_videoId(self):
+        self.mycursor.execute(self.sql_handler.select(
+            'videos', 'videoId').where('exposition', None).get_sql())
+        _result = self.mycursor.fetchall()
+        print('result:', _result)
+        self._iter = iter(_result)
+        self._curr_video_id = None
+        self._list_video_ids = list()
+        self._list_expositions = list()
+
+    def open_webdriver(self):
+        self.driver = webdriver.Chrome('./chromedriver')
+
+    def driver_get_videoId(self):
+        self._curr_video_id = self._iter.__next__()[0]
+        print('videoId:', self._curr_video_id)
+        self.driver.get("https://www.youtube.com/watch?v=%s" % self._curr_video_id)
+    
+    def append_list_expositions(self, exposition=0):
+        self._list_video_ids.append(self._curr_video_id)
+        self._list_expositions.append(exposition)
+    
+    def get_sql_expo(self):
+        assert len(self._list_video_ids) == len(self._list_expositions)
+        for (_video_id, _expo) in zip(self._list_video_ids, self._list_expositions):
+            sql = self.sql_handler.update('videos', columns=['exposition'], values=[_expo]).where('videoId', _video_id).get_sql()
             self.mycursor.execute(sql)
             self.conn.commit()

@@ -71,8 +71,11 @@ class SQLHandler:
     def where(self, column, value, mode='equal'):
         # Param 'mode' could be: 'equal', 'match'
         if mode == 'equal':
-            clause = "`%s`=%d" % (column, value) \
-                if type(value) != str else "`%s`='%s'" % (column, value)
+            if value == None:
+                clause = "`%s` IS NULL" % column
+            else:
+                clause = "`%s`=%d" % (column, value) \
+                    if type(value) != str else "`%s`='%s'" % (column, value)
         elif mode == 'fulltext_list':
             self.check_type(value, 'str')
             list_clauses = []

@@ -9,7 +9,7 @@ import re
 from bs4 import BeautifulSoup
 
 
-class DBPapersUploader(DBHandler):
+class DBPapersUploader():
     regex_abs = re.compile(r'https?://arxiv.org/abs/\d{3,5}.\d{3,5}')
     regex_pdf = re.compile(r'https?://arxiv.org/pdf/\d{3,5}.\d{3,5}.pdf')
     regex_http = re.compile(r'^http://')
@@ -52,10 +52,10 @@ class DBPapersUploader(DBHandler):
                 args.url = self.url_http_to_https(
                     self.url_pdf_to_abs(url))
                 # Check if paper exists
-                if not self.paper_exists(args):
+                if not self.__paper_exists(args):
                     items = self.__get_items(args)
                     print(items)
-                    self.insert('papers', items)
+                    self.db_handler.insert('papers', items)
                     self.num_inserted += 1
 
         print('\nDone')
@@ -66,21 +66,64 @@ class DBPapersUploader(DBHandler):
         print('# of merge:', len(self.list_merged))
         print('Merged urls:', self.list_merged)
 
-    def __update_papers_from_arxiv_list(self, args):
+    def update_papers_from_arxiv_list(self, args, overwrite=False):
+        # Required: args["table","subject", "YY", "MM", "url"]
         _url = self.__get_urls(args, mode="arxiv_list")
         _html = urllib.request.urlopen(_url)
         _soup = BeautifulSoup(_html, 'html.parser')
         _html.close()
 
         _list_paths = self.__get_list_paths_from_arxiv_list(_soup)
+        _num_paths = len(_list_paths)
+        _num_inserted = 0
+        print('# of papers: %d' % _num_paths)
+
         for i, _path in enumerate(_list_paths):
-            _url = "https://arxiv.org" + _path
-            # Get items from url
+            print('Processing %d out of %d papers...' % (i+1, _num_paths))
+            args['url'] = "https://arxiv.org" + _path
+
+            # Get _dict_fields
+            if not self.__paper_exists(args):
+                print('\tPaper not found. Crawling...')
+                # Get fields from args
+                _dict_fields = self.__get_fields(args)
+                _num_inserted += 1
+            else:
+                print('\tPaper already exists. Overwrite policy:', overwrite)
+                if overwrite:
+                    _dict_fields = self.__get_fields(args)
+                    _num_inserted += 1
+                else:
+                    _dict_fields = None
+            
+            if _dict_fields == None:
+                continue
+            _sql = self.db_handler.sql_handler.insert(args['table'], dict_columns_values=_dict_fields).get_sql()
+            self.db_handler.mycursor.execute(_sql)
+            self.db_handler.conn.commit()
+        
+        print('\nDone')
+        print('# of queried papers:', _num_paths)
+        print('# of inserted papers:', _num_inserted)
+        print('# of passed papers:', _num_paths - _num_inserted)
+
+    def __get_fields(self, args):
+        print('\tGet fields from url: %s' % args['url'])
+        _dict_fields = dict()
+        _dict_fields['urls'] = self.__get_urls(args, mode="arxiv_paper")
+        _dict_fields['idx_videos'] = self.__get_idx_videos(args)
+        _dict_fields['queriedAt'] = datetime.now().strftime('%Y-%m-%d %X')
+        _dict_fields.update(self.__get_fields_from_arxiv(args['url']))
+        return _dict_fields
+
+    def __get_idx_videos(self, args):
+        return None if 'idx_videos' not in args.keys() else args['idx_videos']
 
     def __get_list_paths_from_arxiv_list(self, soup):
         _div_dlpage = soup.find('div', {'id': 'dlpage'})
         _list_dts = _div_dlpage.find_all('dt')
-        _list_paths = list(map(lambda _dt: _dt.find('span', {'class': 'list-identifier'}).find('a', {'title': 'Abstract'})['href'], _list_dts)) # ['/abs/1902.33284', ...]
+        _list_paths = list(map(lambda _dt: _dt.find('span', {'class': 'list-identifier'}).find(
+            'a', {'title': 'Abstract'})['href'], _list_dts))  # ['/abs/1902.33284', ...]
         return _list_paths
 
     def __get_items(self, args):
@@ -91,10 +134,10 @@ class DBPapersUploader(DBHandler):
         items['idx_videos'] = args["idx_video"]
         items['queriedAt'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         # title, publishedAt, ...
-        items.update(self.get_fields_from_arxiv(args["url"]))
+        items.update(self.__get_fields_from_arxiv(args["url"]))
         return items
 
-    def get_fields_from_arxiv(self, url):
+    def __get_fields_from_arxiv(self, url):
         # url could be either abs or pdf
         url = self.url_pdf_to_abs(url)
         html = urllib.request.urlopen(url)
@@ -159,12 +202,13 @@ class DBPapersUploader(DBHandler):
         if mode == "arxiv_paper":
             _urls = self.__get_arxiv_paper_urls(args["url"])
         elif mode == "arxiv_list":
-            _urls = self.__get_arxiv_list_urls(args)
+            _urls = self.__get_arxiv_list_urls(
+                args["subject"], args["YY"], args["MM"])
         return _urls
 
-    def __get_arxiv_list_urls(self, args):
+    def __get_arxiv_list_urls(self, field, YY, MM):
         _urls = tuple("https://arxiv.org/list/%s/%s%s?skip=0&show=5000" % (
-            args["field"], args["YY"], args["MM"]))
+            field, YY, MM))
         return _urls
 
     def __get_arxiv_paper_urls(self, url):
@@ -174,9 +218,10 @@ class DBPapersUploader(DBHandler):
         print('\turls:', urls)
         return urls
 
-    def paper_exists(self, args):
+    def __paper_exists(self, args):
         # Determines by url
-        sql = "SELECT `idx`, `idx_videos` FROM papers WHERE match(urls) against('\"%s\"' in boolean mode);" % args["url"]
+        sql = "SELECT `idx`, `idx_videos` FROM papers WHERE match(urls) against('\"%s\"' in boolean mode);" % args[
+            "url"]
         # Determines by title?
         # sql = "SELECT `idx` FROM papers WHERE match(urls) against('\"%s\"' in boolean mode);" % args["title"]
         print('\tsql:', sql)
@@ -225,7 +270,8 @@ class DBPapersUploader(DBHandler):
         self.db_handler.mycursor.execute(sql)
         self.db_handler.conn.commit()
 
-        sql = "SELECT `idx`, `idx_videos` FROM papers WHERE match(urls) against('\"%s\"' in boolean mode);" % args["url"]
+        sql = "SELECT `idx`, `idx_videos` FROM papers WHERE match(urls) against('\"%s\"' in boolean mode);" % args[
+            "url"]
         print('\tsql:', sql)
         self.db_handler.mycursor.execute(sql)
         result = self.db_handler.mycursor.fetchall()
@@ -305,5 +351,6 @@ class DBPapersUploader(DBHandler):
     def get_missing_idx(self):
         sql = "SELECT a.idx+1 AS start, MIN(b.idx) - 1 AS end FROM papers AS a, papers AS b WHERE a.idx < b.idx GROUP BY a.idx HAVING start < MIN(b.idx);"
         self.db_handler.mycursor.execute(sql)
-        results = self.db_handler.mycursor.fetchall()  # [(26, 26), (68, 72), ...]
+        # [(26, 26), (68, 72), ...]
+        results = self.db_handler.mycursor.fetchall()
         return results

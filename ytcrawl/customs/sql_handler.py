@@ -31,15 +31,41 @@ class SQLHandler:
             columns = dict_columns_values.keys()
             values = dict_columns_values.values()
 
+        values = self.__preprocess_list_values(values)
+
         key_val_pairs = list()
         for col, val in zip(columns, values):
-            key_val_pairs.append("%s='%s'" % (col, val))\
-                if type(val) == str else key_val_pairs.append("%s=%d" % (col, val))
+            key_val_pairs.append("%s=%s" % (col, val))
         key_val_pairs = ', '.join(key_val_pairs)
 
         self.command = "UPDATE %s SET %s" % (table, key_val_pairs)
         self.set_command_set()
         return self
+
+    def insert(self, table, columns=None, values=None, dict_columns_values=None):
+        if dict_columns_values != None:
+            columns = list(dict_columns_values.keys())
+            values = list(dict_columns_values.values())
+
+        values = self.__preprocess_list_values(values)
+        self.command = "INSERT INTO %s (%s) VALUES (%s)" % (
+            table, ', '.join(columns), ', '.join(values))
+        self.set_command_set()
+        return self
+
+    def __preprocess_list_values(self, values):
+        for i, val in enumerate(values):
+            if type(val) == str:
+                values[i] = "'%s'" % val
+            elif type(val) == int:
+                values[i] = str(val)
+            elif val == None:
+                values[i] = "NULL"
+            else:
+                raise TypeError(
+                    'Type of value cannot be processed:', val, type(val))
+
+        return values
 
     def reset(self):
         self.init_command()
@@ -61,8 +87,12 @@ class SQLHandler:
     def get_sql(self, mode_where='and', reset=True):
         if not self.command_set:
             raise ValueError('Command not set.')
-        self.last_sql = "%s WHERE %s;" % (
-            self.command, self.get_where_from_list(self.list_where_clauses, mode_where))
+        if self.list_where_clauses:
+            self.last_sql = "%s WHERE %s;" % (
+                self.command, self.get_where_from_list(self.list_where_clauses, mode_where))
+        else:
+            self.last_sql = "%s;" % self.command
+
         print('\tsql:', self.last_sql)
         if reset:
             self.reset()

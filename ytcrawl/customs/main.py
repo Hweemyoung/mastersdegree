@@ -301,8 +301,21 @@ def upload_channels_from_search():
 def altmetric_url_from_papers():
     from altmetric_it import AltmetricIt
     from db_handler import DBHandler
-    from datetime import datetime
-    # parser = argparse.ArgumentParser()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--table', help='Table of target papers', default='temp_papers')
+    parser.add_argument('--overwrite', dest='overwrite',
+                        help='Overwrite policy', action='store_true', default=False)
+    parser.add_argument('--driver', help='Driver', default='chrome')
+    parser.add_argument('--p_driver', help='Driver path',
+                        default='./chromedriver')
+    parser.add_argument(
+        '--new_bookmarklet', help='Whether to install new bookmarklet or not', default=True)
+    parser.add_argument('--max_times_find',
+                        help='Max times to find', default=5)
+    parser.add_argument('--sec_sleep', help='Sleep seconds', default=1.0)
+    args = vars(parser.parse_args())
 
     # # Custom args
     # parser.add_argument('--f-channel-ids',
@@ -310,7 +323,12 @@ def altmetric_url_from_papers():
 
     # args = parser.parse_args()
 
-    altmetric_it = AltmetricIt(new_bookmarklet=True)
+    altmetric_it = AltmetricIt(args['driver'],
+                               args['p_driver'],
+                               args['new_bookmarklet'],
+                               args['max_times_find'],
+                               args['sec_sleep'])
+
     # altmetric_it.crawl_altmetric_from_papers(overwrite='incompleted')
     altmetric_it.update_results(['49541835'], 'twitter', overwrite=True)
 
@@ -360,14 +378,17 @@ def update_papers_from_arxiv_list():
     parser.add_argument('--subject', help='Subject', default='cs.LG')
     parser.add_argument('--YY', help='YY')
     parser.add_argument('--MM', help='MM')
-    parser.add_argument('--overwrite', dest='overwrite', help='Overwrite policy', action='store_true', default=False)
+    parser.add_argument('--overwrite', dest='overwrite',
+                        help='Overwrite policy', action='store_true', default=False)
 
     args = parser.parse_args()
     print(args)
     args = vars(args)
     print(args)
     db_papers_uploader = DBPapersUploader()
-    db_papers_uploader.update_papers_from_arxiv_list(args, overwrite=args['overwrite'])
+    db_papers_uploader.update_papers_from_arxiv_list(
+        args, overwrite=args['overwrite'])
+
 
 if __name__ == '__main__':
     update_papers_from_arxiv_list()

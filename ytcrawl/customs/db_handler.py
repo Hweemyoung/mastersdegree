@@ -24,6 +24,10 @@ class DBHandler:
         self.mycursor.execute(self.sql_handler.last_sql) if self.sql_handler.last_values == None else self.mycursor.execute(
             self.sql_handler.last_sql, self.sql_handler.last_values)
         self.conn.commit()
+        return self
+    
+    def fetchall(self):
+        return self.mycursor.fetchall()
 
     def insert(self, table_name, items, custom_fields={}):
         # Preprocess items

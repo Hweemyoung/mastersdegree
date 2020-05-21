@@ -36,11 +36,11 @@ class AltmetricIt():
         self.driver = self.dict_drivers[driver](p_driver)
         self.max_times_find = max_times_find
         self.sec_sleep = sec_sleep
-        self.init_find_methods()
+        # self.__init_find_methods()
         if new_bookmarklet:
-            self.install_bookmarklet()
+            self.__install_bookmarklet()
 
-    def init_find_methods(self):
+    def __init_find_methods(self):
         self.dict_find_methods = {
             True: {
                 'class': self.driver.find_elements_by_class_name,
@@ -53,7 +53,7 @@ class AltmetricIt():
             }
         }
 
-    def get_random_str(self, length, content_type=None):
+    def __get_random_str(self, length, content_type=None):
         _chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
         if content_type == 'char':
             _chars = _chars[:-10]
@@ -69,20 +69,20 @@ class AltmetricIt():
             _rand_str += _chars[randint(0, _num_chars - 1)]
         return _rand_str
 
-    def install_bookmarklet(self, first_name=None, last_name=None, email=None):
-        self.driver_get(
+    def __install_bookmarklet(self, first_name=None, last_name=None, email=None):
+        self.__driver_get(
             'https://www.altmetric.com/products/free-tools/bookmarklet/')
         sleep(15)
         self.driver.switch_to_frame(
             self.driver.find_element_by_tag_name('iframe'))
         if first_name == None:
-            first_name = self.get_random_str(3, 'char')
+            first_name = self.__get_random_str(3, 'char')
             print('Randomize first name:', first_name)
         if last_name == None:
-            last_name = self.get_random_str(2, 'char')
+            last_name = self.__get_random_str(2, 'char')
             print('Randomize last name:', last_name)
         if email == None:
-            email = self.get_random_str(10, 'num') + '@g.ecc.u-tokyo.ac.jp'
+            email = self.__get_random_str(10, 'num') + '@g.ecc.u-tokyo.ac.jp'
             print('Randomize email:', email)
         job = 'Student'
         organization = 'The Univ. of Tokyo'
@@ -101,13 +101,13 @@ class AltmetricIt():
         self.driver.execute_script(_script_organization)
         self.driver.execute_script(_script_org_type)
 
-        _input_submit = self.find_recursive(
+        _input_submit = self.__find_recursive(
             self.driver, 'submit', 'class', max_times_find=self.max_times_find).find_element_by_tag_name('input')
         print(_input_submit)
         _input_submit.click()
         sleep(5)
 
-        _a_install_bookmarklet = self.find_recursive(
+        _a_install_bookmarklet = self.__find_recursive(
             self.driver, 'install-bookmarklet', 'id', max_times_find=self.max_times_find)
         print('Clicking: #install-bookmarket')
         _a_install_bookmarklet.click()
@@ -122,7 +122,7 @@ class AltmetricIt():
 
         return self
 
-    def get_find_method(self, WebElement, multiple, by):
+    def __get_find_method(self, WebElement, multiple, by):
         _dict_find_methods = {
             True: {
                 'class': WebElement.find_elements_by_class_name,
@@ -150,7 +150,7 @@ class AltmetricIt():
             print('%d out of %d result files' % (i+1, _num_files))
             with open('./altmetricit/%s/%s' % (tab, _fname)) as fp:
                 _dict_result = json.load(fp)
-            _success = self.update_twitter_from_citation_id(
+            _success = self.__update_twitter_from_citation_id(
                 _dict_result['citation_id'], overwrite=overwrite)
             if not _success:
                 _num_failed += 1
@@ -159,9 +159,10 @@ class AltmetricIt():
 
     def crawl_altmetric_from_papers(self, overwrite='incompleted'):
         self.db_handler.sql_handler.select('papers', 'idx, urls')
-        sql = self.db_handler.sql_handler.get_sql()
-        self.db_handler.mycursor.execute(sql)
-        list_urls = self.db_handler.mycursor.fetchall()
+        # sql = self.db_handler.sql_handler.get_sql()
+        # self.db_handler.mycursor.execute(sql)
+        # list_urls = self.db_handler.mycursor.fetchall()
+        list_urls = self.db_handler.execute().fetchall()
         # list_urls = list_urls[:2]
         num_papers = len(list_urls)
         print('# of paper urls:', num_papers)
@@ -175,7 +176,7 @@ class AltmetricIt():
 
             # Twitter
             print('Crawling: Twitter')
-            _success = self.update_twitter_from_url(
+            _success = self.__update_twitter_from_url(
                 _url_abs, overwrite=overwrite)
             if not _success:
                 print('--Job failed: %s' % self.msg_error)
@@ -195,24 +196,25 @@ class AltmetricIt():
             json.dump(self.dict_failed, f)
             print('Log dumped: %s' % _fp)
 
-    def update_twitter_from_url(self, url, overwrite='incompleted'):
+    def __update_twitter_from_url(self, url, overwrite='incompleted'):
         # Get div.wrapper
-        _div_wrapper = self.get_div_wrapper_from_url(url)
+        _div_wrapper = self.__get_div_wrapper_from_url(url)
         if _div_wrapper == False:
             return False
 
         # Get citation id
-        _citation_id = self.get_altmetric_citation_id(_div_wrapper)
+        _citation_id = self.__get_altmetric_citation_id(_div_wrapper)
         if _citation_id == False:  # No altmetric given to paper
             return False
 
-        return self.update_twitter_from_citation_id(_citation_id, overwrite=overwrite)
+        return self.__update_twitter_from_citation_id(_citation_id, overwrite=overwrite)
 
     def update_papers_set_altmetric_id(self):
         self.db_handler.sql_handler.select('papers', 'idx, urls')
-        sql = self.db_handler.sql_handler.get_sql()
-        self.db_handler.mycursor.execute(sql)
-        list_urls = self.db_handler.mycursor.fetchall()
+        # sql = self.db_handler.sql_handler.get_sql()
+        # self.db_handler.mycursor.execute(sql)
+        # list_urls = self.db_handler.mycursor.fetchall()
+        list_urls = self.db_handler.execute().fetchall()
         # list_urls = list_urls[:2]
         num_papers = len(list_urls)
         print('# of paper urls:', num_papers)
@@ -223,49 +225,50 @@ class AltmetricIt():
             print('Processing: %d out of %d papers' % (i+1, num_papers))
             _str_urls = field[1]
             _url_abs = self.regex_abs.findall(_str_urls)[0]
-            _citation_id = self.get_altmetric_id(_url_abs)
+            _citation_id = self.__get_altmetric_id(_url_abs)
             if _citation_id == False:
                 continue
             self.db_handler.sql_handler.reset()
             self.db_handler.sql_handler.update('papers', dict_columns_values={
                 'altmetric_id': _citation_id}).where('idx', int(field[0]))
-            sql = self.db_handler.sql_handler.get_sql()
-            self.db_handler.mycursor.execute(sql)
-            self.db_handler.conn.commit()
+            # sql = self.db_handler.sql_handler.get_sql()
+            # self.db_handler.mycursor.execute(sql)
+            # self.db_handler.conn.commit()
+            self.db_handler.execute()
 
         self.driver.close()
 
-    def get_altmetric_id(self, url):
+    def __get_altmetric_id(self, url):
         # Get div.wrapper
-        _div_wrapper = self.get_div_wrapper_from_url(url)
+        _div_wrapper = self.__get_div_wrapper_from_url(url)
         if _div_wrapper == False:
             return False
 
         # Get citation id
-        _citation_id = self.get_altmetric_citation_id(_div_wrapper)
+        _citation_id = self.__get_altmetric_citation_id(_div_wrapper)
         if _citation_id == False:  # No altmetric given to paper
             return False
 
         return _citation_id
 
-    def update_twitter_from_citation_id(self, citation_id, overwrite='incompleted'):
+    def __update_twitter_from_citation_id(self, citation_id, overwrite='incompleted'):
         # If file already exists
-        if not self.determine_go_or_pass(citation_id, overwrite=overwrite):
+        if not self.__determine_go_or_pass(citation_id, overwrite=overwrite):
             return True
 
         # Crawl on twitter
-        _dict_tweets = self.get_dict_tweets_from_id(citation_id)
+        _dict_tweets = self.__get_dict_tweets_from_id(citation_id)
 
         # Save results
-        self.save_results(_dict_tweets)
+        self.__save_results(_dict_tweets)
 
-        # self.load_results('twitter', _citation_id)
+        # self.__load_results('twitter', _citation_id)
         if _dict_tweets['completed'] == '0':
             return False
 
         return True
 
-    def determine_go_or_pass(self, citation_id, overwrite):
+    def __determine_go_or_pass(self, citation_id, overwrite):
         try:
             print('\tChecking file exists: ./altmetricit/twitter/%s.txt' %
                   citation_id)
@@ -289,31 +292,31 @@ class AltmetricIt():
                 f.close()
                 return False
 
-    def get_nums_twitter(self, dict_tweets):
-        _num_tweets = len(dict_tweets['twitter'])
-        _num_followers = 0
-        for _article in dict_tweets['twitter']:
-            _num_followers += _article['followers']
-        return (_num_tweets, _num_followers)
+    # def get_nums_twitter(self, dict_tweets):
+        # _num_tweets = len(dict_tweets['twitter'])
+        # _num_followers = 0
+        # for _article in dict_tweets['twitter']:
+            # _num_followers += _article['followers']
+        # return (_num_tweets, _num_followers)
 
-    def save_results(self, results):
+    def __save_results(self, results):
         # {'citation_id': str, 'tab': str, 'twitter': [{...}, ...]}
         print(results)
         with open('./altmetricit/%s/%s.txt' % (results['tab'], results['citation_id']), 'w+') as f:
             # with open(osp.join('altmetric', results['tab'], results['citation_id'] + '.txt'), 'w+') as f:
             json.dump(results, f)
 
-    def load_results(self, tab, citation_id):
+    def __load_results(self, tab, citation_id):
         with open('./altmetricit/%s/%s.txt' % (tab, citation_id), 'r') as f:
             return json.load(f)
 
-    def get_dict_tweets_from_id(self, citation_id):
+    def __get_dict_tweets_from_id(self, citation_id):
         # Access authorized page
-        self.driver_get(
+        self.__driver_get(
             'https://www.altmetric.com/details.php?citation_id=%s&src=bookmarklet' % citation_id)
 
         # Iterate over page
-        _url_twitter = self.get_url_tab_altmetric(citation_id, 'twitter')
+        _url_twitter = self.__get_url_tab_altmetric(citation_id, 'twitter')
         _page = 0
         _dict_tweets = dict()
         _dict_tweets['citation_id'] = citation_id
@@ -326,7 +329,7 @@ class AltmetricIt():
             _page += 1
             print('\tProcessing page: %d' % _page)
             _url_page = _url_twitter + '/page:%d' % _page
-            self.driver_get(_url_page)
+            self.__driver_get(_url_page)
             # limited-access-warning
             try:
                 self.driver.find_element_by_class_name(
@@ -344,7 +347,7 @@ class AltmetricIt():
                 break
 
             # Crawl on the page
-            _dict_new_tweets = self.crawl_tweets_from_current_page()
+            _dict_new_tweets = self.__crawl_tweets_from_current_page()
             if _dict_new_tweets == False:
                 print('\t.post-list not found.')
                 self.msg_error = 'Failed to find .post-list.'
@@ -355,9 +358,9 @@ class AltmetricIt():
         _dict_tweets['completed'] = '1'
         return _dict_tweets
 
-    def crawl_tweets_from_current_page(self):
+    def __crawl_tweets_from_current_page(self):
         _dict_tweet = dict()
-        _section_post_list = self.find_recursive(
+        _section_post_list = self.__find_recursive(
             self.driver, 'post-list', 'class', max_times_find=self.max_times_find)
         if _section_post_list == False:
             return False
@@ -383,13 +386,13 @@ class AltmetricIt():
 
         return _dict_tweet
 
-    def get_url_tab_altmetric(self, citation_id, tab):
+    def __get_url_tab_altmetric(self, citation_id, tab):
         if tab not in self.list_tabs_altmetric:
             raise ValueError('Tab name not understood: %s' % tab)
         return 'https://www.altmetric.com/details/%s/%s' % (citation_id, tab)
 
-    def get_altmetric_citation_id(self, div_wrapper):
-        if not self.altmetric_exists(div_wrapper):
+    def __get_altmetric_citation_id(self, div_wrapper):
+        if not self.__altmetric_exists(div_wrapper):
             return False
 
         # Find: #altmetric-wrapper div.article-details a
@@ -397,8 +400,8 @@ class AltmetricIt():
             'article-details').find_element_by_tag_name('a').get_attribute('href')
         return self.regex_citation_id.findall(_href_details)[0].split('=')[1]
 
-    def find_recursive(self, WebElement, name, by='class', multiple=False, max_times_find=1):
-        _method = self.get_find_method(WebElement, multiple, by)
+    def __find_recursive(self, WebElement, name, by='class', multiple=False, max_times_find=1):
+        _method = self.__get_find_method(WebElement, multiple, by)
         _times_find = 0
 
         while True:
@@ -420,40 +423,40 @@ class AltmetricIt():
                 print('\t%s %s found.' % (by, name))
                 return _elements
 
-    def get_div_wrapper_from_url(self, url):
+    def __get_div_wrapper_from_url(self, url):
         print('url:', url)
-        self.driver_get(url)
-        self.driver_execute_script(self.script_altmetricit)
+        self.__driver_get(url)
+        self.__driver_execute_script(self.script_altmetricit)
 
-        _div_wrapper = self.find_recursive(
+        _div_wrapper = self.__find_recursive(
             self.driver, 'altmetric-wrapper', 'id', max_times_find=self.max_times_find)
         if _div_wrapper == False:
             return False
 
         # Case1: error
-        _error = self.find_recursive(
+        _error = self.__find_recursive(
             _div_wrapper, 'error', 'class', max_times_find=1)
         if _error != False:
             return False
 
         # Case2: No altmetric
-        if not self.altmetric_exists(_div_wrapper):
+        if not self.__altmetric_exists(_div_wrapper):
             return False
 
         return _div_wrapper
 
-    def altmetric_exists(self, div_wrapper):
+    def __altmetric_exists(self, div_wrapper):
         # Case2: No altmetric
-        _article_details = self.find_recursive(
+        _article_details = self.__find_recursive(
             div_wrapper, 'article-details', 'class', max_times_find=self.max_times_find)
         return _article_details != False
 
-    def driver_get(self, url):
+    def __driver_get(self, url):
         # url must be understood by altmetricit
         self.driver.get(url)
         return self.driver.execute_script('return document.location.protocol != "chrome-error:"')
 
-    def driver_execute_script(self, script):
+    def __driver_execute_script(self, script):
         self.driver.execute_script(script)
 
 

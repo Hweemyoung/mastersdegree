@@ -245,57 +245,57 @@ def upload_channels_from_search():
 # videos->get urls from description->upload papers
 
 
-def upload_papers_from_videos():
-    parser = argparse.ArgumentParser()
+# def upload_papers_from_videos():
+#     parser = argparse.ArgumentParser()
 
-    # Custom args
-    parser.add_argument('--f-channel-ids',
-                        help='List of Channel IDs', default=None)
+#     # Custom args
+#     parser.add_argument('--f-channel-ids',
+#                         help='List of Channel IDs', default=None)
 
-    args = parser.parse_args()
+#     args = parser.parse_args()
 
-    # Get urls from videos
-    db_papers_uploader = DBPapersUploader()
-    sql = "SELECT `idx`, `description` FROM videos WHERE description LIKE '%arxiv.org/abs/%' OR description LIKE '%arxiv.org/pdf/%';"
-    # sql = "SELECT `idx`, `description` FROM videos WHERE idx=23;"
-    db_papers_uploader.mycursor.execute(sql)
-    results = db_papers_uploader.mycursor.fetchall()
-    num_queried = len(results)
-    print('# of queried videos:', num_queried)
+#     # Get urls from videos
+#     db_papers_uploader = DBPapersUploader()
+#     sql = "SELECT `idx`, `description` FROM videos WHERE description LIKE '%arxiv.org/abs/%' OR description LIKE '%arxiv.org/pdf/%';"
+#     # sql = "SELECT `idx`, `description` FROM videos WHERE idx=23;"
+#     db_papers_uploader.mycursor.execute(sql)
+#     results = db_papers_uploader.mycursor.fetchall()
+#     num_queried = len(results)
+#     print('# of queried videos:', num_queried)
 
-    # Shuffle
-    print('Before shuffle:', results[0])
-    shuffle(results)
-    print('After shuffle:', results[0])
+#     # Shuffle
+#     print('Before shuffle:', results[0])
+#     shuffle(results)
+#     print('After shuffle:', results[0])
 
-    for i, row in enumerate(results):
-        print('Processing:', i+1, 'out of', num_queried, 'videos')
-        args.idx_video = row[0]
-        regex_urls = re.compile(
-            r'https?://arxiv.org/pdf/\d{3,5}.\d{3,5}.pdf|https?://arxiv.org/abs/\d{3,5}.\d{3,5}')
-        list_urls = regex_urls.findall(row[1])
-        num_urls = len(list_urls)
-        print('# of found urls:', num_urls)
-        db_papers_uploader.num_crawled += num_urls
+#     for i, row in enumerate(results):
+#         print('Processing:', i+1, 'out of', num_queried, 'videos')
+#         args.idx_video = row[0]
+#         regex_urls = re.compile(
+#             r'https?://arxiv.org/pdf/\d{3,5}.\d{3,5}.pdf|https?://arxiv.org/abs/\d{3,5}.\d{3,5}')
+#         list_urls = regex_urls.findall(row[1])
+#         num_urls = len(list_urls)
+#         print('# of found urls:', num_urls)
+#         db_papers_uploader.num_crawled += num_urls
 
-        for j, url in enumerate(list_urls):
-            print('\n\tProcessing:', j+1, 'out of', num_urls, 'urls:', url)
-            args.url = db_papers_uploader.url_http_to_https(
-                db_papers_uploader.url_pdf_to_abs(url))
-            # Check if paper exists
-            if not db_papers_uploader.paper_exists(args):
-                items = db_papers_uploader.get_items(args)
-                print(items)
-                db_papers_uploader.insert('papers', items)
-                db_papers_uploader.num_inserted += 1
+#         for j, url in enumerate(list_urls):
+#             print('\n\tProcessing:', j+1, 'out of', num_urls, 'urls:', url)
+#             args.url = db_papers_uploader.url_http_to_https(
+#                 db_papers_uploader.url_pdf_to_abs(url))
+#             # Check if paper exists
+#             if not db_papers_uploader.paper_exists(args):
+#                 items = db_papers_uploader.get_items(args)
+#                 print(items)
+#                 db_papers_uploader.insert('papers', items)
+#                 db_papers_uploader.num_inserted += 1
 
-    print('\nDone')
-    print('# of queried videos:', num_queried)
-    print('# of crawled papers:', db_papers_uploader.num_crawled)
-    print('# of inserted papers:', db_papers_uploader.num_inserted)
-    print('# of existed papers:', db_papers_uploader.num_existed)
-    print('# of merge:', len(db_papers_uploader.list_merged))
-    print('Merged urls:', db_papers_uploader.list_merged)
+#     print('\nDone')
+#     print('# of queried videos:', num_queried)
+#     print('# of crawled papers:', db_papers_uploader.num_crawled)
+#     print('# of inserted papers:', db_papers_uploader.num_inserted)
+#     print('# of existed papers:', db_papers_uploader.num_existed)
+#     print('# of merge:', len(db_papers_uploader.list_merged))
+#     print('Merged urls:', db_papers_uploader.list_merged)
 
 
 def altmetric_url_from_papers():
@@ -343,9 +343,10 @@ def altmetric_url_from_papers():
     #     else:
     #         print('---------------Job successful.')
     #         print('\n')
-    
+
     # with open('./altmetricit/log_fail_%s.txt' % datetime.now().strftime('%Y%m%d_%H%M%S'), 'w+') as f:
     #     json.dump(list_failed, f)
+
 
 def organize_twitter():
     from twitter_organizer import TwitterOrganizer
@@ -353,5 +354,20 @@ def organize_twitter():
     twitter_organizer.update_stats(overwrite=True)
 
 
+def update_papers_from_arxiv_list():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--table', help='Table name', default='temp_papers')
+    parser.add_argument('--subject', help='Subject', default='cs.LG')
+    parser.add_argument('--YY', help='YY')
+    parser.add_argument('--MM', help='MM')
+    parser.add_argument('--overwrite', dest='overwrite', help='Overwrite policy', action='store_true', default=False)
+
+    args = parser.parse_args()
+    print(args)
+    args = vars(args)
+    print(args)
+    db_papers_uploader = DBPapersUploader()
+    db_papers_uploader.update_papers_from_arxiv_list(args, overwrite=args['overwrite'])
+
 if __name__ == '__main__':
-    altmetric_url_from_papers()
+    update_papers_from_arxiv_list()

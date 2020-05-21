@@ -10,8 +10,8 @@ from bs4 import BeautifulSoup
 
 
 class DBPapersUploader():
-    regex_abs = re.compile(r'https?://arxiv.org/abs/\d{3,5}.\d{3,5}')
-    regex_pdf = re.compile(r'https?://arxiv.org/pdf/\d{3,5}.\d{3,5}.pdf')
+    regex_abs = re.compile(r'https?://(export.)?arxiv.org/abs/\d{3,5}.\d{3,5}')
+    regex_pdf = re.compile(r'https?://(export.)?arxiv.org/pdf/\d{3,5}.\d{3,5}.pdf')
     regex_http = re.compile(r'^http://')
     regex_https = re.compile(r'^https://')
 
@@ -67,8 +67,11 @@ class DBPapersUploader():
         print('Merged urls:', self.list_merged)
 
     def update_papers_from_arxiv_list(self, args, overwrite=False):
-        # Required: args["table","subject", "YY", "MM", "url"]
-        _url = self.__get_urls(args, mode="arxiv_list")
+        # Required: args["table","subject", "YY", "MM"]
+        print('Update papers from arXiv list:\tSubject: %s\tYY: %s\tMM: %s' %
+              (args['subject'], args['YY'], args['MM']))
+        _url = self.__get_urls(args, mode="arxiv_list", export=True)
+        print('url:', _url)
         _html = urllib.request.urlopen(_url)
         _soup = BeautifulSoup(_html, 'html.parser')
         _html.close()
@@ -79,8 +82,10 @@ class DBPapersUploader():
         print('# of papers: %d' % _num_paths)
 
         for i, _path in enumerate(_list_paths):
+            # Additional requirements: args['url]
             print('Processing %d out of %d papers...' % (i+1, _num_paths))
-            args['url'] = "https://arxiv.org" + _path
+            args['path'] = _path
+            args['url'] = self.__get_arxiv_domain(export=True) + _path
 
             # Get _dict_fields
             if not self.__paper_exists(args):
@@ -95,22 +100,25 @@ class DBPapersUploader():
                     _num_inserted += 1
                 else:
                     _dict_fields = None
-            
+
             if _dict_fields == None:
                 continue
-            _sql = self.db_handler.sql_handler.insert(args['table'], dict_columns_values=_dict_fields).get_sql()
-            self.db_handler.mycursor.execute(_sql)
-            self.db_handler.conn.commit()
-        
+            self.db_handler.sql_handler.insert(
+                args['table'], dict_columns_values=_dict_fields)
+            self.db_handler.execute()
+
         print('\nDone')
         print('# of queried papers:', _num_paths)
         print('# of inserted papers:', _num_inserted)
         print('# of passed papers:', _num_paths - _num_inserted)
+    
+    def __get_arxiv_domain(self, export=True):
+        return "https://export.arxiv.org" if export else "https://arxiv.org"
 
     def __get_fields(self, args):
         print('\tGet fields from url: %s' % args['url'])
         _dict_fields = dict()
-        _dict_fields['urls'] = self.__get_urls(args, mode="arxiv_paper")
+        _dict_fields['urls'] = self.__get_urls(args, mode="arxiv_paper", export=False)
         _dict_fields['idx_videos'] = self.__get_idx_videos(args)
         _dict_fields['queriedAt'] = datetime.now().strftime('%Y-%m-%d %X')
         _dict_fields.update(self.__get_fields_from_arxiv(args['url']))
@@ -178,18 +186,19 @@ class DBPapersUploader():
 
     def get_authors_from_arxiv_html(self, soup):
         authors = soup.find('div', {'class': 'authors'})
-        authors = authors.find_all(text=True)
+        # authors = authors.find_all(text=True)
         # Filter texts
-        authors = [author for author in authors if author not in (
-            'Authors:', ', ')]
+        # authors = [author for author in authors if author not in ('Authors:', ', ')]
+        authors = tuple(map(lambda a: a.findAll(text=True)[0], authors.findAll('a'))) # export
         return ', '.join(authors)
 
     def get_title_from_arxiv_html(self, soup):
         # Get title
         heading = soup.find('h1', {'class': ['mathjax', 'title']})
-        title = heading.findAll(text=True)[1]
-        print('\ttitle:', title)
-        return str(title)
+        # title = heading.findAll(text=True)[1]
+        title = heading.findAll(text=True)[1].replace('\n', '') # export
+        # print('\ttitle:', title)
+        return title
 
     def get_publishedAt_from_arxiv_html(self, soup):
         # Get publishedAt
@@ -198,32 +207,31 @@ class DBPapersUploader():
         # 2019-10-03
         return datetime.strptime(published_date, '%d %b %Y').strftime('%Y-%m-%d')
 
-    def __get_urls(self, args, mode="arxiv_paper"):
+    def __get_urls(self, args, mode="arxiv_paper", export=True):
         if mode == "arxiv_paper":
-            _urls = self.__get_arxiv_paper_urls(args["url"])
+            _urls = self.__get_arxiv_paper_urls(args["path"], export=export)
         elif mode == "arxiv_list":
             _urls = self.__get_arxiv_list_urls(
-                args["subject"], args["YY"], args["MM"])
+                args["subject"], args["YY"], args["MM"], export=export)
         return _urls
 
-    def __get_arxiv_list_urls(self, field, YY, MM):
-        _urls = tuple("https://arxiv.org/list/%s/%s%s?skip=0&show=5000" % (
-            field, YY, MM))
-        return _urls
+    def __get_arxiv_list_urls(self, field, YY, MM, export=True):
+        _path = "/list/%s/%s%s?skip=0&show=5000" % (
+            field, YY, MM)
+        return self.__get_arxiv_domain(export) + _path
 
-    def __get_arxiv_paper_urls(self, url):
+    def __get_arxiv_paper_urls(self, path, export=False):
+        url = self.__get_arxiv_domain(export=export) + path
         url_abs = self.url_http_to_https(self.url_pdf_to_abs(url))
         url_pdf = self.url_http_to_https(self.url_abs_to_pdf(url))
         urls = '%s, %s' % (url_abs, url_pdf)
-        print('\turls:', urls)
+        # print('\turls:', urls)
         return urls
 
     def __paper_exists(self, args):
         # Determines by url
-        sql = "SELECT `idx`, `idx_videos` FROM papers WHERE match(urls) against('\"%s\"' in boolean mode);" % args[
-            "url"]
-        # Determines by title?
-        # sql = "SELECT `idx` FROM papers WHERE match(urls) against('\"%s\"' in boolean mode);" % args["title"]
+        sql = "SELECT `idx`, `idx_videos` FROM %s WHERE match(urls) against('\"%s\"' in boolean mode);" %(args['table'], self.__get_arxiv_domain(export=False) + args['path'])
+        # sql = "SELECT `idx` FROM %s WHERE match(urls) against('\"%s\"' in boolean mode);" % (args['table'], args["title"])
         print('\tsql:', sql)
         self.db_handler.mycursor.execute(sql)
         result = self.db_handler.mycursor.fetchall()
@@ -231,17 +239,20 @@ class DBPapersUploader():
 
         if len(result) > 0:
             self.num_existed += 1
-            print('\tPaper already exists:', args["url"])
+            print('\tPaper already exists:', self.__get_arxiv_domain(export=False) + args['path'])
 
             if len(result) > 1:
                 print('Multiple papers sharing same URL:', args["url"])
+                raise ValueError('\nPapers Collision')
                 args["rows"] = result
                 result = self.merge_rows(args)
 
             args["idx_paper"] = result[0][0]
-            self.idx_video_exists(args)
-        elif len(result) == 0:
-            print('\tPaper not exist:', args["url"])
+            if "idx_video" in args:
+                self.idx_video_exists(args)
+
+        else:  # len(result) == 0
+            print('\tPaper not exist:', self.__get_arxiv_domain(export=False) + args['path'])
 
         return exists
 
@@ -259,19 +270,19 @@ class DBPapersUploader():
         target_idx_videos = ', '.join(target_idx_videos)
         deleted_idx = ', '.join(deleted_idx)
 
-        sql = "UPDATE papers SET idx_videos='%s' WHERE idx=%s;" % (
-            target_idx_videos, args["rows"][0][0])
+        sql = "UPDATE %s SET idx_videos='%s' WHERE idx=%s;" % (
+            args['table'],target_idx_videos, args["rows"][0][0])
         print('\tsql:', sql)
         self.db_handler.mycursor.execute(sql)
         self.db_handler.conn.commit()
 
-        sql = "DELETE FROM papers WHERE idx in (%s);" % deleted_idx
+        sql = "DELETE FROM %s WHERE idx in (%s);" % (args['table'], deleted_idx)
         print('\tsql:', sql)
         self.db_handler.mycursor.execute(sql)
         self.db_handler.conn.commit()
 
-        sql = "SELECT `idx`, `idx_videos` FROM papers WHERE match(urls) against('\"%s\"' in boolean mode);" % args[
-            "url"]
+        sql = "SELECT `idx`, `idx_videos` FROM %s WHERE match(urls) against('\"%s\"' in boolean mode);" % (args['table'], args[
+            "url"])
         print('\tsql:', sql)
         self.db_handler.mycursor.execute(sql)
         result = self.db_handler.mycursor.fetchall()
@@ -284,9 +295,11 @@ class DBPapersUploader():
         return result
 
     def idx_video_exists(self, args):
+        if "idx_video" not in args:
+            return False
         # Determines by url
-        sql = "SELECT 1 FROM papers WHERE (match(idx_videos) against('\"%s,\"' in boolean mode) OR match(idx_videos) against('\" %s\"' in boolean mode) OR idx_videos='%s') AND idx='%s';" % (
-            args["idx_video"], args["idx_video"], args["idx_video"], args["idx_paper"])
+        sql = "SELECT 1 FROM %s WHERE (match(idx_videos) against('\"%s,\"' in boolean mode) OR match(idx_videos) against('\" %s\"' in boolean mode) OR idx_videos='%s') AND idx='%s';" % (
+            args['table'], args["idx_video"], args["idx_video"], args["idx_video"], args["idx_paper"])
         print('\tsql:', sql)
         self.db_handler.mycursor.execute(sql)
         result = self.db_handler.mycursor.fetchall()
@@ -299,13 +312,13 @@ class DBPapersUploader():
         return exists
 
     def update_idx_videos(self, args):
-        sql = "SELECT `idx_videos` FROM papers WHERE `idx`=%s;" % args["idx_paper"]
+        sql = "SELECT `idx_videos` FROM %s WHERE `idx`=%s;" % (args['table'], args["idx_paper"])
         self.db_handler.mycursor.execute(sql)
         result = self.db_handler.mycursor.fetchall()
         old_idx_videos = result[0][0] if len(result) else ''
         print('\tUpdating idx_videos to:',
               '%s, %s' % (old_idx_videos, args["idx_video"]))
-        sql = "UPDATE papers SET idx_videos='%s' WHERE idx='%s';" % (
+        sql = "UPDATE %s SET idx_videos='%s' WHERE idx='%s';" % (args['table'],
             '%s, %s' % (old_idx_videos, args["idx_video"]), args["idx_paper"])
         self.db_handler.mycursor.execute(sql)
         self.db_handler.conn.commit()
@@ -349,8 +362,23 @@ class DBPapersUploader():
         return url
 
     def get_missing_idx(self):
-        sql = "SELECT a.idx+1 AS start, MIN(b.idx) - 1 AS end FROM papers AS a, papers AS b WHERE a.idx < b.idx GROUP BY a.idx HAVING start < MIN(b.idx);"
+        sql = "SELECT a.idx+1 AS start, MIN(b.idx) - 1 AS end FROM %s AS a, %s AS b WHERE a.idx < b.idx GROUP BY a.idx HAVING start < MIN(b.idx);"%(args['table'],args['table'])
         self.db_handler.mycursor.execute(sql)
         # [(26, 26), (68, 72), ...]
         results = self.db_handler.mycursor.fetchall()
         return results
+
+
+if __name__ == "__main__":
+    db_papers_uploader = DBPapersUploader()
+    # Required: args["table","subject", "YY", "MM", "url"]
+    args = {
+        'table': 'temp_papers',
+        'subject': 'cs.LG',
+        'YY': '19'
+    }
+    # for MM in ['01', '02', '03']:
+    for MM in ['01']:
+        args['MM'] = MM
+        print(args)
+        db_papers_uploader.update_papers_from_arxiv_list(args)

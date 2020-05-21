@@ -4,6 +4,7 @@ from preprocessor import Preprocessor
 class SQLHandler:
     command = None
     command_set = False
+    values = None
     list_where_clauses = []
     # get_where_from_list()
     dict_where_conj = {'and': ' AND ', 'or': ' OR '}
@@ -28,15 +29,17 @@ class SQLHandler:
 
     def update(self, table, columns=None, values=None, dict_columns_values=None):
         if dict_columns_values != None:
-            columns = dict_columns_values.keys()
-            values = dict_columns_values.values()
+            columns = list(dict_columns_values.keys())
+            values = list(dict_columns_values.values())
 
-        values = self.__preprocess_list_values(values)
+        self.values = self.__preprocess_list_values(values)
 
-        key_val_pairs = list()
-        for col, val in zip(columns, values):
-            key_val_pairs.append("%s=%s" % (col, val))
-        key_val_pairs = ', '.join(key_val_pairs)
+        # key_val_pairs = list()
+        # for col, val in zip(columns, values):
+            # key_val_pairs.append("%s=%s" % (col, val))
+        # key_val_pairs = ', '.join(key_val_pairs)
+        
+        key_val_pairs = ', '.join(tuple(map(lambda col: col + '=%s', columns)))
 
         self.command = "UPDATE %s SET %s" % (table, key_val_pairs)
         self.set_command_set()
@@ -45,11 +48,12 @@ class SQLHandler:
     def insert(self, table, columns=None, values=None, dict_columns_values=None):
         if dict_columns_values != None:
             columns = list(dict_columns_values.keys())
-            values = list(dict_columns_values.values())
+            self.values = tuple(dict_columns_values.values())
 
-        values = self.__preprocess_list_values(values)
-        self.command = "INSERT INTO %s (%s) VALUES (%s)" % (
-            table, ', '.join(columns), ', '.join(values))
+        # self.values = self.__preprocess_list_values(values)
+        self.command = "INSERT INTO %s (%s) VALUES (" % (table, ', '.join(columns))\
+            + ', '.join(['%s'] * len(columns))\
+            + ")"
         self.set_command_set()
         return self
 
@@ -64,7 +68,7 @@ class SQLHandler:
             else:
                 raise TypeError(
                     'Type of value cannot be processed:', val, type(val))
-
+        print('Preprocessed values:', values)
         return values
 
     def reset(self):
@@ -84,7 +88,7 @@ class SQLHandler:
             self.list_where_clauses = []
         return self
 
-    def get_sql(self, mode_where='and', reset=True):
+    def get_sql_vals(self, mode_where='and', reset=True):
         if not self.command_set:
             raise ValueError('Command not set.')
         if self.list_where_clauses:
@@ -92,11 +96,11 @@ class SQLHandler:
                 self.command, self.get_where_from_list(self.list_where_clauses, mode_where))
         else:
             self.last_sql = "%s;" % self.command
-
+        self.last_values = self.values
         print('\tsql:', self.last_sql)
         if reset:
             self.reset()
-        return self.last_sql
+        return (self.last_sql, self.last_values)
 
     def where(self, column, value, mode='equal'):
         # Param 'mode' could be: 'equal', 'match'

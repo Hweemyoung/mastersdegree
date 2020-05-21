@@ -5,7 +5,7 @@ from preprocessor import Preprocessor
 
 class DBHandler:
     sql_handler = SQLHandler()
-    
+
     def __init__(self, host='localhost', user='root', passwd='111111', database='ytcrawl0'):
         self.conn = mysql.connector.connect(
             host=host,
@@ -15,9 +15,15 @@ class DBHandler:
         )
         self.mycursor = self.conn.cursor()
         self.preprocessor = Preprocessor()
-    
+
     def close(self):
         self.conn.close()
+
+    def execute(self, mode_where='and', reset=True):
+        self.sql_handler.get_sql_vals(mode_where, reset)
+        self.mycursor.execute(self.sql_handler.last_sql) if self.sql_handler.last_values == None else self.mycursor.execute(
+            self.sql_handler.last_sql, self.sql_handler.last_values)
+        self.conn.commit()
 
     def insert(self, table_name, items, custom_fields={}):
         # Preprocess items
@@ -32,15 +38,15 @@ class DBHandler:
 
         print('\ncolumns:', columns, '#:', len(columns))
         print('\nvalues:', values, '#:', len(values))
-        
+
         val = tuple(values)
-        sql = 'INSERT INTO %s '%(table_name) + \
+        sql = 'INSERT INTO %s ' % (table_name) + \
             '(' + ', '.join(columns) + ')' + ' VALUES ' + \
               '(' + ', '.join(['%s']*len(values)) + ');'
-        
+
         self.mycursor.execute(sql, val)
         self.conn.commit()
-    
+
     def get_columns_values(self, iterable, custom_fields):
         (columns, values) = self.get_columns_values_recursive(iterable)
         for column in custom_fields:
@@ -74,8 +80,8 @@ class DBHandler:
                     values += recur[1]
                 else:
                     print('List:', iterable, '\tValue:', val)
-                    raise TypeError('Cannot get column from non-iterative value in list.')
+                    raise TypeError(
+                        'Cannot get column from non-iterative value in list.')
         else:
             raise TypeError('Iterable expected.')
         return (columns, values)
-        

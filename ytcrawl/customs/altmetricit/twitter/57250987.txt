@@ -1,0 +1,1 @@
+{"tab": "twitter", "queriedAt": "2020-05-21 20:30:33", "citation_id": "57250987", "twitter": {"1107849640819544064": {"datetime": "2019-03-19 03:41:51", "followers": "780", "author": "@arxivml", "content_summary": "\"Evolutionary Deep Learning to Identify Galaxies in the Zone of Avoidance\", David Jones, Geoff Nitschke https://t.co/jUjwXAOm0I"}}, "completed": "1"}

@@ -23,7 +23,8 @@ class DBHandler:
         self.sql_handler.get_sql_vals(mode_where, reset)
         self.mycursor.execute(self.sql_handler.last_sql) if self.sql_handler.last_values == None else self.mycursor.execute(
             self.sql_handler.last_sql, self.sql_handler.last_values)
-        self.conn.commit()
+        if self.sql_handler.last_values != None: # If not select
+            self.conn.commit()
         return self
     
     def fetchall(self):

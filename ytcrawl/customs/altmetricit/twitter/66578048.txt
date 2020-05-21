@@ -1,0 +1,1 @@
+{"tab": "twitter", "queriedAt": "2020-05-21 20:12:43", "citation_id": "66578048", "twitter": {"1172653811795746816": {"datetime": "2019-09-13 23:30:30", "followers": "21,919", "author": "@BlackPhysicists", "content_summary": "Combined State and Parameter Estimation in Level-Set Methods https://t.co/t6mKLjuh0H via @ElsevierPhysics https://t.co/cuyfeGMWtL"}}, "completed": "1"}

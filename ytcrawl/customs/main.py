@@ -2,6 +2,8 @@ from channels import youtube_channels
 from db_channels_uploader import DBChannelsUploader
 from db_videos_uploader import DBVideosUploader
 from db_papers_uploader import DBPapersUploader
+from twitter_organizer import TwitterOrganizer
+from altmetric_it import AltmetricIt
 
 import argparse
 import os
@@ -299,23 +301,41 @@ def upload_channels_from_search():
 
 
 def altmetric_url_from_papers():
-    from altmetric_it import AltmetricIt
-    from db_handler import DBHandler
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--table', help='Table of target papers', default='temp_papers')
     parser.add_argument('--overwrite', dest='overwrite',
-                        help='Overwrite policy', action='store_true', default=False)
+                        help='Overwrite policy', action='store_true', default='incomplete')
     parser.add_argument('--driver', help='Driver', default='chrome')
     parser.add_argument('--p_driver', help='Driver path',
                         default='./chromedriver')
-    parser.add_argument(
-        '--new_bookmarklet', help='Whether to install new bookmarklet or not', default=True)
-    parser.add_argument('--max_times_find',
-                        help='Max times to find', default=5)
-    parser.add_argument('--sec_sleep', help='Sleep seconds', default=1.0)
+    parser.add_argument('--new_bookmarklet', help='Whether to install new bookmarklet or not', default=True)
+    parser.add_argument('--max_times_find', type=int, help='Max times to find', default=5)
+    parser.add_argument('--sec_sleep', type=float, help='Sleep seconds', default=1.0)
+
+    parser.add_argument('--news', help='Set news as target', action='store_true', default=False)
+    parser.add_argument('--blogs', help='Set blogs as target', action='store_true', default=False)
+    parser.add_argument('--twitter', help='Set twitter as target', action='store_true', default=False)
+    parser.add_argument('--wikipedia', help='Set wikipedia as target', action='store_true', default=False)
+    parser.add_argument('--google', help='Set google as target', action='store_true', default=False)
+    parser.add_argument('--reddit', help='Set reddit as target', action='store_true', default=False)
+    parser.add_argument('--video', help='Set video as target', action='store_true', default=False)
     args = vars(parser.parse_args())
+    # args = dict()
+    # args['table'] = 'temp_papers'
+    # args['overwrite']='incomplete'
+    # args['driver']='chrome'
+    # args['p_driver']='./chromedriver_83'
+    # args['new_bookmarklet']=True
+    # args['max_times_find']=5
+    # args['sec_sleep']=1.0
+    # args['news']=False
+    # args['blogs']=False
+    # args['twitter']=False
+    # args['wikipedia']=False
+    # args['google']=False
+    # args['reddit']=False
+    # args['video']=False
 
     # # Custom args
     # parser.add_argument('--f-channel-ids',
@@ -323,14 +343,16 @@ def altmetric_url_from_papers():
 
     # args = parser.parse_args()
 
-    altmetric_it = AltmetricIt(args['driver'],
-                               args['p_driver'],
-                               args['new_bookmarklet'],
-                               args['max_times_find'],
-                               args['sec_sleep'])
+    altmetric_it = AltmetricIt(args)
+    altmetric_it.crawl_altmetric_from_papers(overwrite='incomplete')
+
+    # Select urls from temp_papers
+    # altmetric_it.db_handler.sql_handler.select(args['table'], 'urls')
+    # _list_urls = altmetric_it.db_handler.execute().fetchall()
+    # _list_urls = list(map(lambda _row: _row[0], _list_urls))
 
     # altmetric_it.crawl_altmetric_from_papers(overwrite='incompleted')
-    altmetric_it.update_results(['49541835'], 'twitter', overwrite=True)
+    # altmetric_it.update_results(overwrite='incompleted')
 
     # db_handler = DBHandler()
     # db_handler.sql_handler.select('papers', 'idx, urls')
@@ -367,7 +389,7 @@ def altmetric_url_from_papers():
 
 
 def organize_twitter():
-    from twitter_organizer import TwitterOrganizer
+    
     twitter_organizer = TwitterOrganizer()
     twitter_organizer.update_stats(overwrite=True)
 
@@ -391,4 +413,5 @@ def update_papers_from_arxiv_list():
 
 
 if __name__ == '__main__':
-    update_papers_from_arxiv_list()
+    # update_papers_from_arxiv_list()
+    altmetric_url_from_papers()

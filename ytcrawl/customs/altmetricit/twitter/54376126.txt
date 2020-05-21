@@ -1,0 +1,1 @@
+{"twitter": {"1088252092484124674": {"author": "@StatMLPapers", "datetime": "2019-01-24 01:48:12", "content_summary": "A New CGAN Technique for Constrained Topology Design Optimization. (arXiv:1901.07675v1 [cs.LG]) https://t.co/9Y7DtXMJZ7", "followers": "9,664"}}, "queriedAt": "2020-05-21 19:49:29", "completed": "1", "citation_id": "54376126", "tab": "twitter"}

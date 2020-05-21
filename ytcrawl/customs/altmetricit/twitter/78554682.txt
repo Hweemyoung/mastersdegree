@@ -1,0 +1,1 @@
+{"completed": "1", "tab": "twitter", "queriedAt": "2020-05-21 18:21:29", "citation_id": "78554682", "twitter": {"1244203443847344138": {"followers": "277", "author": "@doctick", "datetime": "2020-03-29 10:03:11", "content_summary": "#NLP \"A Comprehensive Survey on Graph Neural Networks.\" https://t.co/9UmPtuxqfG"}}}

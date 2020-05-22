@@ -101,7 +101,7 @@ class SQLHandler:
             self.list_order_clauses = []
         return self
 
-    def get_sql_vals(self, mode_where='and', reset=True):
+    def __get_sql_vals(self, mode_where='and', reset=True):
         if not self.command_set:
             raise ValueError('Command not set.')
         

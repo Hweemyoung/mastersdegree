@@ -4,6 +4,7 @@ from db_videos_uploader import DBVideosUploader
 from db_papers_uploader import DBPapersUploader
 from twitter_organizer import TwitterOrganizer
 from altmetric_it import AltmetricIt
+from db_handler import DBHandler
 
 import argparse
 import os
@@ -14,7 +15,7 @@ from random import shuffle
 from bs4 import BeautifulSoup
 import re
 
-from search_custom import youtube_search_recursive
+from search_custom import youtube_search_recursive, YouTubeSearch
 from videos import youtube_videos, filter_videos_by_viewcount
 
 
@@ -24,27 +25,114 @@ api_key = 'AIzaSyDuW2lWKYOc-tPjwcXso4LhR8_ZMEZOGKw'  # ytcrawl1
 # api_key = 'AIzaSyBahI8vJbinh7itJs2hJRNW4spp0B2Dqpk'  # ytcrawl2
 
 # channelIDs->VideoIDs->uploadVideos
+def search_by_urls():
+    parser = argparse.ArgumentParser()
 
+    # Custom args
+    # parser.add_argument('--list-channel-ids',
+                        # help='List of Channel IDs', default='fromdb')
+    parser.add_argument(
+        '--up-to', help='Number of results queried up to. None indicates unlimited.', default=None)
+    # parser.add_argument('--api-key', help='API key', default=api_key)
+
+    # Search args
+    parser.add_argument('--part', default='id, snippet')
+    parser.add_argument('--eventType', default=None)
+    parser.add_argument('--channelId', default=None)
+    parser.add_argument('--forDeveloper', default=None)
+    parser.add_argument('--videoSyndicated', default=None)
+    parser.add_argument('--channelType', default=None)
+    parser.add_argument('--videoCaption', default=None)
+    parser.add_argument('--publishedAfter', default=None)
+    parser.add_argument('--publishedBefore', default=None)
+    parser.add_argument('--onBehalfOfContentOwner', default=None)
+    parser.add_argument('--forContentOwner', default=None)
+    parser.add_argument('--regionCode', default=None)
+    parser.add_argument('--location', default=None)
+    parser.add_argument('--locationRadius', default=None)
+    parser.add_argument('--topicId', default=None)
+    parser.add_argument('--videoDimension', default=None)
+    parser.add_argument('--videoLicense', default=None)
+    parser.add_argument('--maxResults', default=50)
+    parser.add_argument('--videoType', default=None)
+    parser.add_argument('--videoDefinition', default=None)
+    parser.add_argument('--pageToken', default=None)
+    parser.add_argument('--relatedToVideoId', default=None)
+    parser.add_argument('--relevanceLanguage', default=None)
+    parser.add_argument('--videoDuration', default=None)
+    parser.add_argument('--forMine', default=None)
+    parser.add_argument('--q', default='Google')
+    parser.add_argument('--safeSearch', default=None)
+    parser.add_argument('--videoEmbeddable', default=None)
+    parser.add_argument('--videoCategoryId', default=None)
+    parser.add_argument('--order', default=None)
+    parser.add_argument('--fields', default='items(id(videoId), snippet(channelTitle))')
+
+    args = vars(parser.parse_args())
+
+    db_handler = DBHandler()
+    db_handler.sql_handler.select('temp_papers', 'urls')
+    _list_queries = db_handler.execute().fetchall()
+    _list_queries = list(map(lambda tup: tup[0].split(', ')[0], _list_queries))
+    # _list_queries = _list_queries[:2]
+    # print(_list_queries)
+
+    youtube_search = YouTubeSearch(args)
+    youtube_search.set_list_queries(_list_queries)
+    _list_responses = youtube_search.start_search()
+    with open('list_video_ids.txt', 'w+') as fp:
+        json.dump(_list_responses, fp)
+    print(_list_responses)
 
 def upload_videos_from_channel_ids(api_key):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--q', help='Search term', default='Google')
-    parser.add_argument('--max-results', help='Max results', default=50)
-    parser.add_argument('--region-code', help='Region code', default=None)
-    parser.add_argument('--page-token', help='Page token', default=None)
-    parser.add_argument('--order', help='Order', default=None)
-    parser.add_argument('--channelId', help='Channel ID', default=None)
-    parser.add_argument('--part', help='Part', default='id, snippet')
-    parser.add_argument('--fields', help='Fields',
-                        default='items(id(videoId), snippet(channelTitle))')
 
-    parser.add_argument('--list-channel-ids',
-                        help='List of Channel IDs', default='fromdb')
+    # Custom args
+    # parser.add_argument('--list-channel-ids',
+                        # help='List of Channel IDs', default='fromdb')
     parser.add_argument(
         '--up-to', help='Number of results queried up to. None indicates unlimited.', default=None)
-    parser.add_argument('--api-key', help='API key', default=api_key)
+    # parser.add_argument('--api-key', help='API key', default=api_key)
 
-    args = parser.parse_args()
+    # Search args
+    parser.add_argument('--part', default='id, snippet')
+    parser.add_argument('--eventType', default=None)
+    parser.add_argument('--channelId', default=None)
+    parser.add_argument('--forDeveloper', default=None)
+    parser.add_argument('--videoSyndicated', default=None)
+    parser.add_argument('--channelType', default=None)
+    parser.add_argument('--videoCaption', default=None)
+    parser.add_argument('--publishedAfter', default=None)
+    parser.add_argument('--publishedBefore', default=None)
+    parser.add_argument('--onBehalfOfContentOwner', default=None)
+    parser.add_argument('--forContentOwner', default=None)
+    parser.add_argument('--regionCode', default=None)
+    parser.add_argument('--location', default=None)
+    parser.add_argument('--locationRadius', default=None)
+    parser.add_argument('--topicId', default=None)
+    parser.add_argument('--publishedBefore', default=None)
+    parser.add_argument('--videoDimension', default=None)
+    parser.add_argument('--videoLicense', default=None)
+    parser.add_argument('--maxResults', default=50)
+    parser.add_argument('--videoType', default=None)
+    parser.add_argument('--videoDefinition', default=None)
+    parser.add_argument('--pageToken', default=None)
+    parser.add_argument('--relatedToVideoId', default=None)
+    parser.add_argument('--relevanceLanguage', default=None)
+    parser.add_argument('--videoDuration', default=None)
+    parser.add_argument('--forMine', default=None)
+    parser.add_argument('--q', default='Google')
+    parser.add_argument('--safeSearch', default=None)
+    parser.add_argument('--videoEmbeddable', default=None)
+    parser.add_argument('--videoCategoryId', default=None)
+    parser.add_argument('--order', default=None)
+    parser.add_argument('--fields', default='items(id(videoId), snippet(channelTitle))')
+
+    args = vars(parser.parse_args())
+
+    youtube_search = YouTubeSearch(args)
+    youtube_search.set_list_queries(['Generetive Adversarial Network'])
+    youtube_search.start_search()
 
     # Video uploader
     db_videos_uploader = DBVideosUploader()
@@ -414,4 +502,4 @@ def update_papers_from_arxiv_list():
 
 if __name__ == '__main__':
     # update_papers_from_arxiv_list()
-    altmetric_url_from_papers()
+    search_by_urls()

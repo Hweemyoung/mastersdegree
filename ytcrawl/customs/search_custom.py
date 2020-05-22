@@ -1,30 +1,30 @@
 """
 list(part, eventType=None, channelId=None, forDeveloper=None, videoSyndicated=None, channelType=None, videoCaption=None, publishedAfter=None, onBehalfOfContentOwner=None, forContentOwner=None, regionCode=None, location=None, locationRadius=None, type=None, topicId=None, publishedBefore=None,
-     videoDimension=None, videoLicense=None, maxResults=None, videoType=None, videoDefinition=None, pageToken=None, relatedToVideoId=None, relevanceLanguage=None, videoDuration=None, forMine=None, q=None, safeSearch=None, videoEmbeddable=None, videoCategoryId=None, order=None)
+	 videoDimension=None, videoLicense=None, maxResults=None, videoType=None, videoDefinition=None, pageToken=None, relatedToVideoId=None, relevanceLanguage=None, videoDuration=None, forMine=None, q=None, safeSearch=None, videoEmbeddable=None, videoCategoryId=None, order=None)
 Returns a collection of search results that match the query parameters specified in the API request. By default, a search result set identifies matching video, channel, and playlist resources, but you can also configure queries to only retrieve a specific type of resource.
 
 Args:
   part: string, The part parameter specifies a comma-separated list of one or more search resource properties that the API response will include. Set the parameter value to snippet. (required)
   eventType: string, The eventType parameter restricts a search to broadcast events. If you specify a value for this parameter, you must also set the type parameter's value to video.
-    Allowed values
-      completed - Only include completed broadcasts.
-      live - Only include active broadcasts.
-      upcoming - Only include upcoming broadcasts.
+	Allowed values
+	  completed - Only include completed broadcasts.
+	  live - Only include active broadcasts.
+	  upcoming - Only include upcoming broadcasts.
   channelId: string, The channelId parameter indicates that the API response should only contain resources created by the channel
   forDeveloper: boolean, The forDeveloper parameter restricts the search to only retrieve videos uploaded via the developer's application or website. The API server uses the request's authorization credentials to identify the developer. Therefore, a developer can restrict results to videos uploaded through the developer's own app or website but not to videos uploaded through other apps or sites.
   videoSyndicated: string, The videoSyndicated parameter lets you to restrict a search to only videos that can be played outside youtube.com. If you specify a value for this parameter, you must also set the type parameter's value to video.
-    Allowed values
-      any - Return all videos, syndicated or not.
-      true - Only retrieve syndicated videos.
+	Allowed values
+	  any - Return all videos, syndicated or not.
+	  true - Only retrieve syndicated videos.
   channelType: string, The channelType parameter lets you restrict a search to a particular type of channel.
-    Allowed values
-      any - Return all channels.
-      show - Only retrieve shows.
+	Allowed values
+	  any - Return all channels.
+	  show - Only retrieve shows.
   videoCaption: string, The videoCaption parameter indicates whether the API should filter video search results based on whether they have captions. If you specify a value for this parameter, you must also set the type parameter's value to video.
-    Allowed values
-      any - Do not filter results based on caption availability.
-      closedCaption - Only include videos that have captions.
-      none - Only include videos that do not have captions.
+	Allowed values
+	  any - Do not filter results based on caption availability.
+	  closedCaption - Only include videos that have captions.
+	  none - Only include videos that do not have captions.
   publishedAfter: string, The publishedAfter parameter indicates that the API response should only contain resources created after the specified time. The value is an RFC 3339 formatted date-time value (1970-01-01T00:00:00Z).
   onBehalfOfContentOwner: string, Note: This parameter is intended exclusively for YouTube content partners.
 
@@ -47,135 +47,135 @@ Note: See the definition of the location parameter for more information.
   topicId: string, The topicId parameter indicates that the API response should only contain resources associated with the specified topic. The value identifies a Freebase topic ID.
   publishedBefore: string, The publishedBefore parameter indicates that the API response should only contain resources created before the specified time. The value is an RFC 3339 formatted date-time value (1970-01-01T00:00:00Z).
   videoDimension: string, The videoDimension parameter lets you restrict a search to only retrieve 2D or 3D videos. If you specify a value for this parameter, you must also set the type parameter's value to video.
-    Allowed values
-      2d - Restrict search results to exclude 3D videos.
-      3d - Restrict search results to only include 3D videos.
-      any - Include both 3D and non-3D videos in returned results. This is the default value.
+	Allowed values
+	  2d - Restrict search results to exclude 3D videos.
+	  3d - Restrict search results to only include 3D videos.
+	  any - Include both 3D and non-3D videos in returned results. This is the default value.
   videoLicense: string, The videoLicense parameter filters search results to only include videos with a particular license. YouTube lets video uploaders choose to attach either the Creative Commons license or the standard YouTube license to each of their videos. If you specify a value for this parameter, you must also set the type parameter's value to video.
-    Allowed values
-      any - Return all videos, regardless of which license they have, that match the query parameters.
-      creativeCommon - Only return videos that have a Creative Commons license. Users can reuse videos with this license in other videos that they create. Learn more.
-      youtube - Only return videos that have the standard YouTube license.
+	Allowed values
+	  any - Return all videos, regardless of which license they have, that match the query parameters.
+	  creativeCommon - Only return videos that have a Creative Commons license. Users can reuse videos with this license in other videos that they create. Learn more.
+	  youtube - Only return videos that have the standard YouTube license.
   maxResults: integer, The maxResults parameter specifies the maximum number of items that should be returned in the result set.
   videoType: string, The videoType parameter lets you restrict a search to a particular type of videos. If you specify a value for this parameter, you must also set the type parameter's value to video.
-    Allowed values
-      any - Return all videos.
-      episode - Only retrieve episodes of shows.
-      movie - Only retrieve movies.
+	Allowed values
+	  any - Return all videos.
+	  episode - Only retrieve episodes of shows.
+	  movie - Only retrieve movies.
   videoDefinition: string, The videoDefinition parameter lets you restrict a search to only include either high definition (HD) or standard definition (SD) videos. HD videos are available for playback in at least 720p, though higher resolutions, like 1080p, might also be available. If you specify a value for this parameter, you must also set the type parameter's value to video.
-    Allowed values
-      any - Return all videos, regardless of their resolution.
-      high - Only retrieve HD videos.
-      standard - Only retrieve videos in standard definition.
+	Allowed values
+	  any - Return all videos, regardless of their resolution.
+	  high - Only retrieve HD videos.
+	  standard - Only retrieve videos in standard definition.
   pageToken: string, The pageToken parameter identifies a specific page in the result set that should be returned. In an API response, the nextPageToken and prevPageToken properties identify other pages that could be retrieved.
   relatedToVideoId: string, The relatedToVideoId parameter retrieves a list of videos that are related to the video that the parameter value identifies. The parameter value must be set to a YouTube video ID and, if you are using this parameter, the type parameter must be set to video.
   relevanceLanguage: string, The relevanceLanguage parameter instructs the API to return search results that are most relevant to the specified language. The parameter value is typically an ISO 639-1 two-letter language code. However, you should use the values zh-Hans for simplified Chinese and zh-Hant for traditional Chinese. Please note that results in other languages will still be returned if they are highly relevant to the search query term.
   videoDuration: string, The videoDuration parameter filters video search results based on their duration. If you specify a value for this parameter, you must also set the type parameter's value to video.
-    Allowed values
-      any - Do not filter video search results based on their duration. This is the default value.
-      long - Only include videos longer than 20 minutes.
-      medium - Only include videos that are between four and 20 minutes long (inclusive).
-      short - Only include videos that are less than four minutes long.
+	Allowed values
+	  any - Do not filter video search results based on their duration. This is the default value.
+	  long - Only include videos longer than 20 minutes.
+	  medium - Only include videos that are between four and 20 minutes long (inclusive).
+	  short - Only include videos that are less than four minutes long.
   forMine: boolean, The forMine parameter restricts the search to only retrieve videos owned by the authenticated user. If you set this parameter to true, then the type parameter's value must also be set to video.
   q: string, The q parameter specifies the query term to search for.
 
 Your request can also use the Boolean NOT (-) and OR (|) operators to exclude videos or to find videos that are associated with one of several search terms. For example, to search for videos matching either "boating" or "sailing", set the q parameter value to boating|sailing. Similarly, to search for videos matching either "boating" or "sailing" but not "fishing", set the q parameter value to boating|sailing -fishing. Note that the pipe character must be URL-escaped when it is sent in your API request. The URL-escaped value for the pipe character is %7C.
   safeSearch: string, The safeSearch parameter indicates whether the search results should include restricted content as well as standard content.
-    Allowed values
-      moderate - YouTube will filter some content from search results and, at the least, will filter content that is restricted in your locale. Based on their content, search results could be removed from search results or demoted in search results. This is the default parameter value.
-      none - YouTube will not filter the search result set.
-      strict - YouTube will try to exclude all restricted content from the search result set. Based on their content, search results could be removed from search results or demoted in search results.
+	Allowed values
+	  moderate - YouTube will filter some content from search results and, at the least, will filter content that is restricted in your locale. Based on their content, search results could be removed from search results or demoted in search results. This is the default parameter value.
+	  none - YouTube will not filter the search result set.
+	  strict - YouTube will try to exclude all restricted content from the search result set. Based on their content, search results could be removed from search results or demoted in search results.
   videoEmbeddable: string, The videoEmbeddable parameter lets you to restrict a search to only videos that can be embedded into a webpage. If you specify a value for this parameter, you must also set the type parameter's value to video.
-    Allowed values
-      any - Return all videos, embeddable or not.
-      true - Only retrieve embeddable videos.
+	Allowed values
+	  any - Return all videos, embeddable or not.
+	  true - Only retrieve embeddable videos.
   videoCategoryId: string, The videoCategoryId parameter filters video search results based on their category. If you specify a value for this parameter, you must also set the type parameter's value to video.
   order: string, The order parameter specifies the method that will be used to order resources in the API response.
-    Allowed values
-      date - Resources are sorted in reverse chronological order based on the date they were created.
-      rating - Resources are sorted from highest to lowest rating.
-      relevance - Resources are sorted based on their relevance to the search query. This is the default value for this parameter.
-      title - Resources are sorted alphabetically by title.
-      videoCount - Channels are sorted in descending order of their number of uploaded videos.
-      viewCount - Resources are sorted from highest to lowest number of views.
+	Allowed values
+	  date - Resources are sorted in reverse chronological order based on the date they were created.
+	  rating - Resources are sorted from highest to lowest rating.
+	  relevance - Resources are sorted based on their relevance to the search query. This is the default value for this parameter.
+	  title - Resources are sorted alphabetically by title.
+	  videoCount - Channels are sorted in descending order of their number of uploaded videos.
+	  viewCount - Resources are sorted from highest to lowest number of views.
 
 Returns:
   An object of the form:
 
-    {
-    # Serialized EventId of the request which produced this response.
-    "eventId": "A String",
-    # The token that can be used as the value of the pageToken parameter to retrieve the next page in the result set.
-    "nextPageToken": "A String",
-    # Identifies what kind of resource this is. Value: the fixed string "youtube#searchListResponse".
-    "kind": "youtube#searchListResponse",
-    "visitorId": "A String", # The visitorId identifies the visitor.
-    "items": [ # A list of results that match the search criteria.
-      { # A search result contains information about a YouTube video, channel, or playlist that matches the search parameters specified in an API request. While a search result points to a uniquely identifiable resource, like a video, it does not have its own persistent data.
-        "snippet": { # Basic details about a search result, including title, description and thumbnails of the item referenced by the search result. # The snippet object contains basic details about a search result, such as its title or description. For example, if the search result is a video, then the title will be the video's title and the description will be the video's description.
-          "thumbnails": { # Internal representation of thumbnails for a YouTube resource. # A map of thumbnail images associated with the search result. For each object in the map, the key is the name of the thumbnail image, and the value is an object that contains other information about the thumbnail.
-            "default": { # A thumbnail is an image representing a YouTube resource. # The default image for this resource.
-              "url": "A String", # The thumbnail image's URL.
-              "width": 42, # (Optional) Width of the thumbnail image.
-              "height": 42, # (Optional) Height of the thumbnail image.
-            },
-            "high": { # A thumbnail is an image representing a YouTube resource. # The high quality image for this resource.
-              "url": "A String", # The thumbnail image's URL.
-              "width": 42, # (Optional) Width of the thumbnail image.
-              "height": 42, # (Optional) Height of the thumbnail image.
-            },
-            "medium": { # A thumbnail is an image representing a YouTube resource. # The medium quality image for this resource.
-              "url": "A String", # The thumbnail image's URL.
-              "width": 42, # (Optional) Width of the thumbnail image.
-              "height": 42, # (Optional) Height of the thumbnail image.
-            },
-            "maxres": { # A thumbnail is an image representing a YouTube resource. # The maximum resolution quality image for this resource.
-              "url": "A String", # The thumbnail image's URL.
-              "width": 42, # (Optional) Width of the thumbnail image.
-              "height": 42, # (Optional) Height of the thumbnail image.
-            },
-            "standard": { # A thumbnail is an image representing a YouTube resource. # The standard quality image for this resource.
-              "url": "A String", # The thumbnail image's URL.
-              "width": 42, # (Optional) Width of the thumbnail image.
-              "height": 42, # (Optional) Height of the thumbnail image.
-            },
-          },
-          "title": "A String", # The title of the search result.
-          # The value that YouTube uses to uniquely identify the channel that published the resource that the search result identifies.
-          "channelId": "A String",
-          # The creation date and time of the resource that the search result identifies. The value is specified in ISO 8601 (YYYY-MM-DDThh:mm:ss.sZ) format.
-          "publishedAt": "A String",
-          # It indicates if the resource (video or channel) has upcoming/active live broadcast content. Or it's "none" if there is not any upcoming/active live broadcasts.
-          "liveBroadcastContent": "A String",
-          # The title of the channel that published the resource that the search result identifies.
-          "channelTitle": "A String",
-          "description": "A String", # A description of the search result.
-        },
-        # Identifies what kind of resource this is. Value: the fixed string "youtube#searchResult".
-        "kind": "youtube#searchResult",
-        "etag": "A String", # Etag of this resource.
-        "id": { # A resource id is a generic reference that points to another YouTube resource. # The id object contains information that can be used to uniquely identify the resource that matches the search request.
-          "kind": "A String", # The type of the API resource.
-          # The ID that YouTube uses to uniquely identify the referred resource, if that resource is a channel. This property is only present if the resourceId.kind value is youtube#channel.
-          "channelId": "A String",
-          # The ID that YouTube uses to uniquely identify the referred resource, if that resource is a playlist. This property is only present if the resourceId.kind value is youtube#playlist.
-          "playlistId": "A String",
-          # The ID that YouTube uses to uniquely identify the referred resource, if that resource is a video. This property is only present if the resourceId.kind value is youtube#video.
-          "videoId": "A String",
-        },
-      },
-    ],
-    "tokenPagination": { # Stub token pagination template to suppress results.
-    },
-    "regionCode": "A String",
-    "etag": "A String", # Etag of this resource.
-    # The token that can be used as the value of the pageToken parameter to retrieve the previous page in the result set.
-    "prevPageToken": "A String",
-    "pageInfo": { # Paging details for lists of resources, including total number of items available and number of resources returned in a single page.
-      "totalResults": 42, # The total number of results in the result set.
-      # The number of results included in the API response.
-      "resultsPerPage": 42,
-    },
+	{
+	# Serialized EventId of the request which produced this response.
+	"eventId": "A String",
+	# The token that can be used as the value of the pageToken parameter to retrieve the next page in the result set.
+	"nextPageToken": "A String",
+	# Identifies what kind of resource this is. Value: the fixed string "youtube#searchListResponse".
+	"kind": "youtube#searchListResponse",
+	"visitorId": "A String", # The visitorId identifies the visitor.
+	"items": [ # A list of results that match the search criteria.
+	  { # A search result contains information about a YouTube video, channel, or playlist that matches the search parameters specified in an API request. While a search result points to a uniquely identifiable resource, like a video, it does not have its own persistent data.
+		"snippet": { # Basic details about a search result, including title, description and thumbnails of the item referenced by the search result. # The snippet object contains basic details about a search result, such as its title or description. For example, if the search result is a video, then the title will be the video's title and the description will be the video's description.
+		  "thumbnails": { # Internal representation of thumbnails for a YouTube resource. # A map of thumbnail images associated with the search result. For each object in the map, the key is the name of the thumbnail image, and the value is an object that contains other information about the thumbnail.
+			"default": { # A thumbnail is an image representing a YouTube resource. # The default image for this resource.
+			  "url": "A String", # The thumbnail image's URL.
+			  "width": 42, # (Optional) Width of the thumbnail image.
+			  "height": 42, # (Optional) Height of the thumbnail image.
+			},
+			"high": { # A thumbnail is an image representing a YouTube resource. # The high quality image for this resource.
+			  "url": "A String", # The thumbnail image's URL.
+			  "width": 42, # (Optional) Width of the thumbnail image.
+			  "height": 42, # (Optional) Height of the thumbnail image.
+			},
+			"medium": { # A thumbnail is an image representing a YouTube resource. # The medium quality image for this resource.
+			  "url": "A String", # The thumbnail image's URL.
+			  "width": 42, # (Optional) Width of the thumbnail image.
+			  "height": 42, # (Optional) Height of the thumbnail image.
+			},
+			"maxres": { # A thumbnail is an image representing a YouTube resource. # The maximum resolution quality image for this resource.
+			  "url": "A String", # The thumbnail image's URL.
+			  "width": 42, # (Optional) Width of the thumbnail image.
+			  "height": 42, # (Optional) Height of the thumbnail image.
+			},
+			"standard": { # A thumbnail is an image representing a YouTube resource. # The standard quality image for this resource.
+			  "url": "A String", # The thumbnail image's URL.
+			  "width": 42, # (Optional) Width of the thumbnail image.
+			  "height": 42, # (Optional) Height of the thumbnail image.
+			},
+		  },
+		  "title": "A String", # The title of the search result.
+		  # The value that YouTube uses to uniquely identify the channel that published the resource that the search result identifies.
+		  "channelId": "A String",
+		  # The creation date and time of the resource that the search result identifies. The value is specified in ISO 8601 (YYYY-MM-DDThh:mm:ss.sZ) format.
+		  "publishedAt": "A String",
+		  # It indicates if the resource (video or channel) has upcoming/active live broadcast content. Or it's "none" if there is not any upcoming/active live broadcasts.
+		  "liveBroadcastContent": "A String",
+		  # The title of the channel that published the resource that the search result identifies.
+		  "channelTitle": "A String",
+		  "description": "A String", # A description of the search result.
+		},
+		# Identifies what kind of resource this is. Value: the fixed string "youtube#searchResult".
+		"kind": "youtube#searchResult",
+		"etag": "A String", # Etag of this resource.
+		"id": { # A resource id is a generic reference that points to another YouTube resource. # The id object contains information that can be used to uniquely identify the resource that matches the search request.
+		  "kind": "A String", # The type of the API resource.
+		  # The ID that YouTube uses to uniquely identify the referred resource, if that resource is a channel. This property is only present if the resourceId.kind value is youtube#channel.
+		  "channelId": "A String",
+		  # The ID that YouTube uses to uniquely identify the referred resource, if that resource is a playlist. This property is only present if the resourceId.kind value is youtube#playlist.
+		  "playlistId": "A String",
+		  # The ID that YouTube uses to uniquely identify the referred resource, if that resource is a video. This property is only present if the resourceId.kind value is youtube#video.
+		  "videoId": "A String",
+		},
+	  },
+	],
+	"tokenPagination": { # Stub token pagination template to suppress results.
+	},
+	"regionCode": "A String",
+	"etag": "A String", # Etag of this resource.
+	# The token that can be used as the value of the pageToken parameter to retrieve the previous page in the result set.
+	"prevPageToken": "A String",
+	"pageInfo": { # Paging details for lists of resources, including total number of items available and number of resources returned in a single page.
+	  "totalResults": 42, # The total number of results in the result set.
+	  # The number of results included in the API response.
+	  "resultsPerPage": 42,
+	},
   }
   """
 
@@ -209,140 +209,175 @@ YOUTUBE_API_VERSION = 'v3'
 class YouTubeSearch:
     YOUTUBE_API_SERVICE_NAME = 'youtube'
     YOUTUBE_API_VERSION = 'v3'
+    list_api_keys = [
+        'AIzaSyCVMEUGxxsSw-BKH4c06PHKr_F4qjSdwJw',
+        'AIzaSyDuW2lWKYOc-tPjwcXso4LhR8_ZMEZOGKw',
+        'AIzaSyBahI8vJbinh7itJs2hJRNW4spp0B2Dqpk'
+    ]
     list_api_keys_unavailable = list()
-	db_hander = DBHandler()
+    args = {
+        'part': None,
+        'eventType': None,
+        'channelId': None,
+        'forDeveloper': None,
+        'videoSyndicated': None,
+        'channelType': None,
+        'videoCaption': None,
+        'publishedAfter': None,
+        'publishedBefore': None,
+        'onBehalfOfContentOwner': None,
+        'forContentOwner': None,
+        'regionCode': None,
+        'location': None,
+        'locationRadius': None,
+        'topicId': None,
+        'publishedBefore': None,
+        'videoDimension': None,
+        'videoLicense': None,
+        'maxResults': None,
+        'videoType': None,
+        'videoDefinition': None,
+        'pageToken': None,
+        'relatedToVideoId': None,
+        'relevanceLanguage': None,
+        'videoDuration': None,
+        'forMine': None,
+        'q': None,
+        'safeSearch': None,
+        'videoEmbeddable': None,
+        'videoCategoryId': None,
+        'order': None,
+        'fields': None
+    }
 
     def __init__(self, args):
         self.list_api_keys = args['list_api_keys']
+        # Update with new args
+        self.args.update(args)
 
+        # 'fields':'items(id(channelId, videoId), snippet(title, channelId, liveBroadcastContent, channelTitle, description))'
+        # 'fields':'items(snippet(channelTitle, title, description))'
+        # 'fields':'nextPageToken, items(id(videoId), snippet(channelTitle))',
+        # 'fields': options.fields
     def __build_youtube(self, api_service_name, api_version, api_key):
         self.youtube = build(api_service_name, api_version,
                              developerKey=api_key)
 
-    def search(self):
-        pass
+    def set_list_channel_ids(self, list_channel_ids):
+        self.list_channel_ids = list_channel_ids
+        return self
+
+    def set_list_queries(self, list_queries):
+        self.list_queries = list_queries
+        return self
+
+    def __search(self, args, list_queries=None, list_channel_ids=None):
+        # q(, channelId) must be already set when list_queries == None
+        if list_queries:
+            _num_queries = len(list_queries)
+            print('# of queries: ', _num_queries)
+            # Per query
+            for i, _q in enumerate(list_queries):
+                print('Processing %d out of %d queries' % (i+1, _num_queries))
+                args['q'] = _q
+                if list_channel_ids:
+                    for j, _channel_id in enumerate(list_channel_ids):
+                        args['channelId'] = _channel_id
+                        return self.__youtube_search_recursive(args)
+                else:
+                    return self.__youtube_search_recursive(args)
+
+        elif 'q' in args.keys():
+            # q must be already set in args
+            return self.__youtube_search_recursive(args)
+        else:
+            raise KeyError('q not given')
 
     def __youtube_search_recursive(self, args):
-        try:
-            args.list_channel_ids
-        except AttributeError:
-            print("args.list_channel_ids not defined. Searching w/o channelId.")
-            args.list_channel_ids = [None]
-        else:
-            if args.list_channel_ids == None:
-                args.list_channel_ids = [None]
-            elif args.list_channel_ids == 'fromdb':
-				self.db_handler.sql_handler.select(args['table'], 'channelId')
-				args.list_channel_ids = self.db_handler.execute().fetchall()
-                
-				# sql = "SELECT channelId FROM channels;"
-                # db_handler.mycursor.execute(sql)
-                # args.list_channel_ids = db_handler.mycursor.fetchall()
+        # For single q (+single channelId)
+        # args['page_token'] = None
+        # print('Initial args:', args)
+        print('q: ', args['q'])
 
-                new_list = list()
-                for item in args.list_channel_ids:
-                    new_list.append(item[0])
-                args.list_channel_ids = new_list
+        _dict_responses = dict()
+        _dict_responses['q'] = args['q']
+        _dict_responses['items'] = list()
 
-            else:
-                try:
-                    args.list_channel_ids.endswith('txt')
-                except AttributeError:
-                    raise TypeError('args.list_channel_ids not understood.')
+        _page = 0
+        _response = self.__youtube_search(args)
+        _dict_responses['items'] += _response['items']
+        while len(_response.get('items', [])) != 0:
+            print('\tPage: %d' % (_page + 1))
+            if args['up_to']:  # Not None
+                _remains = int(args['up_to']) - int(args['max_results'])
+                print('\tRemains: %d' % _remains)
+                if _remains > 0:
+                    args['up_to'] = str(_remains)
+                    # Save quota by quering least amount required
+                    if _remains < int(args['max_results']):
+                        args['max_results'] = str(_remains)
                 else:
-                    with open(args.list_channel_ids) as f:
-                        args.list_channel_ids = json.load(f)[0].values()
-
-        args.page_token = None
-        print('Initial args:', args)
-
-        dict_responses = dict()
-        dict_responses['q'] = args.q
-        dict_responses['items'] = list()
-
-        # Iterate for every chanId
-        for n, chan_id in enumerate(args.list_channel_ids):
-            print(n, 'th channel:', chan_id)
-            args.channel_id = chan_id
-
-            response = youtube_search(args)
-            # Add new items to dict
-            dict_responses['items'] = dict_responses['items'] + \
-                response['items']
-
-            page = 0
-            while (len(response.get('items', [])) != 0):
-                print('\npage:', page)
-
-                if args.up_to:
-                    remains = int(args.up_to) - int(args.max_results)
-                    print('\tremains:', remains)
-                    if remains > 0:
-                        args.up_to = str(remains)
-                        if remains < int(args.max_results):
-                            args.max_results = str(remains)
-                    else:
-                        print('No remains:', remains, '\tBreak.')
-                        break
-
-                args.page_token = response.get('nextPageToken')
-                print('\tPage token:', args.page_token)
-                # print('New args:', args)
-                if args.page_token == None:
-                    print('\nNo page token. Break.')
+                    # No remains
+                    print('\tNo remains. Break.')
                     break
-                page += 1
-                response = youtube_search(args)
-                dict_responses['items'] = dict_responses['items'] + \
-                    response['items']
-                # items = response.get('items', [])
-                # print(items)
+            # Next page token
+            _next_page_token = _response.get('nextPageToken')
+            if _next_page_token == None:
+                print('\nNo page token. Break.')
+                break
+            args['page_token'] = _next_page_token
+            print('\tNext page token:', _next_page_token)
+            _page += 1
+            _response = self.__youtube_search(args)
+            _dict_responses['items'] += _response['items']
 
-        print('dict_responses:', dict_responses)
-        return dict_responses
+        return _dict_responses
 
     def __youtube_search(self, options):
 
         # Call the search.list method to retrieve results matching the specified
         # query term.
-        _response = self.youtube.search().list(
-            part=options.part,
-            # eventType=None,
-            channelId=options.channel_id,
-            # forDeveloper=None,
-            # videoSyndicated=None,
-            # channelType=None,
-            # videoCaption=None,
-            # publishedAfter='2019-01-01T00:00:00Z',
-            # publishedBefore='2019-12-31T23:59:59Z',
-            # onBehalfOfContentOwner=None,
-            # forContentOwner=None,
-            # regionCode=options.region_code,
-            # location=None,
-            # locationRadius=None,
-            type='video',
-            # topicId=None,
-            # publishedBefore=None,
-            # videoDimension=None,
-            # videoLicense=None,
-            maxResults=options.max_results,
-            # videoType=None,
-            # videoDefinition=None,
-            pageToken=options.page_token,
-            # relatedToVideoId=None,
-            # relevanceLanguage=None,
-            # videoDuration=None,
-            # forMine=None,
-            q=options.q,
-            # safeSearch=None,
-            # videoEmbeddable=None,
-            # videoCategoryId=None,
-            # order=options.order,
-            # fields='items(id(channelId, videoId), snippet(title, channelId, liveBroadcastContent, channelTitle, description))'
-            # fields='items(snippet(channelTitle, title, description))'
-            # fields='nextPageToken, items(id(videoId), snippet(channelTitle))',
-            fields=options.fields
-        ).execute()
+        try:
+            _response = self.youtube.search().list(
+                part=options['part'],
+                eventType=options['eventType'],
+                channelId=options['channelId'],
+                forDeveloper=options['forDeveloper'],
+                videoSyndicated=options['videoSyndicated'],
+                channelType=options['channelType'],
+                videoCaption=options['videoCaption'],
+                publishedAfter=options['publishedAfter'],
+                publishedBefore=options['publishedBefore'],
+                onBehalfOfContentOwner=options['onBehalfOfContentOwner'],
+                forContentOwner=options['forContentOwner'],
+                regionCode=options['regionCode'],
+                location=options['location'],
+                locationRadius=options['locationRadius'],
+                type='video',
+                topicId=options['topicId'],
+                publishedBefore=options['publishedBefore'],
+                videoDimension=options['videoDimension'],
+                videoLicense=options['videoLicense'],
+                maxResults=options['maxResults'],
+                videoType=options['videoType'],
+                videoDefinition=options['videoDefinition'],
+                pageToken=options['pageToken'],
+                relatedToVideoId=options['relatedToVideoId'],
+                relevanceLanguage=options['relevanceLanguage'],
+                videoDuration=options['videoDuration'],
+                forMine=options['forMine'],
+                q=options['q'],
+                safeSearch=options['safeSearch'],
+                videoEmbeddable=options['videoEmbeddable'],
+                videoCategoryId=options['videoCategoryId'],
+                order=options['order'],
+                fields=options['fields']
+            ).execute()
+            except:  # Quote exceeded
+                _new_api_key = self.list_api_keys.pop(0)
+            self.__build_youtube(self.YOUTUBE_API_SERVICE_NAME,
+                                 self.YOUTUBE_API_VERSION, _new_api_key)
+            self.list_api_keys_unavailable.append(_new_api_key)
 
         # Add each result to the appropriate list, and then display the lists of
         # matching videos, channels, and playlists.

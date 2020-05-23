@@ -71,7 +71,7 @@ def search_by_urls():
     args = vars(parser.parse_args())
 
     db_handler = DBHandler()
-    db_handler.sql_handler.select('temp_papers', 'urls')
+    db_handler.sql_handler.select('temp_papers', 'urls').where('idx', 3756, '>')
     _list_queries = db_handler.execute().fetchall()
     _list_queries = list(map(lambda tup: tup[0].split(', ')[0], _list_queries))
     # _list_queries = _list_queries[:2]

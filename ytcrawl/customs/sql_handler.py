@@ -104,14 +104,14 @@ class SQLHandler:
     def get_sql_vals(self, mode_where='and', reset=True):
         if not self.command_set:
             raise ValueError('Command not set.')
-        
+
         # Start sql
         self.last_sql = self.command
 
         # WHERE
         if self.list_where_clauses:
             self.last_sql = "%s WHERE %s" % (
-                self.command, self.get_where_from_list(self.list_where_clauses, mode_where)) 
+                self.command, self.get_where_from_list(self.list_where_clauses, mode_where))
 
         # ORDER BY
         if self.list_order_clauses:
@@ -127,14 +127,23 @@ class SQLHandler:
             self.reset()
         return (self.last_sql, self.last_values)
 
-    def where(self, column, value, mode='equal'):
-        # Param 'mode' could be: 'equal', 'match'
-        if mode == 'equal':
+    def where(self, column, value, mode='='):
+        # Param 'mode' could be: '=', 'match'
+        if mode == '=':
             if value == None:
                 clause = "`%s` IS NULL" % column
             else:
                 clause = "`%s`=%d" % (column, value) \
                     if type(value) != str else "`%s`='%s'" % (column, value)
+        
+        elif mode == '>':
+            clause = "`%s`>%d" % (column, value) \
+                if type(value) != str else "`%s`>'%s'" % (column, value)
+
+        elif mode == '<':
+            clause = "`%s`<%d" % (column, value) \
+                if type(value) != str else "`%s`<'%s'" % (column, value)
+                
         elif mode == 'fulltext_list':
             self.__check_type(value, 'str')
             list_clauses = []

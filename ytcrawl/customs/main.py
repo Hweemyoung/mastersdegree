@@ -5,6 +5,7 @@ from db_papers_uploader import DBPapersUploader
 from twitter_organizer import TwitterOrganizer
 from altmetric_it import AltmetricIt
 from db_handler import DBHandler
+from preprocessor import Preprocessor
 
 import argparse
 import os
@@ -15,7 +16,7 @@ from random import shuffle
 from bs4 import BeautifulSoup
 import re
 
-from search_custom import youtube_search_recursive, YouTubeSearch
+from search_custom import YouTubeSearch
 from videos import youtube_videos, filter_videos_by_viewcount
 
 
@@ -36,7 +37,7 @@ def search_by_urls():
     # parser.add_argument('--api-key', help='API key', default=api_key)
 
     # Search args
-    parser.add_argument('--part', default='id, snippet')
+    parser.add_argument('--part', default='id')
     parser.add_argument('--eventType', default=None)
     parser.add_argument('--channelId', default=None)
     parser.add_argument('--forDeveloper', default=None)
@@ -66,22 +67,33 @@ def search_by_urls():
     parser.add_argument('--videoEmbeddable', default=None)
     parser.add_argument('--videoCategoryId', default=None)
     parser.add_argument('--order', default=None)
-    parser.add_argument('--fields', default='items(id(videoId), snippet(channelTitle))')
+    parser.add_argument('--fields', default='items(id(videoId))')
 
     args = vars(parser.parse_args())
 
     db_handler = DBHandler()
-    db_handler.sql_handler.select('temp_papers', 'urls').where('idx', 3756, '>')
-    _list_queries = db_handler.execute().fetchall()
-    _list_queries = list(map(lambda tup: tup[0].split(', ')[0], _list_queries))
+    # db_handler.sql_handler.select('temp_papers', 'urls')
+    db_handler.sql_handler.select('temp_papers', ['idx', 'urls'])
+    _results = db_handler.execute().fetchall()
+    # _results = _results[:2]
+    # _list_queries = list(map(lambda tup: tup[0].split(', ')[1], _list_queries))
+
+    # https to http
+    preprocessor = Preprocessor()
+    preprocessor.url_https_to_http
+    # _list_queries = list(map(lambda tup: tup[1].split(', ')[1], _results))
+    _list_queries = list(map(lambda tup: preprocessor.url_https_to_http(tup[1].split(', ')[0]), _results))
+    _list_idx_papers = list(map(lambda tup: tup[0], _results))
+    args['list_idx_papers'] = _list_idx_papers
+
     # _list_queries = _list_queries[:2]
     # print(_list_queries)
 
     youtube_search = YouTubeSearch(args)
     youtube_search.set_list_queries(_list_queries)
     _list_responses = youtube_search.start_search()
-    with open('list_video_ids.txt', 'w+') as fp:
-        json.dump(_list_responses, fp)
+    # with open('list_video_ids.txt', 'w+') as fp:
+        # json.dump(_list_responses, fp)
     print(_list_responses)
 
 def upload_videos_from_channel_ids(api_key):

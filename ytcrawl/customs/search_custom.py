@@ -262,8 +262,9 @@ class YouTubeSearch(YouTube):
         if list_channel_ids == None:
             # Empty list
             list_channel_ids = list()
-        _dict_responses = self.__search(args, list_queries, list_channel_ids)
-        return _dict_responses
+        _list_responses = self.__search(args, list_queries, list_channel_ids)
+        self.save_task(_list_responses, args)
+        return _list_responses
 
     def __search(self, args, list_queries=None, list_channel_ids=None):
         # q(, channelId) must be already set when list_queries == None
@@ -275,6 +276,9 @@ class YouTubeSearch(YouTube):
             for i, _q in enumerate(list_queries):
                 print('Processing %d out of %d queries' % (i+1, _num_queries))
                 args['q'] = _q
+                
+                args['idx_paper'] = args['list_idx_papers'][i]
+
                 if list_channel_ids:
                     _num_channel_ids = len(list_channel_ids)
                     for j, _channel_id in enumerate(list_channel_ids):
@@ -302,6 +306,7 @@ class YouTubeSearch(YouTube):
 
         _dict_responses = dict()
         _dict_responses['q'] = args['q']
+        _dict_responses['idx_paper'] = args['idx_paper']
         _dict_responses['items'] = list()
 
         _page = 0
@@ -379,8 +384,9 @@ class YouTubeSearch(YouTube):
                 order=options['order'],
                 fields=options['fields']
             ).execute()
-        except HttpError:  # Quota exceeded
-            print('Quota exceeded. Rebuild youtube with new api key.')
+        except HttpError as e:  # Quota exceeded
+            print(e)
+            print('Rebuilding youtube with new api key.')
             self.build_youtube()
             _response = False
 

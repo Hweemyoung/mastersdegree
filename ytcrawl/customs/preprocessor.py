@@ -155,6 +155,19 @@ class Preprocessor:
             url = 'https' + url[4:]
         return url
 
+    def url_https_to_http(self, url):
+        # Convert only if url matches pdf
+        if bool(self.regex_http.match(url)):
+            # Pattern: http
+            pass
+        elif not bool(self.regex_https.match(url)):
+            raise SyntaxError(
+                'URL pattern not understood as http(s).')
+        else:
+            # Pattern: https
+            url = 'http' + url[5:]
+        return url
+
     def url_pdf_to_abs(self, url):
         # Convert only if url matches pdf
         if bool(self.regex_abs.match(url)):

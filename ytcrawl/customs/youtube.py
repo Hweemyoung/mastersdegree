@@ -1,6 +1,7 @@
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from datetime import datetime
+from time import sleep
 import json
 
 
@@ -115,16 +116,27 @@ class YouTube:
             _new_project = self.list_projects.pop(0)
         except IndexError:
             print('No available project.')
-            _fname = datetime.now().strftime('%Y%m%d_%H%M%S')
-            self.__save_list_responses(self.list_responses, _fname)
-            self.__save_log(self.args, _fname)
+            self.save_task(self.list_responses, self.args)
             quit()
         
         _new_api_key = self.dict_api_keys[_new_project]
         print('New project: %s\tAPI key: %s' % (_new_project, _new_api_key))
-        self.youtube = build(self.YOUTUBE_API_SERVICE_NAME,
-                             self.YOUTUBE_API_VERSION, developerKey=_new_api_key)
+        try:
+            self.youtube = build(self.YOUTUBE_API_SERVICE_NAME,
+                                 self.YOUTUBE_API_VERSION, developerKey=_new_api_key)
+        except HttpError as e:
+            print(e)
+            self.save_task(self.list_responses, self.args)
+            quit()
+
         self.list_projects_unavailable.append(_new_project)
+        sleep(1.0)
+        return self
+    
+    def save_task(self, list_responses, args):
+        _fname = datetime.now().strftime('%Y%m%d_%H%M%S')
+        self.__save_list_responses(list_responses, _fname)
+        self.__save_log(args, _fname)
         return self
 
     def __save_list_responses(self, list_responses, fname):

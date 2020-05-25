@@ -2,6 +2,7 @@ from preprocessor import Preprocessor
 from db_channels_uploader import DBChannelsUploader
 from db_videos_uploader import DBVideosUploader
 from db_papers_uploader import DBPapersUploader
+from db_handler import DBHandler
 from sql_handler import SQLHandler
 
 from datetime import datetime
@@ -17,6 +18,7 @@ import matplotlib.pyplot as plt
 from altmetric_it import AltmetricIt
 
 import json
+import os
 
 def _check_arxiv_id_exists():
     with open('./test.txt') as fp:
@@ -32,10 +34,22 @@ def _check_arxiv_id_exists():
             print(_dict_citation['arxivId'])
     print(_list_i_no_arxiv_id)
 
-with open('./test.txt') as fp:
-    _dict = json.load(fp)
-_dict['citations'][5316]
+def _temp():
+    db_handler = DBHandler()
+    _list = list()
+    for _fname in os.listdir('./results/search'):
+        _fp = './results/search/' + _fname
+        with open(_fp, 'r') as _f:
+            _list_temp = json.load(_f)
+        for _dict_q in _list_temp:
+            db_handler.sql_handler.select('temp_papers', 'idx').where('urls', '%'+_dict_q['q']+'%', mode='like')
+            _result = db_handler.execute().fetchall()
+            _dict_q['idx_paper'] = _result[0][0]
+            _list.append(_dict_q)
+    with open('./results/search/search_20200525_094200.txt', 'w+') as _f:
+        json.dump(_list, _f)
     
+_temp()
     # sql_handler = SQLHandler()
     
 

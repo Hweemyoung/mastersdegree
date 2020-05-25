@@ -143,6 +143,10 @@ class SQLHandler:
         elif mode == '<':
             clause = "`%s`<%d" % (column, value) \
                 if type(value) != str else "`%s`<'%s'" % (column, value)
+        
+        elif mode == 'like':
+            clause = "`%s` LIKE %d" % (column, value) \
+                if type(value) != str else "`%s` LIKE '%s'" % (column, value)
                 
         elif mode == 'fulltext_list':
             self.__check_type(value, 'str')

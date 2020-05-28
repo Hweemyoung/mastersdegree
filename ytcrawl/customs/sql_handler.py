@@ -160,7 +160,7 @@ class SQLHandler:
 
             clause = self.get_where_from_list(list_clauses, 'or')
         elif mode == 'fulltext':
-            clause = "match(%s) against (%s in boolean mode)" % (column, value)
+            clause = "match(%s) against (\"%s\" in boolean mode)" % (column, value)
         else:
             raise ValueError()
 

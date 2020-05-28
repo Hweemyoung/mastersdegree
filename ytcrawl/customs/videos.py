@@ -1,6 +1,18 @@
 """
-list(part, hl=None, maxWidth=None, locale=None, id=None, onBehalfOfContentOwner=None, regionCode=None,
-     pageToken=None, maxResults=None, chart=None, myRating=None, maxHeight=None, videoCategoryId=None)
+list(
+part,
+hl=None,
+maxWidth=None,
+locale=None,
+id=None,
+onBehalfOfContentOwner=None,
+regionCode=None,
+pageToken=None,
+maxResults=None,
+chart=None,
+myRating=None,
+maxHeight=None,
+videoCategoryId=None)
 
 Returns a list of videos that match the API request parameters.
 
@@ -19,6 +31,7 @@ import argparse
 import os
 import json
 import mysql.connector
+from youtube import YouTube
 
 
 from datetime import datetime
@@ -34,6 +47,90 @@ from googleapiclient.errors import HttpError
 DEVELOPER_KEY = 'AIzaSyCVMEUGxxsSw-BKH4c06PHKr_F4qjSdwJw'
 YOUTUBE_API_SERVICE_NAME = 'youtube'
 YOUTUBE_API_VERSION = 'v3'
+
+
+class YouTubeVideos(YouTube):
+    args = {
+        'part': 'id, snippet, contentDetails, statistics, liveStreamingDetails',
+        'hl': None,
+        'maxWidth': None,
+        'locale': None,
+        'id': None,
+        'onBehalfOfContentOwner': None,
+        'regionCode': None,
+        'pageToken': None,
+        'maxResults': None,
+        'chart': None,
+        'myRating': None,
+        'maxHeight': None,
+        'videoCategoryId': None,
+        'fields': 'items(id, snippet(title, publishedAt, description, tags, defaultLanguage, defaultAudioLanguage, channelTitle, channelId), contentDetails(duration), statistics(viewCount, dislikeCount, commentCount, likeCount, favoriteCount), liveStreamingDetails)'
+    }
+
+    def __init__(self, args, method_name='videos'):
+        super(YouTubeVideos, self).__init__(args, method_name)
+
+    def set_list_video_ids(self, list_video_ids):
+        self.list_video_ids = list_video_ids
+        return self
+
+    def start_search(self, args=None, list_video_ids=None):
+        if args == None:
+            args = self.args
+        if list_video_ids == None:
+            list_video_ids = self.list_video_ids
+        _list_responses = self.__search(args, list_video_ids)
+        self.save_task(_list_responses, args)
+        return _list_responses
+
+    def __search(self, args, list_video_ids=None):
+        _list_responses = list()
+        if list_video_ids:
+            _num_video_ids = len(list_video_ids)
+            print('# of video IDs: ', _num_video_ids)
+            for i, _video_id in enumerate(list_video_ids):
+                print('Processing %d out of %d video IDs' %
+                      (i+1, _num_video_ids))
+                args['id'] = _video_id
+
+                args['idx_paper'] = args['list_idx_papers'][i]
+
+                self.list_responses.append(self.__youtube_videos(args))
+
+        elif 'id' in args.keys():
+            # q must be already set in args
+            self.list_responses.append(self.__youtube_videos(args))
+        else:
+            raise KeyError('Video ID not given')
+        return self.list_responses
+    
+    def __youtube_videos(self, options):
+        print('Video ID: ', args['id'])
+        try:
+            _response = self.youtube.videos().list(
+                part=options['part'],
+                hl=options['hl'],
+                maxWidth=options['maxWidth'],
+                locale=options['locale'],
+                id=options['id'],
+                onBehalfOfContentOwner=options['onBehalfOfContentOwner'],
+                regionCode=options['regionCode'],
+                pageToken=options['pageToken'],
+                maxResults=options['maxResults'],
+                chart=options['chart'],
+                myRating=options['myRating'],
+                maxHeight=options['maxHeight'],
+                videoCategoryId=options['videoCategoryId'],
+                fields=options['fields']
+            ).execute()
+        except HttpError as e:  # Quota exceeded
+            print(e)
+            print('Rebuilding youtube with new api key.')
+            self.build_youtube()
+            _response = False
+        
+        return _response
+
 
 
 def youtube_videos(options):
@@ -61,6 +158,7 @@ def youtube_videos(options):
         # fields='items(contentDetails(definition, dimension, projection, caption, licensedContent, duration))'
         # fields='items(snippet(channelTitle, description, publishedAt), statistics(viewCount, dislikeCount, commentCount, likeCount, favoriteCount))'
         fields=options.fields
+        'snippet(title, publishedAt, description, tags, defaultLanguage, defaultAudioLanguage, channelTitle, channelId), contentDetails(duration), statistics(viewCount, dislikeCount, commentCount, likeCount, favoriteCount), liveStreamingDetails'
     ).execute()
 
     # print(response.get('items', []))
@@ -92,7 +190,6 @@ if __name__ == '__main__':
     parser.add_argument('--video-id', help='Video ID', default=None)
     # parser.add_argument('--q', help='Query', default=None)
     args = parser.parse_args()
-    
 
     # folder = './results/pdf'
     # for fname in os.listdir(folder):

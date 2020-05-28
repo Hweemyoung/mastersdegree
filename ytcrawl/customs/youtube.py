@@ -49,7 +49,17 @@ class YouTube:
         'ytcrawl37',
         'ytcrawl38',
         'ytcrawl39',
-        'ytcrawl40'
+        'ytcrawl40',
+        'ytcrawl41',
+        'ytcrawl42',
+        'ytcrawl43',
+        'ytcrawl44',
+        'ytcrawl45',
+        'ytcrawl46',
+        'ytcrawl47',
+        'ytcrawl48',
+        'ytcrawl49',
+        'ytcrawl50'
     ]
     dict_api_keys = {
         'ytcrawl': 'AIzaSyCVMEUGxxsSw-BKH4c06PHKr_F4qjSdwJw',
@@ -92,7 +102,17 @@ class YouTube:
         'ytcrawl37': 'AIzaSyD3LtnJu4dEBYZQgvLdWhCU0buCE1Ko83g',
         'ytcrawl38': 'AIzaSyDDWblONcC7X5z4MkR2YsKibOPCygkkpmE',
         'ytcrawl39': 'AIzaSyBe6u5nNoSXldUOSXcfSeuJ-TxJxVTlDeU',
-        'ytcrawl40': 'AIzaSyAG7LfsgOUoE2ymGqWL2y6rN1fTpMbH96E'
+        'ytcrawl40': 'AIzaSyAG7LfsgOUoE2ymGqWL2y6rN1fTpMbH96E',
+        'ytcrawl41': 'AIzaSyBNhNNIOdivlepkoYVXR2lCMQ1AbRfmYZM',
+        'ytcrawl42': 'AIzaSyCwZ5i7E3dtbLjYGHU1SYaIS_VLkGMWVIs',
+        'ytcrawl43': 'AIzaSyAajQ4kpKUCnqOpwbFYSPZ4zrm-VPOb5D8',
+        'ytcrawl44': 'AIzaSyCbgbxUBGj-iRNr8H-eRfmljfxJL7bNnEw',
+        'ytcrawl45': 'AIzaSyB-b37xz-54uKbj9Mrt3xDAWlcVMPntQfg',
+        'ytcrawl46': 'AIzaSyCFnSbXRyOe2m53qKtOqdJ_0tOeubpv6Ic',
+        'ytcrawl47': 'AIzaSyARDw8_uSTw4S8rJcV_NDQcLSFmBugHDQs',
+        'ytcrawl48': 'AIzaSyA1ZNQ_Gt5bnPLEZ4p_bBmkK4hGvBKPv78',
+        'ytcrawl49': 'AIzaSyBMJNQqmaaBZgUz0A99RqipLYhgVTyF4lM',
+        'ytcrawl50': 'AIzaSyA3mLSfPq3O8zLdqtbuSsVbj1w0SkXFeSI',
     }
     list_projects_unavailable = list()
     list_responses = list()

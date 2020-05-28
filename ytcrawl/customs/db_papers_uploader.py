@@ -9,7 +9,7 @@ import re
 from bs4 import BeautifulSoup
 
 
-class DBPapersUploader():
+class DBPapersUploader:
     regex_abs = re.compile(r'https?://(export.)?arxiv.org/abs/\d{3,5}.\d{3,5}')
     regex_pdf = re.compile(r'https?://(export.)?arxiv.org/pdf/\d{3,5}.\d{3,5}.pdf')
     regex_http = re.compile(r'^http://')

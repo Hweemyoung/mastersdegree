@@ -72,17 +72,16 @@ def search_by_urls():
     args = vars(parser.parse_args())
 
     db_handler = DBHandler()
-    # db_handler.sql_handler.select('temp_papers', 'urls')
-    db_handler.sql_handler.select('temp_papers', ['idx', 'urls'])
+    # db_handler.sql_handler.select('temp_papers', ['idx', 'urls']).where('subject_1', 'Computer Science', '=').where('subject_2', 'Machine Learning', '=')
+    db_handler.sql_handler.select('temp_papers', ['idx', 'urls']).where('subject_1', 'Computer Science', '=').where('subject_2', 'Machine Learning', '=').where('idx', 1901, '>')
     _results = db_handler.execute().fetchall()
-    # _results = _results[:2]
-    # _list_queries = list(map(lambda tup: tup[0].split(', ')[1], _list_queries))
 
     # https to http
-    preprocessor = Preprocessor()
-    preprocessor.url_https_to_http
+    # preprocessor = Preprocessor()
+    # preprocessor.url_https_to_http
     # _list_queries = list(map(lambda tup: tup[1].split(', ')[1], _results))
-    _list_queries = list(map(lambda tup: preprocessor.url_https_to_http(tup[1].split(', ')[0]), _results))
+    # _list_queries = list(map(lambda tup: preprocessor.url_https_to_http(tup[1].split(', ')[0]), _results))
+    _list_queries = list(map(lambda tup: tup[1].split(', ')[1][8:], _results)) # arxiv.org/...
     _list_idx_papers = list(map(lambda tup: tup[0], _results))
     args['list_idx_papers'] = _list_idx_papers
 
@@ -92,9 +91,11 @@ def search_by_urls():
     youtube_search = YouTubeSearch(args)
     youtube_search.set_list_queries(_list_queries)
     _list_responses = youtube_search.start_search()
+    print(_list_responses)
+
     # with open('list_video_ids.txt', 'w+') as fp:
         # json.dump(_list_responses, fp)
-    print(_list_responses)
+
 
 def upload_videos_from_channel_ids(api_key):
     parser = argparse.ArgumentParser()

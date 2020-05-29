@@ -512,7 +512,15 @@ def update_papers_from_arxiv_list():
     db_papers_uploader.update_papers_from_arxiv_list(
         args, overwrite=args['overwrite'])
 
+def update_videos_by_list_videos(table_name, fp_list_videos):
+    db_videos_uploader = DBVideosUploader(table_name)
+    with open(fp_list_videos, 'r') as f:
+        _list_responses = json.load(f)
+    _list_responses = _list_responses[:1]
+    db_videos_uploader.upload_videos(_list_responses)
+
 
 if __name__ == '__main__':
     # update_papers_from_arxiv_list()
-    search_by_urls()
+    # search_by_urls()
+    update_videos_by_list_videos('temp_videos', './results/videos/videos_LG.txt')

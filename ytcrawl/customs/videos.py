@@ -64,7 +64,7 @@ class YouTubeVideos(YouTube):
         'myRating': None,
         'maxHeight': None,
         'videoCategoryId': None,
-        'fields': 'items(id, snippet(title, publishedAt, description, tags, defaultLanguage, defaultAudioLanguage, channelTitle, channelId), contentDetails(duration), statistics(viewCount, dislikeCount, commentCount, likeCount, favoriteCount), liveStreamingDetails)'
+        'fields': 'items(id, snippet(title, publishedAt, description, tags, defaultLanguage, defaultAudioLanguage, channelTitle, channelId), contentDetails(duration), statistics(viewCount, dislikeCount, commentCount, likeCount, favoriteCount), liveStreamingDetails(actualStartTime))'
     }
 
     def __init__(self, args, method_name='videos'):
@@ -158,7 +158,6 @@ def youtube_videos(options):
         # fields='items(contentDetails(definition, dimension, projection, caption, licensedContent, duration))'
         # fields='items(snippet(channelTitle, description, publishedAt), statistics(viewCount, dislikeCount, commentCount, likeCount, favoriteCount))'
         fields=options.fields
-        'snippet(title, publishedAt, description, tags, defaultLanguage, defaultAudioLanguage, channelTitle, channelId), contentDetails(duration), statistics(viewCount, dislikeCount, commentCount, likeCount, favoriteCount), liveStreamingDetails'
     ).execute()
 
     # print(response.get('items', []))

@@ -8,79 +8,84 @@ class DBVideosUploader:
     preprocessor = Preprocessor()
     db_handler = DBHandler()
 
-    def __init__(self, table_name):
+    def __init__(self, table_name='temp_videos'):
         self.table_name = table_name
-
-    def q_exists(self, video_id, q):
-        sql = "SELECT `q` FROM videos WHERE `videoId`='%s' AND match(q) against('\"%s\"' in boolean mode);" % (
-            video_id, q)
-        self.mycursor.execute(sql)
-        result = self.mycursor.fetchall()
-        exists = len(result) != 0
-        if exists:
-            print('\nq already exists:', q)
-        else:
-            print('\nq not exist:', q)
-            self.__update_q(video_id, q)
-
-        return exists
-
-    def __update_q(self, video_id, new_q):
+    
+    def upload_videos(self, list_responses):
+        _num_videos = len(list_responses)
+        for i, _dict_response in enumerate(list_responses):
+            print('Processing %d out of %d videos' % (i+1, _num_videos))
+            self.__upload_video(_dict_response)
+        
+        return True
+    
+    def __update_idx_paper(self, idx_video, new_idx_paper):
         self.db_handler.sql_handler.select(
-            self.table_name, ['idx', 'q']).where('videoId', video_id)
+            self.table_name, 'idx_paper').where('idx', idx_video)
         result = self.db_handler.execute().fetchall()
         # sql = "SELECT `q` FROM videos WHERE `videoId`='%s';" % video_id
         # self.mycursor.execute(sql)
         # result = self.mycursor.fetchall()
-        idx = result[0][0]
-        old_q = result[0][1] if len(result) else ''
-        print('Updating q to:', old_q + ', %s' % new_q)
+        old_idx_paper = result[0][0] if len(result) else ''
+        print('\tUpdating idx_paper to:', old_idx_paper + ', ' + new_idx_paper)
         self.db_handler.sql_handler.update(self.table_name, dict_columns_values={
-                                           'q': old_q + ', ' + new_q}).where('idx', idx)
+                                           'idx_paper': old_idx_paper + ', ' + new_idx_paper}).where('idx', idx_video)
         self.db_handler.execute()
+        return True
+
+    def __update_q(self, idx_video, new_q):
+        self.db_handler.sql_handler.select(
+            self.table_name, 'q').where('idx', idx_video)
+        result = self.db_handler.execute().fetchall()
+        # sql = "SELECT `q` FROM videos WHERE `videoId`='%s';" % video_id
+        # self.mycursor.execute(sql)
+        # result = self.mycursor.fetchall()
+        old_q = result[0][0] if len(result) else ''
+        print('\tUpdating q to:', old_q + ', %s' % new_q)
+        self.db_handler.sql_handler.update(self.table_name, dict_columns_values={
+                                           'q': old_q + ', ' + new_q}).where('idx', idx_video)
+        self.db_handler.execute()
+        return True
 
         # sql = "UPDATE videos SET q='%s' WHERE videoId='%s';" % (
         # old_q + ', %s' % new_q, video_id)
         # self.mycursor.execute(sql)
         # self.conn.commit()
 
-    def __video_id_exists(self, video_id):
+    def __get_idx_by_video_id(self, video_id):
         self.db_handler.sql_handler.select(
-            self.table_name, 1).where('videoId', video_id, '=')
+            self.table_name, 'idx').where('videoId', video_id, '=')
         result = self.db_handler.execute().fetchall()
 
         # sql = "SELECT 1 FROM videos WHERE videos.videoId='%s';" % (video_id)
         # print('\nsql:', sql)
         # self.mycursor.execute(sql)
         # result = self.mycursor.fetchall()
-        exists = len(result) != 0
+        # exists = len(result) != 0
         # if exists:
         #     print('\tVideo already exists:', video_id)
         #     if args.q:
         #         self.q_exists(video_id, args.q)
-
-        return exists
-
-    def upload_videos(self, list_responses):
-        _num_videos = len(list_responses)
-        for i, _dict_response in enumerate(list_responses):
-            print('Processing %d out of %d videos' % (i+1, _num_videos))
-            self.__upload_video(_dict_response)
+        if len(result):
+            return result[0][0]
+        return False
 
     def __upload_video(self, _dict_response):
-        _video_id = _dict_response['items']['id']
+        _video_id = _dict_response['items'][0]['id']
         # liveStreaming: set True if exists
-        if 'liveStreamingDetails' in _dict_response['items'].keys():
-            _dict_response['items']['liveStreamingDetails'] = 1
+        if 'liveStreamingDetails' in _dict_response['items'][0].keys():
+            _dict_response['items'][0]['liveStreamingDetails'] = 1
 
         # Check if video already exists by videoID
-        if self.__video_id_exists(_video_id):
+        _idx_video = self.__get_idx_by_video_id(_video_id)
+        if _idx_video != False:
             print('\tVideo already exists:', _video_id)
-            self.__update_q_if_not_exist(_video_id, _dict_response['q'])
-            self.__update_idx_paper_if_not_exist(_video_id, _dict_response['idx_paper'])
+            self.__update_q_if_not_exist(_idx_video, _dict_response['q'])
+            self.__update_idx_paper_if_not_exist(_idx_video, _dict_response['idx_paper'])
+            return True
 
         # Preprocess
-        items = self.preprocessor.preprocess(_video_id)
+        items = self.preprocessor.preprocess(_dict_response['items'][0])
         custom_fields = {
             'q': _dict_response['q'], 'idx_paper': _dict_response['idx_paper']}
 
@@ -95,27 +100,41 @@ class DBVideosUploader:
 
         self.db_handler.sql_handler.insert(
             self.table_name, columns=columns, values=values)
+        self.db_handler.execute()
+        return True
         
-    def __update_idx_paper_if_not_exist(self, video_id, idx_paper):
-        pass
-
-    def __update_q_if_not_exist(self, video_id, q):
-        # Check if q exists
-        self.db_handler.sql_handler.select(self.table_name, 'q').where(
-            'videoId', video_id, '=').where('q', q, 'fulltext_list')
+    def __update_idx_paper_if_not_exist(self, idx_video, idx_paper):
+        # Check if idx_paper exists
+        self.db_handler.sql_handler.select(self.table_name, 'idx_paper').where(
+            'idx', idx_video).where('idx_paper', idx_paper, 'fulltext_list')
         result = self.db_handler.execute().fetchall()
         # sql = "SELECT `q` FROM videos WHERE `videoId`='%s' AND match(q) against('\"%s\"' in boolean mode);" % (
         # video_id, q)
         # self.mycursor.execute(sql)
         # result = self.mycursor.fetchall()
-        exists = len(result) != 0
-        if exists:
+
+        if len(result):
+            print('\tidx_paper already exists:', idx_paper)
+            return True
+        else:
+            print('\tidx_paper not exist:', idx_paper)
+            return self.__update_idx_paper(idx_video, idx_paper)
+
+    def __update_q_if_not_exist(self, idx_video, q):
+        # Check if q exists
+        self.db_handler.sql_handler.select(self.table_name, 'q').where(
+            'idx', idx_video).where('q', q, 'fulltext_list')
+        result = self.db_handler.execute().fetchall()
+        # sql = "SELECT `q` FROM videos WHERE `videoId`='%s' AND match(q) against('\"%s\"' in boolean mode);" % (
+        # video_id, q)
+        # self.mycursor.execute(sql)
+        # result = self.mycursor.fetchall()
+        if len(result):
             print('\tq already exists:', q)
+            return True
         else:
             print('\tq not exist:', q)
-            self.__update_q(video_id, q)
-
-        return exists
+            return self.__update_q(idx_video, q)
 
     def insert_into_videos(self, args, items):
         print('Inserting video:', args.video_id)
@@ -128,26 +147,25 @@ class DBVideosUploader:
         # items = preprocess_items.preprocess_ascii(items)
         # print('\nitems:', items)
 
-        self.insert('videos', items, {'q': args.q})
+        self.db_handler.insert(self.table_name, items, {'q': args.q})
 
     def update_duration(self):
         preprocessor = Preprocessor()
         sql = "SELECT idx, duration FROM videos;"
-        self.mycursor.execute(sql)
-        results = self.mycursor.fetchall()
+        self.db_handler.mycursor.execute(sql)
+        results = self.db_handler.mycursor.fetchall()
         print(type(results[0]), len(results[0]), results[0])
         for row in results:
             new_duration = preprocessor.preprocess_duration(row[1])
             sql = "UPDATE videos SET duration='%s' WHERE idx=%d;" % (
                 new_duration, row[0])
             print(sql)
-            self.mycursor.execute(sql)
-            self.conn.commit()
+            self.db_handler.mycursor.execute(sql)
+            self.db_handler.conn.commit()
 
     def set_iter_videoId(self):
-        self.mycursor.execute(self.sql_handler.select(
-            'videos', 'videoId').where('exposition', None).get_sql())
-        _result = self.mycursor.fetchall()
+        self.db_handler.sql_handler.select(self.table_name, 'videoId').where('exposition', None)
+        _result = self.db_handler.mycursor.fetchall()
         print('result:', _result)
         self._iter = iter(_result)
         self._curr_video_id = None
@@ -170,7 +188,6 @@ class DBVideosUploader:
     def get_sql_expo(self):
         assert len(self._list_video_ids) == len(self._list_expositions)
         for (_video_id, _expo) in zip(self._list_video_ids, self._list_expositions):
-            sql = self.sql_handler.update('videos', columns=['exposition'], values=[
-                                          _expo]).where('videoId', _video_id).get_sql()
-            self.mycursor.execute(sql)
-            self.conn.commit()
+            self.db_handler.sql_handler.update(self.table_name, columns=['exposition'], values=[
+                                          _expo]).where('videoId', _video_id)
+            self.db_handler.execute()

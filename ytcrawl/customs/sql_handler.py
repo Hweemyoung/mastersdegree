@@ -1,6 +1,3 @@
-from preprocessor import Preprocessor
-
-
 class SQLHandler:
     command = None
     command_set = False

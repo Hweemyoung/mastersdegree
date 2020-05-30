@@ -11,9 +11,9 @@ class DBVideosUploader:
     def __init__(self, table_name='temp_videos'):
         self.table_name = table_name
     
-    def upload_videos(self, list_responses):
-        _num_videos = len(list_responses)
-        for i, _dict_response in enumerate(list_responses):
+    def upload_videos(self, list_videos):
+        _num_videos = len(list_videos)
+        for i, _dict_response in enumerate(list_videos):
             print('Processing %d out of %d videos' % (i+1, _num_videos))
             self.__upload_video(_dict_response)
         
@@ -72,20 +72,28 @@ class DBVideosUploader:
 
     def __upload_video(self, _dict_response):
         _video_id = _dict_response['items'][0]['id']
-        # liveStreaming: set True if exists
-        if 'liveStreamingDetails' in _dict_response['items'][0].keys():
-            _dict_response['items'][0]['liveStreamingDetails'] = 1
 
         # Check if video already exists by videoID
         _idx_video = self.__get_idx_by_video_id(_video_id)
         if _idx_video != False:
             print('\tVideo already exists:', _video_id)
             self.__update_q_if_not_exist(_idx_video, _dict_response['q'])
-            self.__update_idx_paper_if_not_exist(_idx_video, _dict_response['idx_paper'])
+            self.__update_idx_paper_if_not_exist(_idx_video, str(_dict_response['idx_paper']))
             return True
 
+        items = _dict_response['items'][0]
+        # Manual preprocessing
+        # liveStreaming: set True if exists
+        if 'liveStreamingDetails' in items.keys():
+            items.pop('liveStreamingDetails')
+            items['liveStreaming'] = 1
+        else:
+            items['liveStreaming'] = 0
+        # key 'id' to 'videoId'
+        items['videoId'] = items.pop('id')
+
         # Preprocess
-        items = self.preprocessor.preprocess(_dict_response['items'][0])
+        items = self.preprocessor.preprocess(items)
         custom_fields = {
             'q': _dict_response['q'], 'idx_paper': _dict_response['idx_paper']}
 
@@ -97,6 +105,7 @@ class DBVideosUploader:
         # columns = self.preprocessor.wrap_columns(columns)
 
         values = tuple(values)
+        # print('\tValues:', values)
 
         self.db_handler.sql_handler.insert(
             self.table_name, columns=columns, values=values)

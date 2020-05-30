@@ -70,42 +70,48 @@ class YouTubeVideos(YouTube):
     def __init__(self, args, method_name='videos'):
         super(YouTubeVideos, self).__init__(args, method_name)
 
-    def set_list_video_ids(self, list_video_ids):
-        self.list_video_ids = list_video_ids
+    def set_list_searches(self, list_searches):
+        self.list_searches = list_searches
         return self
 
-    def start_search(self, args=None, list_video_ids=None):
+    def start_search(self, args=None, list_searches=None):
         if args == None:
             args = self.args
-        if list_video_ids == None:
-            list_video_ids = self.list_video_ids
-        _list_responses = self.__search(args, list_video_ids)
+        if list_searches == None:
+            list_searches = self.list_searches
+        _list_responses = self.__search(args, list_searches)
         self.save_task(_list_responses, args)
         return _list_responses
 
-    def __search(self, args, list_video_ids=None):
+    def __search(self, args, list_searches=None):
         _list_responses = list()
-        if list_video_ids:
-            _num_video_ids = len(list_video_ids)
+        if list_searches:
+            _num_video_ids = len(list_searches)
             print('# of video IDs: ', _num_video_ids)
-            for i, _video_id in enumerate(list_video_ids):
+            for i, _dict_search in enumerate(list_searches):
                 print('Processing %d out of %d video IDs' %
                       (i+1, _num_video_ids))
-                args['id'] = _video_id
+                args['id'] = _dict_search['items'][0]['id']['videoId']
+                args['q'] = _dict_search['q']
+                args['idx_paper'] = _dict_search['idx_paper']
 
-                args['idx_paper'] = args['list_idx_papers'][i]
+                _response = self.__youtube_videos(args)
+                _response['q'] = args['q']
+                _response['idx_paper'] = args['idx_paper']
+                self.list_responses.append(_response)
 
-                self.list_responses.append(self.__youtube_videos(args))
-
-        elif 'id' in args.keys():
-            # q must be already set in args
-            self.list_responses.append(self.__youtube_videos(args))
+        elif args['id'] != None:
+            # videoId must be already set in args
+            _response = self.__youtube_videos(args)
+            _response['q'] = args['q']
+            _response['idx_paper'] = args['idx_paper']
+            self.list_responses.append(_response)
         else:
             raise KeyError('Video ID not given')
         return self.list_responses
-    
+
     def __youtube_videos(self, options):
-        print('Video ID: ', args['id'])
+        print('Video ID: ', options['id'])
         try:
             _response = self.youtube.videos().list(
                 part=options['part'],
@@ -128,9 +134,8 @@ class YouTubeVideos(YouTube):
             print('Rebuilding youtube with new api key.')
             self.build_youtube()
             _response = False
-        
-        return _response
 
+        return _response
 
 
 def youtube_videos(options):

@@ -48,7 +48,9 @@ class SQLHandler:
     def insert(self, table, columns=None, values=None, dict_columns_values=None):
         if dict_columns_values != None:
             columns = list(dict_columns_values.keys())
-            self.values = tuple(dict_columns_values.values())
+            values = tuple(dict_columns_values.values())
+        
+        self.values = values
 
         # self.values = self.__preprocess_list_values(values)
         self.command = "INSERT INTO %s (%s) VALUES (" % (table, ', '.join(columns))\
@@ -149,9 +151,9 @@ class SQLHandler:
             self.__check_type(value, 'str')
             list_clauses = []
             list_clauses.append(
-                "match(%s) against ('%s,' in boolean mode)" % (column, value))
+                "match(%s) against ('\"%s,\"' in boolean mode)" % (column, value))
             list_clauses.append(
-                "match(%s) against (' %s' in boolean mode)" % (column, value))
+                "match(%s) against ('\" %s\"' in boolean mode)" % (column, value))
             list_clauses.append(
                 "`%s`='%s'" % (column, value))
 

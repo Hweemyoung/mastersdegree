@@ -36,20 +36,15 @@ def _check_arxiv_id_exists():
 
 def _temp():
     db_handler = DBHandler()
-    _list = list()
-    for _fname in os.listdir('./results/search'):
-        _fp = './results/search/' + _fname
-        with open(_fp, 'r') as _f:
-            _list_temp = json.load(_f)
-        for _dict_q in _list_temp:
-            db_handler.sql_handler.select('temp_papers', 'idx').where('urls', '%'+_dict_q['q']+'%', mode='like')
-            _result = db_handler.execute().fetchall()
-            _dict_q['idx_paper'] = _result[0][0]
-            _list.append(_dict_q)
-    with open('./results/search/search_20200525_094200.txt', 'w+') as _f:
-        json.dump(_list, _f)
+    db_handler.sql_handler.select('temp_videos', 'channelId')
+    _list_channel_ids = db_handler.execute().fetchall()
+    _list_channel_ids = list(set(list(map(lambda tup: tup[0], _list_channel_ids))))
+    with open('./results/channels/temp_channel_ids.txt', 'w+') as f:
+        json.dump(_list_channel_ids, f)
+
     
-_temp()
+if __name__ == '__main__':
+    _temp()
     # sql_handler = SQLHandler()
     
 

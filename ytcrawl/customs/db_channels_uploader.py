@@ -1,17 +1,74 @@
 from db_handler import DBHandler
+from preprocessor import Preprocessor
 from datetime import datetime
 
 
-class DBChannelsUploader(DBHandler):
-    def channel_id_exists(self, channel_id):
-        sql = "SELECT 1 FROM channels WHERE channels.channelId='%s';" % (
-            channel_id)
-        print('\nsql:', sql)
-        self.mycursor.execute(sql)
-        result = self.mycursor.fetchall()
-        if len(result) != 0:
-            print('\nChannels already exists:', channel_id)
-        return len(result) != 0
+class DBChannelsUploader:
+    preprocessor = Preprocessor()
+    db_handler = DBHandler()
+
+    def __init__(self, table_name='channels'):
+        self.table_name = table_name
+    
+    def upload_channels(self, list_channels):
+        _num_channels = len(list_channels)
+        for i, _dict_response in enumerate(list_channels):
+            print('Processing %d out of %d videos' % (i+1, _num_channels))
+            self.__upload_channel(_dict_response)
+        
+        return True
+    
+    def __upload_channel(self, _dict_response):
+        _channel_id = _dict_response['items'][0]['id']
+
+        # Check if channel already exists by channelID
+        _idx_channel = self.__get_idx_by_channel_id(_channel_id)
+        if _idx_channel != False:
+            print('\tChannel already exists:', _channel_id)
+            return True
+
+        items = _dict_response['items'][0]
+        
+        # Manual preprocessing
+        # key 'id' to 'videoId'
+        items['channelId'] = items.pop('id')
+
+        # Preprocess
+        items = self.preprocessor.preprocess(items)
+
+        # Get columns, values
+        columns, values = self.db_handler.get_columns_values(
+            items, custom_fields={})
+
+        # Wrap columns
+        # columns = self.preprocessor.wrap_columns(columns)
+
+        values = tuple(values)
+        # print('\tValues:', values)
+
+        self.db_handler.sql_handler.insert(
+            self.table_name, columns=columns, values=values)
+        self.db_handler.execute()
+        return True
+    
+    def __get_idx_by_channel_id(self, channel_id):
+        self.db_handler.sql_handler.select(
+            self.table_name, 'idx').where('channelId', channel_id, '=')
+        result = self.db_handler.execute().fetchall()
+
+        # sql = "SELECT 1 FROM videos WHERE videos.videoId='%s';" % (channel_id)
+        # print('\nsql:', sql)
+        # self.mycursor.execute(sql)
+        # result = self.mycursor.fetchall()
+        # exists = len(result) != 0
+        # if exists:
+        #     print('\tVideo already exists:', channel_id)
+        #     if args.q:
+        #         self.q_exists(channel_id, args.q)
+        if len(result):
+            return result[0][0]
+        return False
+
 
     # def insert_into_channels(self, args, items):
     #     print('\Inserting channel:', args.channel_id)

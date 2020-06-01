@@ -1,13 +1,11 @@
 import json
 import calendar
 from datetime import datetime, timedelta
-from os import listdir
+from os import listdir, path
 from db_handler import DBHandler
 
 
 class VideosOrganizer(DBHandler):
-    # 1 Load json -> citation_id.txt
-    # 2
     dict_dt_format = {
         'datetime': '%Y-%m-%d %H:%M:%S',
         'date': '%Y-%m-%d',
@@ -29,9 +27,12 @@ class VideosOrganizer(DBHandler):
     tup_cols_videos = ('idx', 'videoId', 'publishedAt', 'defaultLanguage', 'defaultAudioLanguage', 'channelId', 'duration',
                        'viewCount', 'dislikeCount', 'commentCount', 'favoriteCount', 'liveStreaming', 'content', 'idx_paper', 'queriedAt')
 
-    def __init__(self, table_name_videos):
+    dir_stats = './stats/videos'
+
+    def __init__(self, table_name_videos, table_name_papers):
         super(VideosOrganizer, self).__init__()
         self.table_name_videos = table_name_videos
+        self.table_name_papers = table_name_papers
 
     def set_list_idx_papers(self, list_idx_papers):
         # self.sql_handler.select(self.table_name_papers, 'idx').where('subject_1', 'Computer Science').where('subject_2', 'Machine Learning')
@@ -47,7 +48,7 @@ class VideosOrganizer(DBHandler):
             _dict_stats = self.__get_stats_from_idx_paper(_idx_paper)
             if _dict_stats == False:
                 _num_failed += 1
-                self.dict_msg_err[_fname[:-4]] = self.msg_err
+                self.dict_msg_err[str(_idx_paper)] = self.msg_err
             else:
                 self.__save_stats(_dict_stats, overwrite=overwrite)
 
@@ -62,7 +63,7 @@ class VideosOrganizer(DBHandler):
     def __save_stats(self, dict_stats, overwrite):
         if overwrite != True:
             try:
-                with open('./stats/twitter/%s.txt' % dict_stats['citation_id'], 'r') as f:
+                with open(os.path.join(self.dir_stats, dict_stats['citation_id']) './stats/twitter/%s.txt' % dict_stats['citation_id'], 'r') as f:
                     _queriedAt_old = json.load(f)['queriedAt']
             except IOError:  # No such file or directory
                 pass
@@ -92,16 +93,6 @@ class VideosOrganizer(DBHandler):
             return False
         return self.__get_stats_from_dict_tweets(_dict_tweets)
 
-    def __get_stats_from_idx_paper(self, idx_paper):
-        print('\tidx_paper: %s' % idx_paper)
-        _list_videos = self.__get_video_from_db(idx_paper)
-        if not _list_videos:  # No such records
-            return False
-
-        for _row in _list_videos:
-            _dict_row = dict(zip(self.tup_cols_videos, _row))
-            self.__get_stats_from_video(_dict_row)
-
     def __get_video_from_db(self, idx_paper):
         self.sql_handler.select(self.table_name_videos, self.tup_cols_videos).where(
             'idx_papers', idx_paper, 'fulltext_list')
@@ -124,11 +115,87 @@ class VideosOrganizer(DBHandler):
 
         return _dict_tweets
 
-    def __get_stats_from_video(self, dict_row, interval='month'):
-        print('\tidx_video: %d' % dict_row['idx'])
+    def __get_stats_from_idx_paper(self, idx_paper, interval='month'):
+        print('\tidx_paper: %s' % idx_paper)
+        _list_videos = self.__get_video_from_db(idx_paper)
+        if not _list_videos:  # No such records
+            self.msg_err = "idx_paper not exist."
+            return False
 
+        # idx_paper, idx_arxiv, queriedAt, interval, dt_start, dt_end, publishedAt, videos: {}
         _dict_stats = dict()
+        _dict_stats['idx_paper'] = idx_paper
         
+        self.sql_handler.select(self.table_name_papers,
+                                ['publishedAt', 'idx_arxiv']).where('idx', idx_paper)
+        _result = self.execute().fetchall()[0]
+        _dict_stats['publishedAt'] = _result[0]
+        _dict_stats['idx_arxiv'] = _result[1]
+
+        _dict_stats['queriedAt'] = datetime.now().strftime(
+            self.dict_dt_format['datetime'])
+        _dict_stats['interval'] = interval
+        _dict_stats['videos'] = dict()
+
+        _dt_oldest = datetime.now()
+        _dt_newest = datetime.now()
+
+        for _row in _list_videos:
+            _dict_video = dict(zip(self.tup_cols_videos, _row))
+
+            # datetime
+            _dt_video = datetime.strptime(
+                _dict_video['datetime'],
+                self.dict_dt_format['datetime']
+            )
+            # Update _dt_oldest, _dt_newest
+            _dt_oldest = min(_dt_oldest, _dt_video)
+            _dt_newest = max(_dt_newest, _dt_video)
+
+            # if dt not exists yet
+            _key_dt = _dt_video.strftime(self.dict_dt_format[interval])
+            if _key_dt not in _dict_stats['videos']['count_videos']:
+                _dict_stats['videos']['count_videos'][_key_dt] = 0
+                _dict_stats['videos']['count_duration'][_key_dt] = 0
+                _dict_stats['videos']['viewCount'][_key_dt] = 0
+                _dict_stats['videos']['dislikeCount'][_key_dt] = 0
+                _dict_stats['videos']['commentCount'][_key_dt] = 0
+                _dict_stats['videos']['favoriteCount'][_key_dt] = 0
+                _dict_stats['videos']['count_lives'][_key_dt] = 0
+                _dict_stats['videos']['content'][_key_dt] = 0
+
+            # Add count
+            _dict_stats['videos']['count_videos'][_key_dt] += 1
+            _dict_stats['videos']['count_duration'][_key_dt] += int(
+                _dict_video['duration'])
+            _dict_stats['videos']['viewCount'][_key_dt] += int(
+                _dict_video['viewCount'])
+            _dict_stats['videos']['dislikeCount'][_key_dt] += int(
+                _dict_video['dislikeCount'])
+            _dict_stats['videos']['commentCount'][_key_dt] += int(
+                _dict_video['commentCount'])
+            _dict_stats['videos']['favoriteCount'][_key_dt] += int(
+                _dict_video['favoriteCount'])
+            _dict_stats['videos']['count_lives'][_key_dt] += int(
+                _dict_video['liveStreaming'])
+            _dict_stats['videos']['content'][_key_dt] += int(
+                _dict_video['content'])
+
+        # Fill out empty DTs
+        _dt_publish = datetime.strptime(
+            _dict_stats['publishedAt'], self.dict_dt_format['date'])
+        _dt_oldest = min(_dt_oldest, _dt_publish)
+        _dt_newest = max(_dt_newest, _dt_publish)
+
+        _dict_stats['dt_start'] = _dt_oldest.strftime(
+            self.dict_dt_format[interval])
+        _dict_stats['dt_end'] = _dt_newest.strftime(
+            self.dict_dt_format[interval])
+        _dict_stats = self.__fill_empty_dts(
+            _dict_stats, _dt_oldest, _dt_newest, interval)
+        _dict_stats = self.__cast_to_str(_dict_stats)
+
+        return _dict_stats
 
     def __get_stats_from_dict_tweets(self, dict_tweets, interval='month'):
         print('\tCitation_id: %s\tProcessing: %d tweets' %

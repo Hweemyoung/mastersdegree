@@ -29,15 +29,9 @@ class SQLHandler:
     def update(self, table, columns=None, values=None, dict_columns_values=None):
         if dict_columns_values != None:
             columns = list(dict_columns_values.keys())
-            # values = list(dict_columns_values.values())
-            self.values = tuple(dict_columns_values.values())
-
-        # self.values = self.__preprocess_list_values(values)
-
-        # key_val_pairs = list()
-        # for col, val in zip(columns, values):
-            # key_val_pairs.append("%s=%s" % (col, val))
-        # key_val_pairs = ', '.join(key_val_pairs)
+            values = tuple(dict_columns_values.values())
+        
+        self.values = values
 
         key_val_pairs = ', '.join(tuple(map(lambda col: col + '=%s', columns)))
 
@@ -148,7 +142,8 @@ class SQLHandler:
                 if type(value) != str else "`%s` LIKE '%s'" % (column, value)
                 
         elif mode == 'fulltext_list':
-            self.__check_type(value, 'str')
+            value = str(value)
+            # self.__check_type(value, 'str')
             list_clauses = []
             list_clauses.append(
                 "match(%s) against ('\"%s,\"' in boolean mode)" % (column, value))

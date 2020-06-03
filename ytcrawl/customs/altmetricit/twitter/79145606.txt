@@ -1,0 +1,1 @@
+{"tab": "twitter", "completed": "1", "twitter": {"1246888383965736961": {"author": "@networkspapers", "followers": "1,017", "datetime": "2020-04-05 19:52:11", "content_summary": "Appl. Network Sci.: A survey on graph kernels https://t.co/WbCRFOxa98"}}, "citation_id": "79145606", "queriedAt": "2020-06-04 01:25:25"}

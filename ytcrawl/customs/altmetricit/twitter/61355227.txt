@@ -1,0 +1,1 @@
+{"tab": "twitter", "completed": "1", "twitter": {"1134490080880599040": {"author": "@ElCep", "followers": "786", "datetime": "2019-05-31 16:01:27", "content_summary": "A cooperative game for automated learning of elasto-plasticity knowledge graphs and models with AI-guided experimentation https://t.co/S14MGAR6MM"}}, "citation_id": "61355227", "queriedAt": "2020-06-04 00:23:15"}

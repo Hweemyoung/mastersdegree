@@ -39,7 +39,7 @@ class AltmetricIt:
         self.overwrite = args['overwrite']  # Not used...
         # self.__init_find_methods()
         self.__set_dict_tabs_args(args)
-        if args['new_bookmarklet']:
+        if not args['no_bookmarklet']:
             self.__install_bookmarklet()
 
     def __set_dict_tabs_args(self, args):
@@ -172,7 +172,8 @@ class AltmetricIt:
                 _num_files, _num_failed))
 
     def crawl_altmetric_from_papers(self, overwrite='incomplete'):
-        self.db_handler.sql_handler.select(self.table, ('idx', 'urls', 'altmetric_id'))
+        # self.db_handler.sql_handler.select(self.table, ('idx', 'urls', 'altmetric_id'))
+        self.db_handler.sql_handler.select(self.table, ('idx', 'urls', 'altmetric_id')).where('altmetric_id', None).where('subject_1', 'Computer Science').where('subject_2', ['Machine Learning', 'Artificial Intelligence'], 'in').where('idx', 12209, '>')
         # self.db_handler.sql_handler.select(self.table, ('idx', 'urls', 'altmetric_id')).order_by(dict_columns_orders={'idx': 'desc'})
         _records = self.db_handler.execute().fetchall()
         # _records = _records[:2]
@@ -223,7 +224,8 @@ class AltmetricIt:
             # Get citation id
             _citation_id = self.__get_altmetric_citation_id(_div_wrapper)
             if _citation_id == False:  # No altmetric given to paper
-                print('\tNo altmetric score given.')
+                self.msg_error = 'No altmetric score given.'
+                print('\t%s' % self.msg_error)
                 return False
 
             # Update table set altmetric_id
@@ -435,8 +437,12 @@ class AltmetricIt:
         # return False
 
         # Find: #altmetric-wrapper div.article-details a
-        _href_details = div_wrapper.find_element_by_class_name(
-            'article-details').find_element_by_tag_name('a').get_attribute('href')
+        # _href_details = div_wrapper.find_element_by_class_name(
+            # 'article-details').find_element_by_tag_name('a').get_attribute('href')
+        _div_article_details = self.__find_recursive(div_wrapper, 'article-details', 'class', max_times_find=self.max_times_find)
+        if _div_article_details == False:
+            return False
+        _href_details = _div_article_details.find_element_by_tag_name('a').get_attribute('href')
         _list_sentences = self.regex_citation_id.findall(_href_details)
         return self.regex_citation_id.findall(_href_details)[0].split('=')[1] if _list_sentences else False
 

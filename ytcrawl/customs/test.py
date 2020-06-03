@@ -85,28 +85,35 @@ def test_plt(num_cols, max_fig=30):
         )) + list(_dict_stats_twitter['twitter']['count_tweets'].keys())))
         x_vals.sort()
         y_vals_videoCount = list()
+        # y_vals_explanationCount = list()
         y_vals_tweetCount = list()
         for _key in x_vals:
-            val_videoCount = int(_dict_stats_videos['videos']['videoCount'][_key]
+            val_videoCount = int(_dict_stats_videos['videos']['viewCount'][_key]
                                  ) if _key in _dict_stats_videos['videos']['videoCount'] else 0
             y_vals_videoCount.append(val_videoCount)
+            # val_explanationCount = int(_dict_stats_videos['videos']['content'][_key]['paper_explanation']
+                                #  ) if _key in _dict_stats_videos['videos']['videoCount'] else 0
+            # y_vals_explanationCount.append(val_explanationCount)
             val_tweetCount = int(_dict_stats_twitter['twitter']['count_tweets'][_key]
                                  ) if _key in _dict_stats_twitter['twitter']['count_tweets'] else 0
             y_vals_tweetCount.append(val_tweetCount)
 
+        x_vals = [val[2:] for val in x_vals] # YYYY-MM to YY-MM
         primary_axis = axes[_num_fig // num_cols, _num_fig % num_cols]
-        primary_axis.plot(x_vals, y_vals_tweetCount, 'b-')
+        primary_axis.set_title(_idx_arxiv, fontsize=10) # Title: idx_arxiv
         primary_axis.set_ylim([0.1, 100])  # Tweets
+        primary_axis.plot(x_vals, y_vals_tweetCount, 'b-')
         primary_axis.set_yscale('log')
         primary_axis.set_xticklabels(labels=x_vals, rotation=90)
         # primary_axis.set_xlabel('Month')
         # primary_axis.set_ylabel('video')
         secondary_axis = primary_axis.twinx()
         secondary_axis.plot(x_vals, y_vals_videoCount, 'g--')
-        secondary_axis.set_ylim([0, 3])  # Videos
+        secondary_axis.set_ylim([0.1, 10000])  # Videos
+        secondary_axis.set_yscale('log')
 
         _num_fig += 1
-    plt.subplots_adjust(wspace=0.4, hspace=0.4)
+    plt.subplots_adjust(wspace=0.4, hspace=1)
     # plt.tight_layout(pad=0, w_pad=0.1, h_pad=0)
     # plt.xticks(rotation='vertical')
     plt.show()

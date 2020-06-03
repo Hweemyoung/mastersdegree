@@ -1,0 +1,1 @@
+{"tab": "twitter", "completed": "1", "twitter": {"1095231534406266881": {"author": "@arxivml", "followers": "787", "datetime": "2019-02-12 08:02:00", "content_summary": "\"Differential Similarity in Higher Dimensional Spaces: Theory and Applications\", L\uff0e Thorne McCarty https://t.co/i3w4VgBdyL"}}, "citation_id": "55335171", "queriedAt": "2020-06-03 23:07:14"}

@@ -151,10 +151,17 @@ class SQLHandler:
                 "match(%s) against ('\" %s\"' in boolean mode)" % (column, value))
             list_clauses.append(
                 "`%s`='%s'" % (column, value))
-
             clause = self.get_where_from_list(list_clauses, 'or')
+
         elif mode == 'fulltext':
             clause = "match(%s) against (\"%s\" in boolean mode)" % (column, value)
+        
+        elif mode == 'in':
+            _list_vals_wrapped = list()
+            for val in value:
+                _list_vals_wrapped.append(str(val)) if type(val) != str else _list_vals_wrapped.append('\'' + val + '\'')
+            clause = "%s IN (%s)"%(column, ', '.join(_list_vals_wrapped))
+
         else:
             raise ValueError()
 

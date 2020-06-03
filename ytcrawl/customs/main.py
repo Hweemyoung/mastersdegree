@@ -342,7 +342,7 @@ def altmetric_url_from_papers():
     parser.add_argument('--driver', help='Driver', default='chrome')
     parser.add_argument('--p_driver', help='Driver path',
                         default='./chromedriver_83')
-    parser.add_argument('--new_bookmarklet', help='Whether to install new bookmarklet or not', default=True)
+    parser.add_argument('--no_bookmarklet', help='Whether to install new bookmarklet or not', action='store_true', default=False)
     parser.add_argument('--max_times_find', type=int, help='Max times to find', default=5)
     parser.add_argument('--sec_sleep', type=float, help='Sleep seconds', default=1.0)
 

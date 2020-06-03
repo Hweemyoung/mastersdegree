@@ -1,0 +1,1 @@
+{"tab": "twitter", "completed": "1", "twitter": {"1100597170242244610": {"author": "@arxiv_cs_LG", "followers": "273", "datetime": "2019-02-27 03:23:08", "content_summary": "A Feature Selection Based on Perturbation Theory. Javad Rahimipour Anaraki and Hamid Usefi https://t.co/55mpPZ04IS"}}, "citation_id": "56103679", "queriedAt": "2020-06-04 00:35:45"}

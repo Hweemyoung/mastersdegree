@@ -1,0 +1,1 @@
+{"tab": "twitter", "completed": "1", "twitter": {"1105746726030204928": {"author": "@ComputerPapers", "followers": "613", "datetime": "2019-03-13 08:25:37", "content_summary": "A Capsule-unified Framework of Deep Neural Networks for Graphical Programming. https://t.co/XwkfdnPxN8"}}, "citation_id": "56944558", "queriedAt": "2020-06-04 00:33:00"}

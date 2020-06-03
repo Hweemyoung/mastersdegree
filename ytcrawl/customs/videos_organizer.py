@@ -9,24 +9,6 @@ import collections.abc
 
 
 class VideosOrganizer(Organizer):
-    dict_dt_format = {
-        'datetime': '%Y-%m-%d %H:%M:%S',
-        'date': '%Y-%m-%d',
-        'month': '%Y-%m',
-        # 'quarter': ,
-        'year': '%Y'
-    }
-    dict_interval = {
-        'day': 1,
-        'week': 7,
-        'month': 1,
-        'quarter': 3,
-        'half': 6,
-        'year': 12
-    }
-    dict_msg_err = dict()
-    msg_err = ''
-
     tup_cols_videos = ('idx', 'videoId', 'publishedAt', 'defaultLanguage', 'defaultAudioLanguage', 'channelId', 'duration',
                        'viewCount', 'dislikeCount', 'commentCount', 'favoriteCount', 'liveStreaming', 'content', 'idx_paper', 'queriedAt')
     tup_enum_content = ('paper_explanation', 'paper_supplementary', 'paper_application',

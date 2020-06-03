@@ -1,0 +1,1 @@
+{"queriedAt": "2020-06-03 14:58:41", "completed": "1", "citation_id": "54971818", "tab": "twitter", "twitter": {"1092684876141248512": {"author": "@arxivml", "datetime": "2019-02-05 07:22:30", "content_summary": "\"Finite-Time Error Bounds For Linear Stochastic Approximation and TD Learning\", R\uff0e Srikant, Lei Ying https://t.co/dCRARyeK2D", "followers": "768"}}}

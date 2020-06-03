@@ -230,6 +230,7 @@ class AltmetricIt:
             self.db_handler.sql_handler.update(table, dict_columns_values={
                                                'altmetric_id': _citation_id}).where('idx', idx_paper)
             self.db_handler.execute()
+            print('\tCitation_id set on DB.')
 
         return self.__update_twitter_from_citation_id(_citation_id, overwrite=overwrite)
 

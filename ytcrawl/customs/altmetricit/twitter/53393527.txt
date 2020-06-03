@@ -1,1 +1,1 @@
-{"twitter": {}, "queriedAt": "2020-05-21 19:10:02", "completed": "0", "citation_id": "53393527", "tab": "twitter"}
+{"completed": "0", "queriedAt": "2020-06-03 16:07:15", "tab": "twitter", "twitter": {}, "citation_id": "53393527"}

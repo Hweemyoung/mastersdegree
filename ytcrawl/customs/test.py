@@ -6,6 +6,7 @@ from db_handler import DBHandler
 from sql_handler import SQLHandler
 
 from datetime import datetime
+from random import shuffle
 
 import urllib.request
 from bs4 import BeautifulSoup
@@ -19,6 +20,7 @@ from altmetric_it import AltmetricIt
 
 import json
 import os
+
 
 def _check_arxiv_id_exists():
     with open('./test.txt') as fp:
@@ -34,19 +36,86 @@ def _check_arxiv_id_exists():
             print(_dict_citation['arxivId'])
     print(_list_i_no_arxiv_id)
 
+
 def _temp():
     db_handler = DBHandler()
     db_handler.sql_handler.select('temp_videos', 'channelId')
     _list_channel_ids = db_handler.execute().fetchall()
-    _list_channel_ids = list(set(list(map(lambda tup: tup[0], _list_channel_ids))))
+    _list_channel_ids = list(
+        set(list(map(lambda tup: tup[0], _list_channel_ids))))
     with open('./results/channels/temp_channel_ids.txt', 'w+') as f:
         json.dump(_list_channel_ids, f)
 
-    
+
+def test_plt(num_cols, max_fig=30):
+    db_handler = DBHandler()
+    _list_idx_arxiv = [_fname[:-4] for _fname in os.listdir('./stats/videos')]
+    shuffle(_list_idx_arxiv)
+    _num_fig = 0
+    _iter_idx_arxiv = iter(_list_idx_arxiv)
+
+    fig, axes = plt.subplots(max_fig//num_cols + 1, num_cols)
+
+    while _num_fig < max_fig:
+        try:
+            _idx_arxiv = next(_iter_idx_arxiv)
+        except StopIteration:
+            print('\tList idx_arxiv exhausted.')
+            break
+
+        with open('./stats/videos/%s.txt' % _idx_arxiv, 'r') as f:
+            _dict_stats_videos = json.load(f)
+        db_handler.sql_handler.select(
+            'papers_cs', 'altmetric_id').where('idx_arxiv', _idx_arxiv)
+
+        altmetric_id = db_handler.execute().fetchall()[0][0]
+        if altmetric_id == None:
+            print('\tAltmetric_id not found.')
+            continue
+
+        try:
+            f = open('./stats/twitter/%s.txt' % altmetric_id, 'r')
+        except FileNotFoundError:
+            print('\tTwitter file not found.')
+            continue
+        else:
+            _dict_stats_twitter = json.load(f)
+
+        x_vals = list(set(list(_dict_stats_videos['videos']['videoCount'].keys(
+        )) + list(_dict_stats_twitter['twitter']['count_tweets'].keys())))
+        x_vals.sort()
+        y_vals_videoCount = list()
+        y_vals_tweetCount = list()
+        for _key in x_vals:
+            val_videoCount = int(_dict_stats_videos['videos']['videoCount'][_key]
+                                 ) if _key in _dict_stats_videos['videos']['videoCount'] else 0
+            y_vals_videoCount.append(val_videoCount)
+            val_tweetCount = int(_dict_stats_twitter['twitter']['count_tweets'][_key]
+                                 ) if _key in _dict_stats_twitter['twitter']['count_tweets'] else 0
+            y_vals_tweetCount.append(val_tweetCount)
+
+        primary_axis = axes[_num_fig // num_cols, _num_fig % num_cols]
+        primary_axis.plot(x_vals, y_vals_tweetCount, 'b-')
+        primary_axis.set_ylim([0.1, 100])  # Tweets
+        primary_axis.set_yscale('log')
+        primary_axis.set_xticklabels(labels=x_vals, rotation=90)
+        # primary_axis.set_xlabel('Month')
+        # primary_axis.set_ylabel('video')
+        secondary_axis = primary_axis.twinx()
+        secondary_axis.plot(x_vals, y_vals_videoCount, 'g--')
+        secondary_axis.set_ylim([0, 3])  # Videos
+
+        _num_fig += 1
+    plt.subplots_adjust(wspace=0.4, hspace=0.4)
+    # plt.tight_layout(pad=0, w_pad=0.1, h_pad=0)
+    # plt.xticks(rotation='vertical')
+    plt.show()
+
+
 if __name__ == '__main__':
-    _temp()
+    # _temp()
+    test_plt(num_cols=6, max_fig=20)
     # sql_handler = SQLHandler()
-    
 
     # with open('table.csv', newline='') as f:
     # table = csv.reader(f)
@@ -75,9 +144,6 @@ if __name__ == '__main__':
     #         ax.text(i, j, str(c), va='center', ha='center')
 
     # plt.show()
-
-
-
 
     # db_papers_uploader = DBPapersUploader()
 

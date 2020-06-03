@@ -19,6 +19,7 @@ class DBChannelsUploader:
         return True
     
     def __upload_channel(self, _dict_response):
+        print("\n\tdict_response:",_dict_response)
         _channel_id = _dict_response['items'][0]['id']
 
         # Check if channel already exists by channelID

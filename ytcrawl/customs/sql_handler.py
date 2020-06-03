@@ -22,7 +22,7 @@ class SQLHandler:
         if type(columns) in (list, tuple):
             columns = tuple(map(lambda column: '`' + column + '`', columns))
             columns = ', '.join(columns)
-        self.command = "SELECT %s FROM %s" % (columns, table)
+        self.command = "SELECT %s FROM `%s`" % (columns, table)
         self.set_command_set()
         return self
 
@@ -35,7 +35,7 @@ class SQLHandler:
 
         key_val_pairs = ', '.join(tuple(map(lambda col: col + '=%s', columns)))
 
-        self.command = "UPDATE %s SET %s" % (table, key_val_pairs)
+        self.command = "UPDATE `%s` SET %s" % (table, key_val_pairs)
         self.set_command_set()
         return self
 
@@ -47,7 +47,7 @@ class SQLHandler:
         self.values = values
 
         # self.values = self.__preprocess_list_values(values)
-        self.command = "INSERT INTO %s (%s) VALUES (" % (table, ', '.join(columns))\
+        self.command = "INSERT INTO `%s` (%s) VALUES (" % (table, ', '.join(columns))\
             + ', '.join(['%s'] * len(columns))\
             + ")"
         self.set_command_set()

@@ -74,7 +74,7 @@ class YouTubeVideos(YouTube):
         self.list_searches = list_searches
         return self
 
-    def start_search(self, args=None, list_searches=None):
+    def start(self, args=None, list_searches=None):
         if args == None:
             args = self.args
         if list_searches == None:
@@ -94,15 +94,18 @@ class YouTubeVideos(YouTube):
                 args['id'] = _dict_search['items'][0]['id']['videoId']
                 args['q'] = _dict_search['q']
                 args['idx_paper'] = _dict_search['idx_paper']
-
-                _response = self.__youtube_videos(args)
+                _response = False
+                while _response == False:
+                    _response = self.__youtube_videos(args)
                 _response['q'] = args['q']
                 _response['idx_paper'] = args['idx_paper']
                 self.list_responses.append(_response)
 
         elif args['id'] != None:
             # videoId must be already set in args
-            _response = self.__youtube_videos(args)
+            _response = False
+            while _response == False:
+                _response = self.__youtube_videos(args)
             _response['q'] = args['q']
             _response['idx_paper'] = args['idx_paper']
             self.list_responses.append(_response)

@@ -14,6 +14,7 @@ class DBPapersUploader:
     regex_pdf = re.compile(r'https?://(export.)?arxiv.org/pdf/\d{3,5}.\d{3,5}.pdf')
     regex_http = re.compile(r'^http://')
     regex_https = re.compile(r'^https://')
+    regex_idx_arxiv = re.compile(r'\d{3,5}.\d{3,5}')
 
     regex_date = re.compile(r'\d{1,2} \w{3} \d{4}')  # 3 Oct 2019
 
@@ -121,6 +122,7 @@ class DBPapersUploader:
         _dict_fields['urls'] = self.__get_urls(args, mode="arxiv_paper", export=False)
         _dict_fields['idx_videos'] = self.__get_idx_videos(args)
         _dict_fields['queriedAt'] = datetime.now().strftime('%Y-%m-%d %X')
+        _dict_fields['idx_arxiv'] = self.regex_idx_arxiv.findall(_dict_fields['urls'])[0]
         _dict_fields.update(self.__get_fields_from_arxiv(args['url']))
         return _dict_fields
 
@@ -230,11 +232,14 @@ class DBPapersUploader:
 
     def __paper_exists(self, args):
         # Determines by url
-        sql = "SELECT `idx`, `idx_videos` FROM %s WHERE match(urls) against('\"%s\"' in boolean mode);" %(args['table'], self.__get_arxiv_domain(export=False) + args['path'])
+        # sql = "SELECT `idx`, `idx_videos` FROM %s WHERE match(urls) against('\"%s\"' in boolean mode);" %(args['table'], self.__get_arxiv_domain(export=False) + args['path'])
         # sql = "SELECT `idx` FROM %s WHERE match(urls) against('\"%s\"' in boolean mode);" % (args['table'], args["title"])
-        print('\tsql:', sql)
-        self.db_handler.mycursor.execute(sql)
-        result = self.db_handler.mycursor.fetchall()
+        # print('\tsql:', sql)
+        # self.db_handler.mycursor.execute(sql)
+        # self.db_handler.sql_handler.select(args['table'], ['idx', 'idx_videos']).where('urls', self.__get_arxiv_domain(export=False) + args['path'], 'fulltext')
+        self.db_handler.sql_handler.select(args['table'], ['idx', 'idx_videos']).where('idx_arxiv', self.regex_idx_arxiv.findall(args['path'])[0])
+        result = self.db_handler.execute().fetchall()
+        # result = self.db_handler.mycursor.fetchall()
         exists = len(result) != 0
 
         if len(result) > 0:

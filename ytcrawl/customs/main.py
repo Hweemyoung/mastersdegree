@@ -336,12 +336,12 @@ def upload_channels_from_search():
 def altmetric_url_from_papers():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--table', help='Table of target papers', default='temp_papers')
+        '--table', help='Table of target papers')
     parser.add_argument('--overwrite', dest='overwrite',
                         help='Overwrite policy', action='store_true', default='incomplete')
     parser.add_argument('--driver', help='Driver', default='chrome')
     parser.add_argument('--p_driver', help='Driver path',
-                        default='./chromedriver')
+                        default='./chromedriver_83')
     parser.add_argument('--new_bookmarklet', help='Whether to install new bookmarklet or not', default=True)
     parser.add_argument('--max_times_find', type=int, help='Max times to find', default=5)
     parser.add_argument('--sec_sleep', type=float, help='Sleep seconds', default=1.0)
@@ -429,8 +429,8 @@ def organize_twitter():
 
 def update_papers_from_arxiv_list():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--table', help='Table name', default='temp_papers')
-    parser.add_argument('--subject', help='Subject', default='cs.LG')
+    parser.add_argument('--table', help='Table name', default='papers_cs.AI')
+    parser.add_argument('--subject', help='Subject', default='cs.AI')
     parser.add_argument('--YY', help='YY')
     parser.add_argument('--MM', help='MM')
     parser.add_argument('--overwrite', dest='overwrite',
@@ -470,11 +470,11 @@ def videos_by_video_ids():
     parser.add_argument('--fields', default='items(id, snippet(title, publishedAt, description, tags, defaultLanguage, defaultAudioLanguage, channelTitle, channelId), contentDetails(duration), statistics(viewCount, dislikeCount, commentCount, likeCount, favoriteCount), liveStreamingDetails(actualStartTime))')
 
     args = vars(parser.parse_args())
-    with open('./results/search/search_LG_with_videos.txt', 'r') as f:
+    with open('./results/search/search_AI_with_videos.txt', 'r') as f:
         _list_searches = json.load(f)
         # _list_searches = json.load(f)[:2]
     youtube_videos = YouTubeVideos(args)
-    return youtube_videos.set_list_searches(_list_searches).start_search()
+    return youtube_videos.set_list_searches(_list_searches).start()
 
 def search_by_urls():
     parser = argparse.ArgumentParser()
@@ -523,7 +523,7 @@ def search_by_urls():
 
     db_handler = DBHandler()
     # db_handler.sql_handler.select('temp_papers', ['idx', 'urls']).where('subject_1', 'Computer Science', '=').where('subject_2', 'Machine Learning', '=')
-    db_handler.sql_handler.select('temp_papers', ['idx', 'urls']).where('subject_1', 'Computer Science', '=').where('subject_2', 'Machine Learning', '=').where('idx', 1901, '>')
+    db_handler.sql_handler.select('papers_cs.AI', ['idx', 'urls']).where('subject_1', 'Computer Science', '=').where('subject_2', 'Artificial Intelligence', '=')
     _results = db_handler.execute().fetchall()
 
     # https to http
@@ -531,7 +531,7 @@ def search_by_urls():
     # preprocessor.url_https_to_http
     # _list_queries = list(map(lambda tup: tup[1].split(', ')[1], _results))
     # _list_queries = list(map(lambda tup: preprocessor.url_https_to_http(tup[1].split(', ')[0]), _results))
-    _list_queries = list(map(lambda tup: tup[1].split(', ')[1][8:], _results)) # arxiv.org/...
+    _list_queries = list(map(lambda tup: tup[1].split(', ')[0][8:], _results)) # arxiv.org/...
     _list_idx_papers = list(map(lambda tup: tup[0], _results))
     args['list_idx_papers'] = _list_idx_papers
 
@@ -543,8 +543,8 @@ def search_by_urls():
     _list_responses = youtube_search.start_search()
     print(_list_responses)
 
-    # with open('list_video_ids.txt', 'w+') as fp:
-        # json.dump(_list_responses, fp)
+    with open('list_cs_AI.txt', 'w+') as fp:
+        json.dump(_list_responses, fp)
 
 def update_videos_by_list_videos(table_name, fp_list_videos):
     db_videos_uploader = DBVideosUploader(table_name)
@@ -586,8 +586,9 @@ def channels_by_list_channel_ids(table_name, fp_list_channel_ids):
 
 if __name__ == '__main__':
     # update_papers_from_arxiv_list()
+    altmetric_url_from_papers()
     # search_by_urls()
     # videos_by_video_ids()
-    # update_videos_by_list_videos('temp_videos', './results/videos/videos_20200529_185937.txt')
-    # channels_by_list_channel_ids('channels', './results/channels/temp_channel_ids.txt')
-    upload_channels_by_list_channels('channels', './results/channels/channels_20200530_134417.txt')
+    # update_videos_by_list_videos('videos_cs.AI', './results/videos/videos_20200602_230922.txt')
+    # channels_by_list_channel_ids('channels', './results/channels/list_channel_ids_AI.txt')
+    # upload_channels_by_list_channels('channels', './results/channels/channels_20200602_233006.txt')

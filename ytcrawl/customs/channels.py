@@ -416,15 +416,16 @@ class YouTubeChannels(YouTube):
 				print('Processing %d out of %d channel IDs' %
 					  (i+1, _num_channel_ids))
 				args['id'] = _channel_id
-
-				_response = self.__youtube_channels(args)
+				_response = False
+				while _response == False:
+					_response = self.__youtube_channels(args)
 				self.list_responses.append(_response)
 
 		elif args['id'] != None:
 			# videoId must be already set in args
-			_response = self.__youtube_channels(args)
-			_response['q'] = args['q']
-			_response['idx_paper'] = args['idx_paper']
+			_response = False
+			while _response == False:
+				_response = self.__youtube_channels(args)
 			self.list_responses.append(_response)
 		else:
 			raise KeyError('Video ID not given')

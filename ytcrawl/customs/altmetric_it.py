@@ -172,8 +172,8 @@ class AltmetricIt:
                 _num_files, _num_failed))
 
     def crawl_altmetric_from_papers(self, overwrite='incomplete'):
-        # self.db_handler.sql_handler.select(self.table, ('idx', 'urls', 'altmetric_id'))
-        self.db_handler.sql_handler.select(self.table, ('idx', 'urls', 'altmetric_id')).order_by(dict_columns_orders={'idx': 'desc'})
+        self.db_handler.sql_handler.select(self.table, ('idx', 'urls', 'altmetric_id'))
+        # self.db_handler.sql_handler.select(self.table, ('idx', 'urls', 'altmetric_id')).order_by(dict_columns_orders={'idx': 'desc'})
         _records = self.db_handler.execute().fetchall()
         # _records = _records[:2]
         _num_papers = len(_records)

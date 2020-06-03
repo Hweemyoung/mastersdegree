@@ -2,10 +2,13 @@ import json
 import calendar
 from datetime import time, datetime, timedelta
 from os import listdir, path
-from db_handler import DBHandler
+# from db_handler import DBHandler
+from organizer import Organizer
+
+import collections.abc
 
 
-class VideosOrganizer(DBHandler):
+class VideosOrganizer(Organizer):
     dict_dt_format = {
         'datetime': '%Y-%m-%d %H:%M:%S',
         'date': '%Y-%m-%d',
@@ -28,10 +31,8 @@ class VideosOrganizer(DBHandler):
                        'viewCount', 'dislikeCount', 'commentCount', 'favoriteCount', 'liveStreaming', 'content', 'idx_paper', 'queriedAt')
     tup_enum_content = ('paper_explanation', 'paper_supplementary', 'paper_application',
                         'paper_assessment', 'paper_reference', 'news', 'dialogue', 'routine')
-    dict_count_content = dict(zip(tup_enum_content, [0]*len(tup_enum_content)))
     keys_videos = ['videoCount', 'durationCount', 'viewCount',
                    'dislikeCount', 'commentCount', 'favoriteCount', 'livesCount', 'content']
-
     dir_stats = './stats/videos'
 
     def __init__(self, table_name_videos, table_name_papers):
@@ -56,6 +57,7 @@ class VideosOrganizer(DBHandler):
         print('# of papers:', _num_papers)
 
         for i, _idx_paper in enumerate(list_idx_papers):  # 2375
+        # for i, _idx_paper in enumerate([24]):
             print('%d out of %d papers' % (i+1, _num_papers))
             _dict_stats = self.__get_stats_from_idx_paper(_idx_paper)
             if _dict_stats == False:
@@ -120,6 +122,7 @@ class VideosOrganizer(DBHandler):
     def __get_stats_from_idx_paper(self, idx_paper, interval='month'):
         print('\tidx_paper: %s' % idx_paper)
         _list_videos = self.__get_video_from_db(idx_paper)
+        # print('\n\tlist_videos:', _list_videos)
         if not _list_videos:  # No such records
             self.msg_err = "idx_paper not exist."
             return False
@@ -144,6 +147,8 @@ class VideosOrganizer(DBHandler):
 
         for _row in _list_videos:
             _dict_video = dict(zip(self.tup_cols_videos, _row))
+            _dict_video = self.__preprocess_dict_video(_dict_video)
+            # print('\n\tdict_video:', _dict_video)
             # dt_video
             _dt_video = _dict_video['publishedAt']
 
@@ -154,7 +159,8 @@ class VideosOrganizer(DBHandler):
             # if dt not exists yet
             _key_dt = _dt_video.strftime(self.dict_dt_format[interval])
             if _key_dt not in _dict_stats['videos']['videoCount']:
-                _dict_stats['videos'].update(self.__get_init_dict_count_videos_by_key_dt(_key_dt))
+                # _dict_stats['videos'].update(self.__get_init_dict_count_videos_by_key_dt(_key_dt))
+                self.update_dict_recursive(_dict_stats['videos'], self.__get_init_dict_count_videos_by_key_dt(_key_dt))
                 
             # Add count
             _dict_stats['videos']['videoCount'][_key_dt] += 1
@@ -171,20 +177,25 @@ class VideosOrganizer(DBHandler):
             _dict_stats['videos']['livesCount'][_key_dt] += int(
                 _dict_video['liveStreaming']) # += 0 or 1
             _dict_stats['videos']['content'][_key_dt][_dict_video['content']] += 1
+            # print('\n\tdict_stats["videos"]:', _dict_stats['videos'])
 
         # Fill out empty DTs
         _dt_paper = datetime.combine(_date_paper, time())
         _dt_oldest = min(_dt_oldest, _dt_paper)
         _dt_newest = max(_dt_newest, _dt_paper)
 
+        # print("\n\tdict_stats", _dict_stats)
         _dict_stats['dt_start'] = _dt_oldest.strftime(
             self.dict_dt_format[interval])
+        # print("\n\tdict_stats['dt_start']", _dict_stats['dt_start'])
         _dict_stats['dt_end'] = _dt_newest.strftime(
             self.dict_dt_format[interval])
+        # print("\n\tdict_stats['dt_end']", _dict_stats['dt_end'])
         _dict_stats = self.__fill_empty_dts(
             _dict_stats, _dt_oldest, _dt_newest, interval)
         _dict_stats = self.__cast_to_str(_dict_stats)
-
+        # print('\n\tdict_stats["videos"]:', _dict_stats['videos'])
+        # print("\n\tdict_stats", _dict_stats)
         return _dict_stats
 
     def __get_init_dict_count_videos_by_key_dt(self, key_dt):
@@ -205,10 +216,14 @@ class VideosOrganizer(DBHandler):
     def __fill_empty_dts(self, dict_stats, dt_oldest, dt_newest, interval):
         while dt_oldest < dt_newest:
             _key_dt = dt_oldest.strftime(self.dict_dt_format[interval])
-
+            # print("\n\t_key_dt:", _key_dt)
             # Add key
             if _key_dt not in dict_stats['videos']['videoCount']:
-                dict_stats['videos'].update(self.__get_init_dict_count_videos_by_key_dt(_key_dt))
+                # print("\n\tinit_dict_count_videos_by_key_dt(_key_dt):", self.__get_init_dict_count_videos_by_key_dt(_key_dt))
+                # dict_stats['videos'].update(self.__get_init_dict_count_videos_by_key_dt(_key_dt))
+                self.update_dict_recursive(dict_stats['videos'], self.__get_init_dict_count_videos_by_key_dt(_key_dt))
+            
+            # print("\n\t KEYS: dict_stats['videos']['videoCount']:", dict_stats['videos']['videoCount'].keys())
 
             # DT increment
             if interval not in ['day', 'week']:
@@ -236,8 +251,16 @@ class VideosOrganizer(DBHandler):
                 'Type in [list, dict, int, str] expected.', type(data), 'given.')
 
         return data
+    
+    def __preprocess_dict_video(self, dict_video):
+        # count NULL to 0
+        for _key in ['viewCount', 'dislikeCount', 'commentCount', 'favoriteCount']:
+            if dict_video[_key] == None:
+                dict_video[_key] = 0
+        
+        return dict_video
 
 
 if __name__ == '__main__':
     videos_organizer = VideosOrganizer('temp_videos', 'temp_papers')
-    videos_organizer.set_list_idx_papers().update_stats(overwrite='new')
+    videos_organizer.set_list_idx_papers().update_stats(overwrite=True)

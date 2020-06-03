@@ -1,0 +1,1 @@
+{"citation_id": "74176343", "tab": "twitter", "twitter": {"1226970413290467332": {"author": "@ResearchINTouch", "followers": "330", "datetime": "2020-02-10 20:45:17", "content_summary": "Learning efficient haptic shape exploration with a rigid tactile sensor array https://t.co/aNgHHGZWvH"}}, "completed": "1", "queriedAt": "2020-06-03 01:22:09"}

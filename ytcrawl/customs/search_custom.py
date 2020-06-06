@@ -209,191 +209,199 @@ YOUTUBE_API_VERSION = 'v3'
 
 
 class YouTubeSearch(YouTube):
-    args = {
-        'part': None,
-        'eventType': None,
-        'channelId': None,
-        'forDeveloper': None,
-        'videoSyndicated': None,
-        'channelType': None,
-        'videoCaption': None,
-        'publishedAfter': None,
-        'publishedBefore': None,
-        'onBehalfOfContentOwner': None,
-        'forContentOwner': None,
-        'regionCode': None,
-        'location': None,
-        'locationRadius': None,
-        'topicId': None,
-        'videoDimension': None,
-        'videoLicense': None,
-        'maxResults': None,
-        'videoType': None,
-        'videoDefinition': None,
-        'pageToken': None,
-        'relatedToVideoId': None,
-        'relevanceLanguage': None,
-        'videoDuration': None,
-        'forMine': None,
-        'q': None,
-        'safeSearch': None,
-        'videoEmbeddable': None,
-        'videoCategoryId': None,
-        'order': None,
-        'fields': None
-    }
+	args = {
+		'part': None,
+		'eventType': None,
+		'channelId': None,
+		'forDeveloper': None,
+		'videoSyndicated': None,
+		'channelType': None,
+		'videoCaption': None,
+		'publishedAfter': None,
+		'publishedBefore': None,
+		'onBehalfOfContentOwner': None,
+		'forContentOwner': None,
+		'regionCode': None,
+		'location': None,
+		'locationRadius': None,
+		'topicId': None,
+		'videoDimension': None,
+		'videoLicense': None,
+		'maxResults': None,
+		'videoType': None,
+		'videoDefinition': None,
+		'pageToken': None,
+		'relatedToVideoId': None,
+		'relevanceLanguage': None,
+		'videoDuration': None,
+		'forMine': None,
+		'q': None,
+		'safeSearch': None,
+		'videoEmbeddable': None,
+		'videoCategoryId': None,
+		'order': None,
+		'fields': None
+	}
 
-    def __init__(self, args, method_name='search'):
-        super(YouTubeSearch, self).__init__(args, method_name)
+	def __init__(self, args, method_name='search'):
+		super(YouTubeSearch, self).__init__(args, method_name)
 
-    def set_list_channel_ids(self, list_channel_ids):
-        self.list_channel_ids = list_channel_ids
-        return self
+	def set_list_channel_ids(self, list_channel_ids):
+		self.list_channel_ids = list_channel_ids
+		return self
 
-    def set_list_queries(self, list_queries):
-        self.list_queries = list_queries
-        return self
+	def set_list_queries(self, list_queries):
+		self.list_queries = list_queries
+		return self
 
-    def start_search(self, args=None, list_queries=None, list_channel_ids=None):
-        if args == None:
-            args = self.args
-        if list_queries == None:
-            list_queries = self.list_queries
-        if list_channel_ids == None:
-            # Empty list
-            list_channel_ids = list()
-        _list_responses = self.__search(args, list_queries, list_channel_ids)
-        self.save_task(_list_responses, args)
-        return _list_responses
+	def start_search(self, args=None, list_queries=None, list_channel_ids=None, recursive=True):
+		if args == None:
+			args = self.args
+		if list_queries == None:
+			list_queries = self.list_queries
+		if list_channel_ids == None:
+			# Empty list
+			list_channel_ids = list()
+		if 'no_recursive' in args:
+			recursive = not args['no_recursive']
+		_list_responses = self.__search(args, list_queries, list_channel_ids, recursive)
+		self.save_task(_list_responses, args)
+		return _list_responses
 
-    def __search(self, args, list_queries=None, list_channel_ids=None):
-        # q(, channelId) must be already set when list_queries == None
-        _list_responses = list()
-        if list_queries:
-            _num_queries = len(list_queries)
-            print('# of queries: ', _num_queries)
-            # Per query
-            for i, _q in enumerate(list_queries):
-                print('Processing %d out of %d queries' % (i+1, _num_queries))
-                args['q'] = _q
-                
-                args['idx_paper'] = args['list_idx_papers'][i]
+	def __search(self, args, list_queries=None, list_channel_ids=None, recursive=True):
+		# q(, channelId) must be already set when list_queries == None
+		_list_responses = list()
+		if list_queries:
+			_num_queries = len(list_queries)
+			print('# of queries: ', _num_queries)
+			# Per query
+			for i, _q in enumerate(list_queries):
+				print('Processing %d out of %d queries' % (i+1, _num_queries))
+				args['q'] = _q
+				
+				# args['idx_paper'] = args['list_idx_papers'][i]
 
-                if list_channel_ids:
-                    _num_channel_ids = len(list_channel_ids)
-                    for j, _channel_id in enumerate(list_channel_ids):
-                        print('\tQuery from %d out of %d channels.' %
-                              (j+1, _num_channel_ids))
-                        args['channelId'] = _channel_id
-                        self.list_responses.append(
-                            self.__youtube_search_recursive(args))
-                else:
-                    self.list_responses.append(
-                        self.__youtube_search_recursive(args))
+				if list_channel_ids:
+					_num_channel_ids = len(list_channel_ids)
+					for j, _channel_id in enumerate(list_channel_ids):
+						print('\tQuery from %d out of %d channels.' %
+							  (j+1, _num_channel_ids))
+						args['channelId'] = _channel_id
+						self.list_responses.append(
+							self.__youtube_search_recursive(args, recursive))
+				else:
+					self.list_responses.append(
+						self.__youtube_search_recursive(args, recursive))
 
-        elif 'q' in args.keys():
-            # q must be already set in args
-            self.list_responses.append(self.__youtube_search_recursive(args))
-        else:
-            raise KeyError('q not given')
-        return self.list_responses
+		elif 'q' in args.keys():
+			# q must be already set in args
+			self.list_responses.append(self.__youtube_search_recursive(args, recursive))
+		else:
+			raise KeyError('q not given')
+		return self.list_responses
 
-    def __youtube_search_recursive(self, args):
-        # For single q (+single channelId)
-        # args['page_token'] = None
-        # print('Initial args:', args)
-        print('q: ', args['q'])
+	def __youtube_search_recursive(self, args, recursive=True):
+		# For single q (+single channelId)
+		# args['pageToken'] = None
+		# print('Initial args:', args)
+		print('q: ', args['q'])
 
-        _dict_responses = dict()
-        _dict_responses['q'] = args['q']
-        _dict_responses['idx_paper'] = args['idx_paper']
-        _dict_responses['items'] = list()
+		_dict_responses = dict()
+		_dict_responses['q'] = args['q']
+		_dict_responses['publishedAfter'] = args['publishedAfter']
+		_dict_responses['publishedBefore'] = args['publishedBefore']
+		# _dict_responses['idx_paper'] = args['idx_paper']
+		_dict_responses['items'] = list()
+		_dict_responses['totalResults'] = list()
 
-        _page = 0
-        # _response = self.__youtube_search(args)
-        # _dict_responses['items'] += _response['items']
-        # while len(_response.get('items', [])) != 0:
-        while True:
-            _no_remain = False
-            print('\tPage: %d' % (_page + 1))
-            if args['up_to'] != None:  # Not None
-                # Save quota by querying least amount required
-                if int(args['up_to']) < int(args['maxResults']):
-                    args['maxResults'] = args['up_to']
-                _remains = int(args['up_to']) - int(args['maxResults'])
-                print('\tRemains: %d' % _remains)
-                if _remains > 0:
-                    args['up_to'] = str(_remains)
-                elif _no_remain:
-                    break
-                else:
-                    _no_remain = True
+		_page = 0
+		# _response = self.__youtube_search(args)
+		# _dict_responses['items'] += _response['items'][0]
+		# while len(_response.get('items', [])) != 0:
+		while True:
+			_no_remain = False
+			print('\tPage: %d' % (_page + 1))
+			if args['up_to'] != None:  # Not None
+				# Save quota by querying least amount required
+				if int(args['up_to']) < int(args['maxResults']):
+					args['maxResults'] = args['up_to']
+				_remains = int(args['up_to']) - int(args['maxResults'])
+				print('\tRemains: %d' % _remains)
+				if _remains > 0:
+					args['up_to'] = str(_remains)
+				elif _no_remain:
+					break
+				else:
+					_no_remain = True
 
-            # Get response
-            _response = False
-            while _response == False:
-                _response = self.__youtube_search(args)
+			# Get response
+			_response = False
+			while _response == False:
+				_response = self.__youtube_search(args)
 
-            _dict_responses['items'] += _response['items']
+			_dict_responses['items'].append(_response['items'])
+			_dict_responses['totalResults'].append(_response['pageInfo']['totalResults'])
 
-            # Next page token
-            _next_page_token = _response.get('nextPageToken')
-            if _next_page_token == None:
-                print('\tNo page token. Break.')
-                break
-            args['page_token'] = _next_page_token
-            _page += 1
+			if not recursive:
+				break
+			# Next page token
+			_next_page_token = _response.get('nextPageToken')
+			if _next_page_token == None:
+				print('\tNo page token. Break.')
+				break
+			args['pageToken'] = _next_page_token
+			_page += 1
 
-        return _dict_responses
+		return _dict_responses
 
-    def __youtube_search(self, options):
-        # Call the search.list method to retrieve results matching the specified
-        # query term.
-        try:
-            _response = self.youtube.search().list(
-                part=options['part'],
-                eventType=options['eventType'],
-                channelId=options['channelId'],
-                forDeveloper=options['forDeveloper'],
-                videoSyndicated=options['videoSyndicated'],
-                channelType=options['channelType'],
-                videoCaption=options['videoCaption'],
-                publishedAfter=options['publishedAfter'],
-                publishedBefore=options['publishedBefore'],
-                onBehalfOfContentOwner=options['onBehalfOfContentOwner'],
-                forContentOwner=options['forContentOwner'],
-                regionCode=options['regionCode'],
-                location=options['location'],
-                locationRadius=options['locationRadius'],
-                type='video',
-                topicId=options['topicId'],
-                videoDimension=options['videoDimension'],
-                videoLicense=options['videoLicense'],
-                maxResults=options['maxResults'],
-                videoType=options['videoType'],
-                videoDefinition=options['videoDefinition'],
-                pageToken=options['pageToken'],
-                relatedToVideoId=options['relatedToVideoId'],
-                relevanceLanguage=options['relevanceLanguage'],
-                videoDuration=options['videoDuration'],
-                forMine=options['forMine'],
-                q=options['q'],
-                safeSearch=options['safeSearch'],
-                videoEmbeddable=options['videoEmbeddable'],
-                videoCategoryId=options['videoCategoryId'],
-                order=options['order'],
-                fields=options['fields']
-            ).execute()
-        except HttpError as e:  # Quota exceeded
-            print(e)
-            print('Rebuilding youtube with new api key.')
-            self.build_youtube()
-            _response = False
+	def __youtube_search(self, options):
+		# Call the search.list method to retrieve results matching the specified
+		# query term.
+		try:
+			_response = self.youtube.search().list(
+				part=options['part'],
+				eventType=options['eventType'],
+				channelId=options['channelId'],
+				forDeveloper=options['forDeveloper'],
+				videoSyndicated=options['videoSyndicated'],
+				channelType=options['channelType'],
+				videoCaption=options['videoCaption'],
+				publishedAfter=options['publishedAfter'],
+				publishedBefore=options['publishedBefore'],
+				onBehalfOfContentOwner=options['onBehalfOfContentOwner'],
+				forContentOwner=options['forContentOwner'],
+				regionCode=options['regionCode'],
+				location=options['location'],
+				locationRadius=options['locationRadius'],
+				type='video',
+				topicId=options['topicId'],
+				videoDimension=options['videoDimension'],
+				videoLicense=options['videoLicense'],
+				maxResults=options['maxResults'],
+				videoType=options['videoType'],
+				videoDefinition=options['videoDefinition'],
+				pageToken=options['pageToken'],
+				relatedToVideoId=options['relatedToVideoId'],
+				relevanceLanguage=options['relevanceLanguage'],
+				videoDuration=options['videoDuration'],
+				forMine=options['forMine'],
+				q=options['q'],
+				safeSearch=options['safeSearch'],
+				videoEmbeddable=options['videoEmbeddable'],
+				videoCategoryId=options['videoCategoryId'],
+				order=options['order'],
+				fields=options['fields']
+			).execute()
+		except HttpError as e:  # Quota exceeded
+			print(e)
+			print('Rebuilding youtube with new api key.')
+			self.build_youtube()
+			_response = False
 
-        # Add each result to the appropriate list, and then display the lists of
-        # matching videos, channels, and playlists.
-        # print(_response.get('items', []))
-        # for result in _response.get('items', []):
-        #     print('\nChannel title:', result['snippet']['channelTitle'], '\nTitle: ',
-        #           result['snippet']['title'], '\nDescription: ', result['snippet']['description'])
-        return _response
+		# Add each result to the appropriate list, and then display the lists of
+		# matching videos, channels, and playlists.
+		# print(_response.get('items', []))
+		# for result in _response.get('items', []):
+		#     print('\nChannel title:', result['snippet']['channelTitle'], '\nTitle: ',
+		#           result['snippet']['title'], '\nDescription: ', result['snippet']['description'])
+		return _response

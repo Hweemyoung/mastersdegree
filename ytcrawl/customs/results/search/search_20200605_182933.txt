@@ -1,0 +1,1 @@
+[{"q": "science.sciencemag.org/content", "totalResults": [0], "items": [[]], "publishedAfter": "2005-01-01T00:00:00Z", "publishedBefore": "2006-01-01T00:00:00Z"}]

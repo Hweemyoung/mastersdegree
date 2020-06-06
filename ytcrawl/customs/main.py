@@ -28,13 +28,12 @@ api_key = 'AIzaSyDuW2lWKYOc-tPjwcXso4LhR8_ZMEZOGKw'  # ytcrawl1
 # channelIDs->VideoIDs->uploadVideos
 
 
-
 def upload_videos_from_channel_ids(api_key):
     parser = argparse.ArgumentParser()
 
     # Custom args
     # parser.add_argument('--list-channel-ids',
-                        # help='List of Channel IDs', default='fromdb')
+    # help='List of Channel IDs', default='fromdb')
     parser.add_argument(
         '--up-to', help='Number of results queried up to. None indicates unlimited.', default=None)
     # parser.add_argument('--api-key', help='API key', default=api_key)
@@ -71,7 +70,8 @@ def upload_videos_from_channel_ids(api_key):
     parser.add_argument('--videoEmbeddable', default=None)
     parser.add_argument('--videoCategoryId', default=None)
     parser.add_argument('--order', default=None)
-    parser.add_argument('--fields', default='items(id(videoId), snippet(channelTitle))')
+    parser.add_argument(
+        '--fields', default='items(id(videoId), snippet(channelTitle))')
 
     args = vars(parser.parse_args())
 
@@ -342,17 +342,27 @@ def altmetric_url_from_papers():
     parser.add_argument('--driver', help='Driver', default='chrome')
     parser.add_argument('--p_driver', help='Driver path',
                         default='./chromedriver_83')
-    parser.add_argument('--no_bookmarklet', help='Whether to install new bookmarklet or not', action='store_true', default=False)
-    parser.add_argument('--max_times_find', type=int, help='Max times to find', default=5)
-    parser.add_argument('--sec_sleep', type=float, help='Sleep seconds', default=1.0)
+    parser.add_argument('--no_bookmarklet', help='Whether to install new bookmarklet or not',
+                        action='store_true', default=False)
+    parser.add_argument('--max_times_find', type=int,
+                        help='Max times to find', default=5)
+    parser.add_argument('--sec_sleep', type=float,
+                        help='Sleep seconds', default=1.0)
 
-    parser.add_argument('--news', help='Set news as target', action='store_true', default=False)
-    parser.add_argument('--blogs', help='Set blogs as target', action='store_true', default=False)
-    parser.add_argument('--twitter', help='Set twitter as target', action='store_true', default=False)
-    parser.add_argument('--wikipedia', help='Set wikipedia as target', action='store_true', default=False)
-    parser.add_argument('--google', help='Set google as target', action='store_true', default=False)
-    parser.add_argument('--reddit', help='Set reddit as target', action='store_true', default=False)
-    parser.add_argument('--video', help='Set video as target', action='store_true', default=False)
+    parser.add_argument('--news', help='Set news as target',
+                        action='store_true', default=False)
+    parser.add_argument('--blogs', help='Set blogs as target',
+                        action='store_true', default=False)
+    parser.add_argument('--twitter', help='Set twitter as target',
+                        action='store_true', default=False)
+    parser.add_argument('--wikipedia', help='Set wikipedia as target',
+                        action='store_true', default=False)
+    parser.add_argument('--google', help='Set google as target',
+                        action='store_true', default=False)
+    parser.add_argument('--reddit', help='Set reddit as target',
+                        action='store_true', default=False)
+    parser.add_argument('--video', help='Set video as target',
+                        action='store_true', default=False)
     args = vars(parser.parse_args())
     # args = dict()
     # args['table'] = 'temp_papers'
@@ -422,7 +432,7 @@ def altmetric_url_from_papers():
 
 
 def organize_twitter():
-    
+
     twitter_organizer = TwitterOrganizer()
     twitter_organizer.update_stats(overwrite=True)
 
@@ -444,17 +454,19 @@ def update_papers_from_arxiv_list():
     db_papers_uploader.update_papers_from_arxiv_list(
         args, overwrite=args['overwrite'])
 
+
 def videos_by_video_ids():
     parser = argparse.ArgumentParser()
 
     # Custom args
     # parser.add_argument('--list-channel-ids',
-                        # help='List of Channel IDs', default='fromdb')
+    # help='List of Channel IDs', default='fromdb')
     # parser.add_argument('--up-to', help='Number of results queried up to. None indicates unlimited.', default=None)
     # parser.add_argument('--api-key', help='API key', default=api_key)
 
     # Search args
-    parser.add_argument('--part', default='id, snippet, contentDetails, statistics, liveStreamingDetails')
+    parser.add_argument(
+        '--part', default='id, snippet, contentDetails, statistics, liveStreamingDetails')
     parser.add_argument('--hl', default=None)
     parser.add_argument('--maxWidth', default=None)
     parser.add_argument('--locale', default=None)
@@ -476,14 +488,17 @@ def videos_by_video_ids():
     youtube_videos = YouTubeVideos(args)
     return youtube_videos.set_list_searches(_list_searches).start()
 
+
 def search_by_urls():
     parser = argparse.ArgumentParser()
 
     # Custom args
     # parser.add_argument('--list-channel-ids',
-                        # help='List of Channel IDs', default='fromdb')
+    # help='List of Channel IDs', default='fromdb')
     parser.add_argument(
         '--up-to', help='Number of results queried up to. None indicates unlimited.', default=None)
+    parser.add_argument(
+        '--no_recursive', help='Call search API for a single time per query.', action='store_true', default=False)
     # parser.add_argument('--api-key', help='API key', default=api_key)
 
     # Search args
@@ -517,13 +532,15 @@ def search_by_urls():
     parser.add_argument('--videoEmbeddable', default=None)
     parser.add_argument('--videoCategoryId', default=None)
     parser.add_argument('--order', default=None)
-    parser.add_argument('--fields', default='items(id(videoId))')
+    parser.add_argument(
+        '--fields', default='nextPageToken, items(id(videoId))')
 
     args = vars(parser.parse_args())
 
     db_handler = DBHandler()
     # db_handler.sql_handler.select('temp_papers', ['idx', 'urls']).where('subject_1', 'Computer Science', '=').where('subject_2', 'Machine Learning', '=')
-    db_handler.sql_handler.select('papers_cs.AI', ['idx', 'urls']).where('subject_1', 'Computer Science', '=').where('subject_2', 'Artificial Intelligence', '=')
+    db_handler.sql_handler.select('papers_cs.AI', ['idx', 'urls']).where(
+        'subject_1', 'Computer Science', '=').where('subject_2', 'Artificial Intelligence', '=')
     _results = db_handler.execute().fetchall()
 
     # https to http
@@ -531,7 +548,9 @@ def search_by_urls():
     # preprocessor.url_https_to_http
     # _list_queries = list(map(lambda tup: tup[1].split(', ')[1], _results))
     # _list_queries = list(map(lambda tup: preprocessor.url_https_to_http(tup[1].split(', ')[0]), _results))
-    _list_queries = list(map(lambda tup: tup[1].split(', ')[0][8:], _results)) # arxiv.org/...
+
+    # arxiv.org/...
+    _list_queries = list(map(lambda tup: tup[1].split(', ')[0][8:], _results))
     _list_idx_papers = list(map(lambda tup: tup[0], _results))
     args['list_idx_papers'] = _list_idx_papers
 
@@ -543,8 +562,73 @@ def search_by_urls():
     _list_responses = youtube_search.start_search()
     print(_list_responses)
 
-    with open('list_cs_AI.txt', 'w+') as fp:
+    with open('list_sciencemag_%s.txt' % args['publishedAfter'][:4], 'w+') as fp:
         json.dump(_list_responses, fp)
+
+
+def num_of_videos():
+    parser = argparse.ArgumentParser()
+
+    # Custom args
+    # parser.add_argument('--list-channel-ids',
+    # help='List of Channel IDs', default='fromdb')
+    parser.add_argument(
+        '--up-to', help='Number of results queried up to. None indicates unlimited.', default=None)
+    # parser.add_argument('--api-key', help='API key', default=api_key)
+    parser.add_argument(
+        '--no_recursive', help='Call search API for a single time per query.', action='store_true', default=False)
+
+    # Search args
+    parser.add_argument('--part', default='id')
+    parser.add_argument('--eventType', default=None)
+    parser.add_argument('--channelId', default=None)
+    parser.add_argument('--forDeveloper', default=None)
+    parser.add_argument('--videoSyndicated', default=None)
+    parser.add_argument('--channelType', default=None)
+    parser.add_argument('--videoCaption', default=None)
+    parser.add_argument('--publishedAfter', default=None)
+    parser.add_argument('--publishedBefore', default=None)
+    parser.add_argument('--onBehalfOfContentOwner', default=None)
+    parser.add_argument('--forContentOwner', default=None)
+    parser.add_argument('--regionCode', default=None)
+    parser.add_argument('--location', default=None)
+    parser.add_argument('--locationRadius', default=None)
+    parser.add_argument('--topicId', default=None)
+    parser.add_argument('--videoDimension', default=None)
+    parser.add_argument('--videoLicense', default=None)
+    parser.add_argument('--maxResults', default=50)
+    parser.add_argument('--videoType', default=None)
+    parser.add_argument('--videoDefinition', default=None)
+    parser.add_argument('--pageToken', default=None)
+    parser.add_argument('--relatedToVideoId', default=None)
+    parser.add_argument('--relevanceLanguage', default=None)
+    parser.add_argument('--videoDuration', default=None)
+    parser.add_argument('--forMine', default=None)
+    parser.add_argument('--q', default='Google')
+    parser.add_argument('--safeSearch', default=None)
+    parser.add_argument('--videoEmbeddable', default=None)
+    parser.add_argument('--videoCategoryId', default=None)
+    parser.add_argument('--order', default=None)
+    parser.add_argument(
+        '--fields', default='pageInfo(totalResults), items')
+
+    args = vars(parser.parse_args())
+
+    _list_queries = [
+        'science.sciencemag.org/content',
+        # 'arxiv.org/abs',
+        # 'nature.com/articles'
+    ]
+    _range_year = range(2005, 2020)
+
+    for _year in _range_year:
+        args['publishedAfter'] = '%d-01-01T00:00:00Z' % _year
+        args['publishedBefore'] = '%d-01-01T00:00:00Z' % (_year + 1)
+        # print(args)
+        youtube_search = YouTubeSearch(args)
+        youtube_search.set_list_queries(_list_queries)
+        _list_responses = youtube_search.start_search()
+        print(_list_responses)
 
 def update_videos_by_list_videos(table_name, fp_list_videos):
     db_videos_uploader = DBVideosUploader(table_name)
@@ -553,6 +637,7 @@ def update_videos_by_list_videos(table_name, fp_list_videos):
     # _list_responses = _list_responses[:1]
     db_videos_uploader.upload_videos(_list_responses)
 
+
 def upload_channels_by_list_channels(table_name, fp_list_channels):
     db_channels_uploader = DBChannelsUploader(table_name)
     with open(fp_list_channels, 'r') as f:
@@ -560,9 +645,11 @@ def upload_channels_by_list_channels(table_name, fp_list_channels):
     _list_responses[:1]
     db_channels_uploader.upload_channels(_list_responses)
 
+
 def channels_by_list_channel_ids(table_name, fp_list_channel_ids):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--part', default='id, statistics, brandingSettings, snippet')
+    parser.add_argument(
+        '--part', default='id, statistics, brandingSettings, snippet')
     parser.add_argument('--hl', default=None)
     parser.add_argument('--mine', default=None)
     parser.add_argument('--mySubscribers', default=None)
@@ -575,20 +662,19 @@ def channels_by_list_channel_ids(table_name, fp_list_channel_ids):
     parser.add_argument('--maxResults', default=None)
     parser.add_argument('--fields', default="items(id, statistics(commentCount, subscriberCount, videoCount, viewCount), brandingSettings(channel(description, title, country, defaultLanguage, keywords)), snippet(publishedAt))")
     args = vars(parser.parse_args())
-    
+
     with open(fp_list_channel_ids, 'r') as f:
         _list_channel_ids = json.load(f)
     youtube_channels = YouTubeChannels(args)
     youtube_channels.set_list_channel_ids(_list_channel_ids).start()
 
 
-
-
 if __name__ == '__main__':
     # update_papers_from_arxiv_list()
-    altmetric_url_from_papers()
+    # altmetric_url_from_papers()
     # search_by_urls()
     # videos_by_video_ids()
     # update_videos_by_list_videos('videos_cs.AI', './results/videos/videos_20200602_230922.txt')
     # channels_by_list_channel_ids('channels', './results/channels/list_channel_ids_AI.txt')
     # upload_channels_by_list_channels('channels', './results/channels/channels_20200602_233006.txt')
+    num_of_videos()

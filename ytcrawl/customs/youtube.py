@@ -157,6 +157,7 @@ class YouTube:
         _fname = datetime.now().strftime('%Y%m%d_%H%M%S')
         self.__save_list_responses(list_responses, _fname)
         self.__save_log(args, _fname)
+        sleep(1.0) # Prevent duplicating fname
         return self
 
     def __save_list_responses(self, list_responses, fname):

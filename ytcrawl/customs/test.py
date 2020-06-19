@@ -22,6 +22,13 @@ import json
 import os
 import statistics
 
+import pandas as pd
+
+def scopus_csv():
+    fpath = "scopus.csv"
+    data = pd.read_csv(fpath)
+    list_doi = list(data["DOI"])
+    
 
 def _check_arxiv_id_exists():
     with open('./test.txt') as fp:

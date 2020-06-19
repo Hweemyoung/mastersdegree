@@ -192,3 +192,4 @@ class Preprocessor:
         else:
             url = url.replace('abs', 'pdf') + '.pdf'
         return url
+

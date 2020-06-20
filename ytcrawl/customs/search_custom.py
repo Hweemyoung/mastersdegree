@@ -279,7 +279,7 @@ class YouTubeSearch(YouTube):
 				print('Processing %d out of %d queries' % (i+1, _num_queries))
 				args['q'] = _q
 				
-				# args['idx_paper'] = args['list_idx_papers'][i]
+				args['idx_paper'] = args['list_idx_papers'][i]
 
 				if list_channel_ids:
 					_num_channel_ids = len(list_channel_ids)
@@ -308,11 +308,11 @@ class YouTubeSearch(YouTube):
 
 		_dict_responses = dict()
 		_dict_responses['q'] = args['q']
-		_dict_responses['publishedAfter'] = args['publishedAfter']
-		_dict_responses['publishedBefore'] = args['publishedBefore']
-		# _dict_responses['idx_paper'] = args['idx_paper']
+		# _dict_responses['publishedAfter'] = args['publishedAfter']
+		# _dict_responses['publishedBefore'] = args['publishedBefore']
+		# _dict_responses['totalResults'] = list()
+		_dict_responses['idx_paper'] = args['idx_paper']
 		_dict_responses['items'] = list()
-		_dict_responses['totalResults'] = list()
 
 		_page = 0
 		# _response = self.__youtube_search(args)
@@ -340,7 +340,7 @@ class YouTubeSearch(YouTube):
 				_response = self.__youtube_search(args)
 
 			_dict_responses['items'].append(_response['items'])
-			_dict_responses['totalResults'].append(_response['pageInfo']['totalResults'])
+			# _dict_responses['totalResults'].append(_response['pageInfo']['totalResults'])
 
 			if not recursive:
 				break

@@ -1,8 +1,11 @@
 import pandas as pd
-from selenium import webdriver
+
 # from urllib.request import urlopen
 from urllib.request import build_opener, HTTPCookieProcessor, Request
 from urllib.parse import urlparse
+from urllib.error import URLError
+from selenium import webdriver
+import socket
 
 from preprocessor import Preprocessor
 
@@ -10,6 +13,7 @@ from preprocessor import Preprocessor
 class ScopusPreprocessor(Preprocessor):
     tup_new_columns = ("Redirection",)
     opener = build_opener(HTTPCookieProcessor())
+    driver = webdriver.Chrome("./chromedriver_83")
 
     def __init__(
             self,
@@ -19,7 +23,8 @@ class ScopusPreprocessor(Preprocessor):
         self.fpath_scopus_csv = fpath_scopus_csv
         self.savepoint_interval = savepoint_interval
 
-        self.data = pd.read_csv(fpath_scopus_csv, header=0)
+        self.data = pd.read_csv(fpath_scopus_csv, header=0, sep=",", dtype=str)
+        self.data = self.data.astype(str)
 
     def preprocess_scopus_csv(self):
         # Create columns
@@ -27,10 +32,11 @@ class ScopusPreprocessor(Preprocessor):
             try:
                 self.data[_col]
             except KeyError:
-                self.data[_col] = None
+                self.data[_col] = "None"
 
         # Get youtube search queries
         self.__add_yt_direct_queries()
+        self.driver.close()
 
         return self.data
 
@@ -51,7 +57,7 @@ class ScopusPreprocessor(Preprocessor):
         for _i in range(_num_papers):
             print("[+]Processing %d out of %d papers..." % (_i+1, _num_papers))
             # Hasn't been processed?
-            if self.data["Redirection"][_i] != None:
+            if self.data["Redirection"][_i] != "None":
                 print("\t[+]Already processed. Skipping...")
                 continue
             _doi = self.data["DOI"][_i]
@@ -61,16 +67,26 @@ class ScopusPreprocessor(Preprocessor):
             try:
                 print("\t[+]Opening url:")
                 print("\t\t%s" % _url)
-                _res = self.opener.open(_url, timeout=30)
-            except:
-                # Timeout?
-                print("\t[-]Exception has occurred.")
+                # _res = self.opener.open(_url, timeout=30)
+                self.driver.get(_url)
+            except URLError:
+                # Invalid URL
+                print("\t[-]Invalid URL.")
                 _url_redirected = "Err"
+            except socket.timeout:
+                # Timeout
+                print("\t[-]Timed out.")
+                _url_redirected = "Err"
+            except ConnectionResetError:
+                # Connection reset
+                print("\t[-]Connection reset error. Passing...")
+                _url_redirected = "None"
             else:
                 print("\t[+]Opening url successful.")
-                _url_redirected = _res.geturl()
+                # _url_redirected = _res.geturl()
                 # Close response
-                _res.close()
+                # _res.close()
+                _url_redirected = self.driver.current_url
             finally:
                 # Remove protocol(https?://www.), query, hash, ...
                 _url_redirected = urlparse(_url_redirected)
@@ -91,6 +107,6 @@ class ScopusPreprocessor(Preprocessor):
 
 
 if __name__ == "__main__":
-    fpath = "scopus/scopus (1).csv"
+    fpath = "scopus/scopus_life_2014.csv"
     scopus_preprocessor = ScopusPreprocessor(fpath)
     scopus_preprocessor.preprocess_scopus_csv()

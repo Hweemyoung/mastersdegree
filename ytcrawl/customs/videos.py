@@ -87,19 +87,20 @@ class YouTubeVideos(YouTube):
         _list_responses = list()
         if list_searches:
             _num_video_ids = len(list_searches)
-            print('# of video IDs: ', _num_video_ids)
+            print('[+]# of video IDs: ', _num_video_ids)
             for i, _dict_search in enumerate(list_searches):
-                print('Processing %d out of %d video IDs' %
+                print('[+]Processing %d out of %d queries' %
                       (i+1, _num_video_ids))
-                args['id'] = _dict_search['items'][0]['id']['videoId']
-                args['q'] = _dict_search['q']
-                args['idx_paper'] = _dict_search['idx_paper']
-                _response = False
-                while _response == False:
-                    _response = self.__youtube_videos(args)
-                _response['q'] = args['q']
-                _response['idx_paper'] = args['idx_paper']
-                self.list_responses.append(_response)
+                for _item in _dict_search['items'][0]:
+                    args['id'] = _item['id']['videoId']
+                    args['q'] = _dict_search['q']
+                    args['idx_paper'] = _dict_search['idx_paper']
+                    _response = False
+                    while _response == False:
+                        _response = self.__youtube_videos(args)
+                    _response['q'] = args['q']
+                    _response['idx_paper'] = args['idx_paper']
+                    self.list_responses.append(_response)
 
         elif args['id'] != None:
             # videoId must be already set in args
@@ -114,7 +115,7 @@ class YouTubeVideos(YouTube):
         return self.list_responses
 
     def __youtube_videos(self, options):
-        print('Video ID: ', options['id'])
+        print('\t[+]Video ID: ', options['id'])
         try:
             _response = self.youtube.videos().list(
                 part=options['part'],
@@ -134,7 +135,7 @@ class YouTubeVideos(YouTube):
             ).execute()
         except HttpError as e:  # Quota exceeded
             print(e)
-            print('Rebuilding youtube with new api key.')
+            print('[-]Rebuilding youtube with new api key.')
             self.build_youtube()
             _response = False
 

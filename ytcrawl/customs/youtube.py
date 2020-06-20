@@ -135,12 +135,12 @@ class YouTube:
         try:
             _new_project = self.list_projects.pop(0)
         except IndexError:
-            print('No available project.')
+            print('[-]No available project.')
             self.save_task(self.list_responses, self.args)
             quit()
         
         _new_api_key = self.dict_api_keys[_new_project]
-        print('New project: %s\tAPI key: %s' % (_new_project, _new_api_key))
+        print('[+]New project: %s\tAPI key: %s\tRemaining projects: %d' % (_new_project, _new_api_key, len(self.list_responses)))
         try:
             self.youtube = build(self.YOUTUBE_API_SERVICE_NAME,
                                  self.YOUTUBE_API_VERSION, developerKey=_new_api_key)
@@ -163,7 +163,7 @@ class YouTube:
     def __save_list_responses(self, list_responses, fname):
         _p = './results/%s/%s_%s.txt' % (self.method_name,
                                          self.method_name, fname)
-        print('Saving list_responses: %s' % _p)
+        print('[+]Saving list_responses: %s' % _p)
         with open(_p, 'w+') as fp:
             json.dump(list_responses, fp)
         return self
@@ -171,8 +171,8 @@ class YouTube:
     def __save_log(self, args, fname):
         _p = './logs/%s/log_%s_%s.txt' % (self.method_name,
                                           self.method_name, fname)
-        print('Saving log: %s' % _p)
-        print('args:', args)
+        print('[+]Saving log: %s' % _p)
+        print('\targs:', args)
         with open(_p, 'w+') as fp:
             json.dump(args, fp)
         return self

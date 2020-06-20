@@ -11,6 +11,7 @@ import argparse
 import os
 import json
 import urllib.request
+import pandas as pd
 from random import shuffle
 
 from bs4 import BeautifulSoup
@@ -482,9 +483,13 @@ def videos_by_video_ids():
     parser.add_argument('--fields', default='items(id, snippet(title, publishedAt, description, tags, defaultLanguage, defaultAudioLanguage, channelTitle, channelId), contentDetails(duration), statistics(viewCount, dislikeCount, commentCount, likeCount, favoriteCount), liveStreamingDetails(actualStartTime))')
 
     args = vars(parser.parse_args())
-    with open('./results/search/search_AI_with_videos.txt', 'r') as f:
+    with open('./results/search/search_scopus_health_2014.txt', 'r') as f:
         _list_searches = json.load(f)
-        # _list_searches = json.load(f)[:2]
+        _list_searches = [_dict_response for _dict_response in _list_searches if _dict_response["items"][0]]
+    
+    # Test
+    # _list_searches = _list_searches[:2]
+
     youtube_videos = YouTubeVideos(args)
     return youtube_videos.set_list_searches(_list_searches).start()
 
@@ -498,7 +503,7 @@ def search_by_urls():
     parser.add_argument(
         '--up-to', help='Number of results queried up to. None indicates unlimited.', default=None)
     parser.add_argument(
-        '--no_recursive', help='Call search API for a single time per query.', action='store_true', default=False)
+        '--no-recursive', help='Call search API for a single time per query.', action='store_true', default=False)
     # parser.add_argument('--api-key', help='API key', default=api_key)
 
     # Search args
@@ -537,11 +542,10 @@ def search_by_urls():
 
     args = vars(parser.parse_args())
 
-    db_handler = DBHandler()
+    # db_handler = DBHandler()
     # db_handler.sql_handler.select('temp_papers', ['idx', 'urls']).where('subject_1', 'Computer Science', '=').where('subject_2', 'Machine Learning', '=')
-    db_handler.sql_handler.select('papers_cs.AI', ['idx', 'urls']).where(
-        'subject_1', 'Computer Science', '=').where('subject_2', 'Artificial Intelligence', '=')
-    _results = db_handler.execute().fetchall()
+    # db_handler.sql_handler.select('papers_cs.AI', ['idx', 'urls']).where('subject_1', 'Computer Science', '=').where('subject_2', 'Artificial Intelligence', '=')
+    # _results = db_handler.execute().fetchall()
 
     # https to http
     # preprocessor = Preprocessor()
@@ -550,19 +554,25 @@ def search_by_urls():
     # _list_queries = list(map(lambda tup: preprocessor.url_https_to_http(tup[1].split(', ')[0]), _results))
 
     # arxiv.org/...
-    _list_queries = list(map(lambda tup: tup[1].split(', ')[0][8:], _results))
-    _list_idx_papers = list(map(lambda tup: tup[0], _results))
-    args['list_idx_papers'] = _list_idx_papers
+    # _list_queries = list(map(lambda tup: tup[1].split(', ')[0][8:], _results))
+    # _list_idx_papers = list(map(lambda tup: tup[0], _results))
+    # args['list_idx_papers'] = _list_idx_papers
 
     # _list_queries = _list_queries[:2]
     # print(_list_queries)
+
+    data = pd.read_csv("scopus/scopus_health_2014.csv", header=0, keep_default_na=False)
+    data = data[data["DOI"] != "nan"]
+    _list_queries = list(data["DOI"])
+    _list_idx_papers = list(data["DOI"])
+    args['list_idx_papers'] = _list_idx_papers
 
     youtube_search = YouTubeSearch(args)
     youtube_search.set_list_queries(_list_queries)
     _list_responses = youtube_search.start_search()
     print(_list_responses)
 
-    with open('list_sciencemag_%s.txt' % args['publishedAfter'][:4], 'w+') as fp:
+    with open('list_searches_doi_health_2014.txt', 'w+') as fp:
         json.dump(_list_responses, fp)
 
 
@@ -646,7 +656,7 @@ def upload_channels_by_list_channels(table_name, fp_list_channels):
     db_channels_uploader.upload_channels(_list_responses)
 
 
-def channels_by_list_channel_ids(table_name, fp_list_channel_ids):
+def channels_by_list_channel_ids(table_name, fp_list_channel_ids=None):
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--part', default='id, statistics, brandingSettings, snippet')
@@ -668,13 +678,29 @@ def channels_by_list_channel_ids(table_name, fp_list_channel_ids):
     youtube_channels = YouTubeChannels(args)
     youtube_channels.set_list_channel_ids(_list_channel_ids).start()
 
+def upload_rel_paper_video():
+    _fp_list_searches = "results/search/search_scopus_health_2014.txt"
+    with open(_fp_list_searches, 'r') as f:
+        _list_searches = json.load(f)
+    
+    db_handler = DBHandler()
+
+    for _response in _list_searches:
+        if _response["items"][0]:
+            for _dict_item in _response["items"][0]:
+                _dict = {"DOI": _response["idx_paper"], "videoId": _dict_item["id"]["videoId"]}
+                print(_dict)
+                db_handler.sql_handler.insert("rel_paper_video", dict_columns_values=_dict)
+                db_handler.execute()
+
 
 if __name__ == '__main__':
     # update_papers_from_arxiv_list()
     # altmetric_url_from_papers()
     # search_by_urls()
+    # upload_rel_paper_video()
     # videos_by_video_ids()
-    # update_videos_by_list_videos('videos_cs.AI', './results/videos/videos_20200602_230922.txt')
-    # channels_by_list_channel_ids('channels', './results/channels/list_channel_ids_AI.txt')
+    # update_videos_by_list_videos('scopus_videos', './results/videos/videos_20200620_173158.txt')
+    channels_by_list_channel_ids('channels', './results/channels/list_channel_ids_AI.txt')
     # upload_channels_by_list_channels('channels', './results/channels/channels_20200602_233006.txt')
-    num_of_videos()
+    # num_of_videos()

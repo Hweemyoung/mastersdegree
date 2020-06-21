@@ -656,7 +656,7 @@ def upload_channels_by_list_channels(table_name, fp_list_channels):
     db_channels_uploader.upload_channels(_list_responses)
 
 
-def channels_by_list_channel_ids(table_name, fp_list_channel_ids=None):
+def channels_by_list_channel_ids(table_name, fp_list_channel_ids=None, table_name_videos=None):
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--part', default='id, statistics, brandingSettings, snippet')
@@ -673,8 +673,17 @@ def channels_by_list_channel_ids(table_name, fp_list_channel_ids=None):
     parser.add_argument('--fields', default="items(id, statistics(commentCount, subscriberCount, videoCount, viewCount), brandingSettings(channel(description, title, country, defaultLanguage, keywords)), snippet(publishedAt))")
     args = vars(parser.parse_args())
 
-    with open(fp_list_channel_ids, 'r') as f:
-        _list_channel_ids = json.load(f)
+    if fp_list_channel_ids != None:
+        with open(fp_list_channel_ids, 'r') as f:
+            _list_channel_ids = json.load(f)
+    elif table_name_videos != None:
+        db_handler = DBHandler()
+        db_handler.sql_handler.select(table_name_videos, "channelId")
+        _list_channel_ids = db_handler.execute().fetchall()
+        _list_channel_ids = list(map(lambda _row: _row[0], _list_channel_ids))
+    else:
+        raise ValueError("[-]Either argument fp_list_channel_ids or table_name_videos must be set.")
+    
     youtube_channels = YouTubeChannels(args)
     youtube_channels.set_list_channel_ids(_list_channel_ids).start()
 
@@ -701,6 +710,6 @@ if __name__ == '__main__':
     # upload_rel_paper_video()
     # videos_by_video_ids()
     # update_videos_by_list_videos('scopus_videos', './results/videos/videos_20200620_173158.txt')
-    channels_by_list_channel_ids('channels', './results/channels/list_channel_ids_AI.txt')
-    # upload_channels_by_list_channels('channels', './results/channels/channels_20200602_233006.txt')
+    # channels_by_list_channel_ids('channels', table_name_videos="scopus_videos")
+    upload_channels_by_list_channels('channels', './results/channels/channels_20200621_180959.txt')
     # num_of_videos()

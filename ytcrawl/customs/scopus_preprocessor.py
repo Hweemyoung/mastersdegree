@@ -13,7 +13,7 @@ from preprocessor import Preprocessor
 class ScopusPreprocessor(Preprocessor):
     tup_new_columns = ("Redirection",)
     opener = build_opener(HTTPCookieProcessor())
-    driver = webdriver.Chrome("./chromedriver_83")
+    # driver = webdriver.Chrome("./chromedriver_83")
 
     def __init__(
             self,
@@ -36,7 +36,7 @@ class ScopusPreprocessor(Preprocessor):
 
         # Get youtube search queries
         self.__add_yt_direct_queries()
-        self.driver.close()
+        # self.driver.close()
 
         return self.data
 
@@ -67,8 +67,8 @@ class ScopusPreprocessor(Preprocessor):
             try:
                 print("\t[+]Opening url:")
                 print("\t\t%s" % _url)
-                # _res = self.opener.open(_url, timeout=30)
-                self.driver.get(_url)
+                _res = self.opener.open(_url, timeout=30)
+                # self.driver.get(_url)
             except URLError:
                 # Invalid URL
                 print("\t[-]Invalid URL.")
@@ -83,10 +83,10 @@ class ScopusPreprocessor(Preprocessor):
                 _url_redirected = "None"
             else:
                 print("\t[+]Opening url successful.")
-                # _url_redirected = _res.geturl()
+                _url_redirected = _res.geturl()
                 # Close response
-                # _res.close()
-                _url_redirected = self.driver.current_url
+                _res.close()
+                # _url_redirected = self.driver.current_url
             finally:
                 # Remove protocol(https?://www.), query, hash, ...
                 _url_redirected = urlparse(_url_redirected)
@@ -107,6 +107,6 @@ class ScopusPreprocessor(Preprocessor):
 
 
 if __name__ == "__main__":
-    fpath = "scopus/scopus_life_2014.csv"
+    fpath = "scopus/scopus_social_2014.csv"
     scopus_preprocessor = ScopusPreprocessor(fpath)
     scopus_preprocessor.preprocess_scopus_csv()

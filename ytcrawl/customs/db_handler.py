@@ -21,6 +21,7 @@ class DBHandler:
 
     def execute(self, mode_where='and', reset=True):
         self.sql_handler.get_sql_vals(mode_where, reset)
+        # print("\tLast Values:", self.sql_handler.last_values)
         self.mycursor.execute(self.sql_handler.last_sql) if self.sql_handler.last_values == None else self.mycursor.execute(
             self.sql_handler.last_sql, self.sql_handler.last_values)
         if self.sql_handler.last_values != None: # If not select

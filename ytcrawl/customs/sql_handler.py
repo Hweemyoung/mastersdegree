@@ -129,6 +129,13 @@ class SQLHandler:
                 clause = "`%s`=%d" % (column, value) \
                     if type(value) != str else "`%s`='%s'" % (column, value)
         
+        elif mode == '<>':
+            if value == None:
+                clause = "`%s` IS NOT NULL" % column
+            else:
+                clause = "`%s`<>%d" % (column, value) \
+                    if type(value) != str else "`%s`<>'%s'" % (column, value)
+        
         elif mode == '>':
             clause = "`%s`>%d" % (column, value) \
                 if type(value) != str else "`%s`>'%s'" % (column, value)

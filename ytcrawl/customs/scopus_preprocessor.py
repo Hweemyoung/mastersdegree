@@ -107,6 +107,6 @@ class ScopusPreprocessor(Preprocessor):
 
 
 if __name__ == "__main__":
-    fpath = "scopus/scopus_social_2014.csv"
+    fpath = "scopus/scopus_cs_LG_1901.csv"
     scopus_preprocessor = ScopusPreprocessor(fpath)
     scopus_preprocessor.preprocess_scopus_csv()

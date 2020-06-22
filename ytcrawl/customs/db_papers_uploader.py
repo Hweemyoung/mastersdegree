@@ -6,12 +6,14 @@ from random import shuffle
 import urllib.request
 import re
 
-from bs4 import BeautifulSoup
+# from bs4 import BeautifulSoup
+from selenium import webdriver
 
 
 class DBPapersUploader:
     regex_abs = re.compile(r'https?://(export.)?arxiv.org/abs/\d{3,5}.\d{3,5}')
-    regex_pdf = re.compile(r'https?://(export.)?arxiv.org/pdf/\d{3,5}.\d{3,5}.pdf')
+    regex_pdf = re.compile(
+        r'https?://(export.)?arxiv.org/pdf/\d{3,5}.\d{3,5}.pdf')
     regex_http = re.compile(r'^http://')
     regex_https = re.compile(r'^https://')
     regex_idx_arxiv = re.compile(r'\d{3,5}.\d{3,5}')
@@ -112,17 +114,19 @@ class DBPapersUploader:
         print('# of queried papers:', _num_paths)
         print('# of inserted papers:', _num_inserted)
         print('# of passed papers:', _num_paths - _num_inserted)
-    
+
     def __get_arxiv_domain(self, export=True):
         return "https://export.arxiv.org" if export else "https://arxiv.org"
 
     def __get_fields(self, args):
         print('\tGet fields from url: %s' % args['url'])
         _dict_fields = dict()
-        _dict_fields['urls'] = self.__get_urls(args, mode="arxiv_paper", export=False)
+        _dict_fields['urls'] = self.__get_urls(
+            args, mode="arxiv_paper", export=False)
         _dict_fields['idx_videos'] = self.__get_idx_videos(args)
         _dict_fields['queriedAt'] = datetime.now().strftime('%Y-%m-%d %X')
-        _dict_fields['idx_arxiv'] = self.regex_idx_arxiv.findall(_dict_fields['urls'])[0]
+        _dict_fields['idx_arxiv'] = self.regex_idx_arxiv.findall(_dict_fields['urls'])[
+            0]
         _dict_fields.update(self.__get_fields_from_arxiv(args['url']))
         return _dict_fields
 
@@ -191,14 +195,15 @@ class DBPapersUploader:
         # authors = authors.find_all(text=True)
         # Filter texts
         # authors = [author for author in authors if author not in ('Authors:', ', ')]
-        authors = tuple(map(lambda a: a.findAll(text=True)[0], authors.findAll('a'))) # export
+        authors = tuple(map(lambda a: a.findAll(text=True)[
+                        0], authors.findAll('a')))  # export
         return ', '.join(authors)
 
     def get_title_from_arxiv_html(self, soup):
         # Get title
         heading = soup.find('h1', {'class': ['mathjax', 'title']})
         # title = heading.findAll(text=True)[1]
-        title = heading.findAll(text=True)[1].replace('\n', '') # export
+        title = heading.findAll(text=True)[1].replace('\n', '')  # export
         # print('\ttitle:', title)
         return title
 
@@ -237,14 +242,16 @@ class DBPapersUploader:
         # print('\tsql:', sql)
         # self.db_handler.mycursor.execute(sql)
         # self.db_handler.sql_handler.select(args['table'], ['idx', 'idx_videos']).where('urls', self.__get_arxiv_domain(export=False) + args['path'], 'fulltext')
-        self.db_handler.sql_handler.select(args['table'], ['idx', 'idx_videos']).where('idx_arxiv', self.regex_idx_arxiv.findall(args['path'])[0])
+        self.db_handler.sql_handler.select(args['table'], ['idx', 'idx_videos']).where(
+            'idx_arxiv', self.regex_idx_arxiv.findall(args['path'])[0])
         result = self.db_handler.execute().fetchall()
         # result = self.db_handler.mycursor.fetchall()
         exists = len(result) != 0
 
         if len(result) > 0:
             self.num_existed += 1
-            print('\tPaper already exists:', self.__get_arxiv_domain(export=False) + args['path'])
+            print('\tPaper already exists:', self.__get_arxiv_domain(
+                export=False) + args['path'])
 
             if len(result) > 1:
                 print('Multiple papers sharing same URL:', args["url"])
@@ -257,7 +264,8 @@ class DBPapersUploader:
                 self.idx_video_exists(args)
 
         else:  # len(result) == 0
-            print('\tPaper not exist:', self.__get_arxiv_domain(export=False) + args['path'])
+            print('\tPaper not exist:', self.__get_arxiv_domain(
+                export=False) + args['path'])
 
         return exists
 
@@ -276,12 +284,13 @@ class DBPapersUploader:
         deleted_idx = ', '.join(deleted_idx)
 
         sql = "UPDATE %s SET idx_videos='%s' WHERE idx=%s;" % (
-            args['table'],target_idx_videos, args["rows"][0][0])
+            args['table'], target_idx_videos, args["rows"][0][0])
         print('\tsql:', sql)
         self.db_handler.mycursor.execute(sql)
         self.db_handler.conn.commit()
 
-        sql = "DELETE FROM %s WHERE idx in (%s);" % (args['table'], deleted_idx)
+        sql = "DELETE FROM %s WHERE idx in (%s);" % (
+            args['table'], deleted_idx)
         print('\tsql:', sql)
         self.db_handler.mycursor.execute(sql)
         self.db_handler.conn.commit()
@@ -317,14 +326,15 @@ class DBPapersUploader:
         return exists
 
     def update_idx_videos(self, args):
-        sql = "SELECT `idx_videos` FROM %s WHERE `idx`=%s;" % (args['table'], args["idx_paper"])
+        sql = "SELECT `idx_videos` FROM %s WHERE `idx`=%s;" % (
+            args['table'], args["idx_paper"])
         self.db_handler.mycursor.execute(sql)
         result = self.db_handler.mycursor.fetchall()
         old_idx_videos = result[0][0] if len(result) else ''
         print('\tUpdating idx_videos to:',
               '%s, %s' % (old_idx_videos, args["idx_video"]))
         sql = "UPDATE %s SET idx_videos='%s' WHERE idx='%s';" % (args['table'],
-            '%s, %s' % (old_idx_videos, args["idx_video"]), args["idx_paper"])
+                                                                 '%s, %s' % (old_idx_videos, args["idx_video"]), args["idx_paper"])
         self.db_handler.mycursor.execute(sql)
         self.db_handler.conn.commit()
 
@@ -367,23 +377,226 @@ class DBPapersUploader:
         return url
 
     def get_missing_idx(self):
-        sql = "SELECT a.idx+1 AS start, MIN(b.idx) - 1 AS end FROM %s AS a, %s AS b WHERE a.idx < b.idx GROUP BY a.idx HAVING start < MIN(b.idx);"%(args['table'],args['table'])
+        sql = "SELECT a.idx+1 AS start, MIN(b.idx) - 1 AS end FROM %s AS a, %s AS b WHERE a.idx < b.idx GROUP BY a.idx HAVING start < MIN(b.idx);" % (
+            args['table'], args['table'])
         self.db_handler.mycursor.execute(sql)
         # [(26, 26), (68, 72), ...]
         results = self.db_handler.mycursor.fetchall()
         return results
+
+    def __find_recursive(self, WebElement, name, by='class', multiple=False, max_times_find=1):
+        _method = self.__get_find_method(WebElement, multiple, by)
+        _times_find = 0
+
+        while True:
+            _times_find += 1
+            try:
+                print('\tFind by %s: %s(%d th try)' % (by, name, _times_find))
+
+                _elements = _method(name)
+            except:  # NoSuchElementException
+                print('\t%s %s not found.' % (by, name))
+                if _times_find < max_times_find:
+                    print('\tRetrying...')
+                    sleep(self.sec_sleep)
+                    pass
+                else:
+                    print('\tExceeded max_times_find.')
+                    return False
+            else:
+                print('\t%s %s found.' % (by, name))
+                return _elements
+
+    def update_cited(self, args, list_idx_arxiv=None):
+        from time import sleep
+        self.db_handler.sql_handler.select(args["table"], ["idx", "title", "idx_arxiv"]).where(
+            "subject_1", "Computer Science").where("subject_2", "Machine Learning")
+        if list_idx_arxiv != None:
+            self.db_handler.sql_handler.where(
+                "idx_arxiv", list_idx_arxiv, "in")
+        self.list_idx_arxiv = self.db_handler.execute().fetchall()[:1000]
+
+        _driver = webdriver.Chrome("./chromedriver_83")
+        _num_papers = len(self.list_idx_arxiv)
+        _dict_cited = dict()
+        regex_number = re.compile(r'\d{1,7}')
+        for _i, _row in enumerate(self.list_idx_arxiv):
+            print("[+]Processing %d out of %d papers", _i+1, _num_papers)
+            # title to URL format
+            _q = _row[1].replace(' ', '+')
+            # Build url
+            _url = "https://www.google.com/search?q=" + _q
+            # Open url
+            _driver.get(_url)
+            # Find all div.g
+            try:
+                _list_div_g = _driver.find_elements_by_class_name("g")
+            except:
+                # Empty record
+                continue
+
+            # Set flag
+            _arxiv_found = False
+            _citation = False
+            # Find specific div.g div.r > a[href="https://arxiv.org/..."]
+            for _div_g in _list_div_g:
+                _div_rc = _div_g.find_element_by_class_name("rc")
+                # .rc > a
+                _a = _div_rc.find_element_by_class_name(
+                    "r").find_element_by_tag_name("a")
+                # Href matches arxiv?
+                if not(bool(self.regex_abs.match(_a.get_property("href"))) or bool(self.regex_pdf.match(_a.get_property("href")))):
+                    continue
+                _arxiv_found = True
+                # .rc > .s > div > .dhIWPd.f
+                try:
+                    _div_fl = _div_rc.find_element_by_class_name("s").find_element_by_tag_name(
+                        "div").find_element_by_css_selector("div.dhIWPd.f").find_element_by_class_name("fl")
+                except:
+                    break
+                # Is it citation?
+                regex_number = re.compile(r'\d{1,7}')
+                _list_cited = regex_number.findall(
+                    _div_fl.get_attribute("innerText"))
+                if _list_cited:
+                    _citation = _list_cited[0]
+                # Citation found.
+                if _citation != False:
+                    break
+
+            if not _arxiv_found:
+                _citation = "no arxiv"
+            elif _citation == False:
+                _citation = '0'
+            print("\t[+]Citation:", _citation)
+
+            # Store at dict
+            _dict_cited[_row[0]] = _citation
+
+            # Upload cited
+            # self.db_handler.sql_handler.update(args["table"], {"cited": _citation}).where("idx", _row[0])
+            # self.db_handler.execute()
+
+            sleep(5.0)
+
+        import json
+        with open("dict_cited_LG.txt", "w+") as f:
+            json.dump(_dict_cited, f)
+
+    def update_cited_from_gs(self, args, list_idx_arxiv=None):
+        from time import sleep
+        self.db_handler.sql_handler.select(args["table"], ["idx", "title", "idx_arxiv"]).where(
+            "subject_1", "Computer Science").where("subject_2", "Machine Learning")
+        if list_idx_arxiv != None:
+            self.db_handler.sql_handler.where(
+                "idx_arxiv", list_idx_arxiv, "in")
+        self.list_idx_arxiv = self.db_handler.execute().fetchall()
+
+        _driver = webdriver.Chrome("./chromedriver_83")
+        _num_papers = len(self.list_idx_arxiv)
+        _dict_cited = dict()
+        regex_number = re.compile(r'\d{1,7}')
+
+        for _i, _row in enumerate(self.list_idx_arxiv):
+            print("[+]Processing %d out of %d papers" % (_i+1, _num_papers))
+            # Set flag
+            _arxiv_found = False
+            _citation = False
+
+            # title to URL format
+            # Dense+Morphological+Network%3A+An+Universal+Function+Approximator.+arXiv+2019
+            _q = _row[1].replace(' ', '+') + ".+arXiv+2019"
+            # Build url
+            _url = "https://scholar.google.com/scholar?q=" + _q
+            # Open url
+            _driver.get(_url)
+            # Find div#gs_res_ccl_mid
+            _div_mid = _driver.find_element_by_id("gs_res_ccl_mid")
+            # Find all div.gs_r
+            _list_div_gs_r = _div_mid.find_elements_by_class_name("gs_r")
+            # Find specific div.gs_r > div.gs_ri > h3.gs_rt > a[href="https://arxiv.org/..."]
+            for _div_gs_r in _list_div_gs_r:
+                _div_ri = _div_gs_r.find_element_by_class_name("gs_ri")
+                # .gs_ri > h3.gs_rt > a
+                try:
+                    _a = _div_ri.find_element_by_css_selector(
+                        "h3.gs_rt").find_element_by_tag_name("a")
+                except:
+                    continue
+
+                # Href matches idx_arxiv?
+                print("[+]Heading href:", _a.get_property("href"))
+                if not _row[2] in _a.get_property("href"):
+                    continue
+
+                _arxiv_found = True
+
+                # .gs_rt > .gs_fl > a[href="/scholar?cites=..."]
+                try:
+                    _list_a = _div_ri.find_element_by_css_selector(
+                        "div.gs_fl").find_elements_by_tag_name("a")
+                    for _a in _list_a:
+                        # Is it citation?
+                        if "/scholar?cites=" in _a.get_property("href"):
+                            _citation = regex_number.findall(
+                                _a.get_attribute("innerText"))[0]
+                            break
+                except:
+                    continue
+
+                # Citation found?
+                if _citation != False:
+                    break
+
+            if not _arxiv_found:
+                _citation = "no arxiv"
+            elif _citation == False:
+                _citation = '0'
+            print("\t[+]Citation:", _citation)
+
+            # Store at dict
+            _dict_cited[_row[0]] = _citation
+
+            # Upload cited
+            # self.db_handler.sql_handler.update(args["table"], {"cited": _citation}).where("idx", _row[0])
+            # self.db_handler.execute()
+
+            sleep(10.0)
+
+        import json
+        with open("dict_cited_LG.txt", "w+") as f:
+            json.dump(_dict_cited, f)
 
 
 if __name__ == "__main__":
     db_papers_uploader = DBPapersUploader()
     # Required: args["table","subject", "YY", "MM", "url"]
     args = {
-        'table': 'temp_papers',
+        'table': 'papers_cs.LG',
         'subject': 'cs.LG',
         'YY': '19'
     }
+    # Fields
+    # args['urls'] = False
+    # args['idx_videos'] = False
+    # args['queriedAt'] = False
+    # args['idx_arxiv'] = False
+    # args['title'] = False
+    # args['authors'] = False
+    # args['abstract'] = False
+    # args['publishedAt'] = False
+    # args['subject_1'] = False
+    # args['subject_2'] = False
+    # args['subject_3'] = False
+    # args['urls'] = False
+    # args['idx_videos'] = False
+    # args['queriedAt'] = False
+    # args['idx_arxiv'] = False
+    # args['cited'] = True
+
     # for MM in ['01', '02', '03']:
-    for MM in ['01']:
-        args['MM'] = MM
-        print(args)
-        db_papers_uploader.update_papers_from_arxiv_list(args)
+    # for MM in ['01']:
+    # args['MM'] = MM
+    # print(args)
+    # db_papers_uploader.update_papers_from_arxiv_list(args)
+    db_papers_uploader.update_cited_from_gs(args)

@@ -561,7 +561,7 @@ def search_by_urls():
     # _list_queries = _list_queries[:2]
     # print(_list_queries)
 
-    data = pd.read_csv("scopus/scopus_health_2014.csv", header=0, keep_default_na=False)
+    data = pd.read_csv("scopus/scopus_cs_LG_1901.csv", header=0, keep_default_na=False)
     data = data[data["DOI"] != "nan"]
     _list_queries = list(data["DOI"])
     _list_idx_papers = list(data["DOI"])
@@ -706,10 +706,10 @@ def upload_rel_paper_video():
 if __name__ == '__main__':
     # update_papers_from_arxiv_list()
     # altmetric_url_from_papers()
-    # search_by_urls()
+    search_by_urls()
     # upload_rel_paper_video()
     # videos_by_video_ids()
     # update_videos_by_list_videos('scopus_videos', './results/videos/videos_20200620_173158.txt')
     # channels_by_list_channel_ids('channels', table_name_videos="scopus_videos")
-    upload_channels_by_list_channels('channels', './results/channels/channels_20200621_180959.txt')
+    # upload_channels_by_list_channels('channels', './results/channels/channels_20200621_180959.txt')
     # num_of_videos()

@@ -45,10 +45,34 @@ class ScopusPreprocessor(Preprocessor):
         # _S_doi = data["DOI"]
         # Redirected urls
         self.__set_redirections()
+        # Adjust Err values
 
         # pd.Series.astype(str) + ',' + pd.Series.astype(str)
         return self
 
+    def __url_without_open(self, i):
+        # Case1: SagePub
+        if self.data["Source title"][i] in ("Journal of Peace Research","Progress in Human Geography",):
+            # https://journals.sagepub.com/doi/10.1177/0022343314534458
+            return "journals.sagepub.com/doi/" + self.data["DOI"][i]
+        # Case2: Taylor&Francis Online
+        elif self.data["Source title"][i] in ("Journal of Business and Economic Statistics", "Research on Language and Social Interaction",):
+            # https://www.tandfonline.com/doi/abs/10.1080/07350015.2014.917979
+            return "tandfonline.com/doi/abs/" + self.data["DOI"][i]
+        # Case3: Wiley Online Library
+        elif self.data["Source title"][i] in ("Criminology",):
+            return "onlinelibrary.wiley.com/doi/abs/" + self.data["DOI"][i]
+        # Case4: The University of Chicago Press Journal
+        elif self.data["Source title"][i] in ("American Journal of Sociology",):
+            return "journals.uchicago.edu/doi/" + self.data["DOI"][i]
+        # Case5: American Psychological Association
+        elif self.data["Source title"][i] in ("Journal of Personality and Social Psychology",):
+            return "doi.apa.org/doiLanding?doi=" + self.data["DOI"][i].replace('/', "%2F")
+            # 10.1037/a0036148
+            # return "doi.apa.org/doiLanding?doi=10.1037%2Fa0036148"
+        
+        return False
+            
     def __set_redirections(self):
         print("[+]Getting redirected urls...")
         # S_DOI == data["DOI"]
@@ -61,42 +85,50 @@ class ScopusPreprocessor(Preprocessor):
                 print("\t[+]Already processed. Skipping...")
                 continue
             _doi = self.data["DOI"][_i]
-            # Build up url
-            _url = "https://www.doi.org/" + _doi
-            # Get redirection
-            try:
-                print("\t[+]Opening url:")
-                print("\t\t%s" % _url)
-                _res = self.opener.open(_url, timeout=30)
-                # self.driver.get(_url)
-            except URLError:
-                # Invalid URL
-                print("\t[-]Invalid URL.")
-                _url_redirected = "Err"
-            except socket.timeout:
-                # Timeout
-                print("\t[-]Timed out.")
-                _url_redirected = "Err"
-            except ConnectionResetError:
-                # Connection reset
-                print("\t[-]Connection reset error. Passing...")
-                _url_redirected = "None"
+            # Skip opening?
+            _url_redirected = self.__url_without_open(_i)
+            if _url_redirected != False:
+                print("\t[+]Skip opening.")
             else:
-                print("\t[+]Opening url successful.")
-                _url_redirected = _res.geturl()
-                # Close response
-                _res.close()
-                # _url_redirected = self.driver.current_url
-            finally:
-                # Remove protocol(https?://www.), query, hash, ...
-                _url_redirected = urlparse(_url_redirected)
-                # Append
-                print("\t[+]Setting redirected url:")
-                _url_redirected = _url_redirected.netloc + _url_redirected.path
-                print("\t\t%s" % _url_redirected)
-                self.data["Redirection"][_i] = _url_redirected
-                # _list_urls_redirected.append(_url_redirected.netloc + _url_redirected.path)
+                # Build up url
+                _url = "https://www.doi.org/" + _doi
+                # Get redirection
+                try:
+                    print("\t[+]Opening url:")
+                    print("\t\t%s" % _url)
+                    _res = self.opener.open(_url, timeout=30)
+                    # self.driver.get(_url)
+                except URLError:
+                    # Invalid URL
+                    print("\t[-]Invalid URL.")
+                    _url_redirected = "Err"
+                except socket.timeout:
+                    # Timeout
+                    print("\t[-]Timed out.")
+                    _url_redirected = "Err"
+                except ConnectionResetError:
+                    # Connection reset
+                    print("\t[-]Connection reset error. Passing...")
+                    _url_redirected = "None"
+                else:
+                    print("\t[+]Opening url successful.")
+                    _url_redirected = _res.geturl()
+                    # Close response
+                    _res.close()
+                    # _url_redirected = self.driver.current_url
+                finally:
+                    # Remove protocol(https?://www.), query, hash, ...
+                    _url_redirected = urlparse(_url_redirected)
+                    # Append
+                    print("\t[+]Setting redirected url:")
+                    _url_redirected = _url_redirected.netloc + _url_redirected.path
+                    print("\t\t%s" % _url_redirected)
+            # Write on DataFrame
+            self.data["Redirection"][_i] = _url_redirected
+            # _list_urls_redirected.append(_url_redirected.netloc + _url_redirected.path)
             self.__check_savepoint(_i, self.data)
+        # Save
+        self.data.astype(str).to_csv(self.fpath_scopus_csv, index=False)
 
         return self
 
@@ -107,6 +139,6 @@ class ScopusPreprocessor(Preprocessor):
 
 
 if __name__ == "__main__":
-    fpath = "scopus/scopus_cs_LG_1901.csv"
+    fpath = "scopus/social-science,top11-20journals,2014.csv"
     scopus_preprocessor = ScopusPreprocessor(fpath)
     scopus_preprocessor.preprocess_scopus_csv()

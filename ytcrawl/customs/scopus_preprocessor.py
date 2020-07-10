@@ -14,6 +14,8 @@ class ScopusPreprocessor(Preprocessor):
     tup_new_columns = ("Redirection",)
     opener = build_opener(HTTPCookieProcessor())
     # driver = webdriver.Chrome("./chromedriver_83")
+    num_pass = 0
+    num_fail = 0
 
     def __init__(
             self,
@@ -29,6 +31,7 @@ class ScopusPreprocessor(Preprocessor):
 
         self.data = pd.read_csv(fpath_scopus_csv, header=0, sep=",", dtype=str)
         self.data = self.data.astype(str)
+        self.num_papers = len(self.data)
         if shuffle:
             print("[+]Shuffling records.")
             self.data = self.data.sample(frac=1).reset_index(drop=True)
@@ -45,6 +48,8 @@ class ScopusPreprocessor(Preprocessor):
         self.__add_yt_direct_queries()
         # self.driver.close()
 
+        # Report
+
         return self.data
 
     def __add_yt_direct_queries(self):
@@ -52,6 +57,8 @@ class ScopusPreprocessor(Preprocessor):
         # _S_doi = data["DOI"]
         # Redirected urls
         self.__set_redirections()
+        print("\n# papers: %d\t# fail: %d\t# pass: %d"%(self.num_papers, self.num_fail, self.num_pass))
+        print("Done.")
 
         # pd.Series.astype(str) + ',' + pd.Series.astype(str)
         return self
@@ -83,14 +90,17 @@ class ScopusPreprocessor(Preprocessor):
         print("[+]Getting redirected urls...")
         # S_DOI == data["DOI"]
         _list_urls_redirected = list()
-        _num_papers = len(self.data)
-        for _i in range(_num_papers):
-            print("[+]Processing %d out of %d papers..." % (_i+1, _num_papers))
+        self.num_pass = 0
+        self.num_fail = 0
+        for _i in range(self.num_papers):
+            print("[+]Processing %d out of %d papers..." % (_i+1, self.num_papers))
             # Overwrite: False
             if self.overwrite == False and self.data["Redirection"][_i] != "None":
+                self.num_pass += 1
                 continue
             # Overwrite: "Err"
             elif self.overwrite == "Err" and self.data["Redirection"][_i] not in ("None", "Err"):
+                self.num_pass += 1
                 continue
             # Overwrite: True
             # Already processed and not overwrite?
@@ -116,14 +126,17 @@ class ScopusPreprocessor(Preprocessor):
                     # Invalid URL
                     print("\t[-]Invalid URL.")
                     _url_redirected = "Err"
+                    self.num_fail += 1
                 except socket.timeout:
                     # Timeout
                     print("\t[-]Timed out.")
                     _url_redirected = "Err"
+                    self.num_fail += 1
                 except ConnectionResetError:
                     # Connection reset
                     print("\t[-]Connection reset error. Passing...")
                     _url_redirected = "None"
+                    self.num_fail += 1
                 else:
                     print("\t[+]Opening url successful.")
                     _url_redirected = _res.geturl()

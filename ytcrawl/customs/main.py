@@ -702,6 +702,17 @@ def upload_rel_paper_video():
                 db_handler.sql_handler.insert("rel_paper_video", dict_columns_values=_dict)
                 db_handler.execute()
 
+def preprocess_scopus():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--fpath')
+    parser.add_argument('--overwrite', action="store_true", default="Err")
+    parser.add_argument('--shuffle', action="store_true", default=False)
+    args = parser.parse_args()
+    
+    from scopus_preprocessor import ScopusPreprocessor
+    scopus_preprocessor = ScopusPreprocessor(args.fpath, overwrite=args.overwrite, shuffle=args.shuffle)
+    scopus_preprocessor.preprocess_scopus_csv()
+    
 
 if __name__ == '__main__':
     # update_papers_from_arxiv_list()

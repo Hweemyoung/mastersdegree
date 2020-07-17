@@ -50,22 +50,22 @@ YOUTUBE_API_VERSION = 'v3'
 
 
 class YouTubeVideos(YouTube):
-    args = {
-        'part': 'id, snippet, contentDetails, statistics, liveStreamingDetails',
-        'hl': None,
-        'maxWidth': None,
-        'locale': None,
-        'id': None,
-        'onBehalfOfContentOwner': None,
-        'regionCode': None,
-        'pageToken': None,
-        'maxResults': None,
-        'chart': None,
-        'myRating': None,
-        'maxHeight': None,
-        'videoCategoryId': None,
-        'fields': 'items(id, snippet(title, publishedAt, description, tags, defaultLanguage, defaultAudioLanguage, channelTitle, channelId), contentDetails(duration), statistics(viewCount, dislikeCount, commentCount, likeCount, favoriteCount), liveStreamingDetails(actualStartTime))'
-    }
+    # args = {
+    #     'part': 'id, snippet, contentDetails, statistics, liveStreamingDetails',
+    #     'hl': None,
+    #     'maxWidth': None,
+    #     'locale': None,
+    #     'id': None,
+    #     'onBehalfOfContentOwner': None,
+    #     'regionCode': None,
+    #     'pageToken': None,
+    #     'maxResults': None,
+    #     'chart': None,
+    #     'myRating': None,
+    #     'maxHeight': None,
+    #     'videoCategoryId': None,
+    #     'fields': 'items(id, snippet(title, publishedAt, description, tags, defaultLanguage, defaultAudioLanguage, channelTitle, channelId), contentDetails(duration), statistics(viewCount, dislikeCount, commentCount, likeCount, favoriteCount), liveStreamingDetails(actualStartTime))'
+    # }
 
     def __init__(self, args, method_name='videos'):
         super(YouTubeVideos, self).__init__(args, method_name)
@@ -79,20 +79,20 @@ class YouTubeVideos(YouTube):
             args = self.args
         if list_searches == None:
             list_searches = self.list_searches
-        args["filter_by_q"] = filter_by_q
 
         _list_responses = self.__search(args, list_searches)
         self.save_task(_list_responses, args)
         return _list_responses
 
     def __search(self, args, list_searches=None):
+        print("[+]Filters By Q.")
         _list_responses = list()
         if list_searches:
             _num_video_ids = len(list_searches)
             print('[+]# of video IDs: ', _num_video_ids)
             for i, _dict_search in enumerate(list_searches):
-                print('[+]Processing %d out of %d queries' %
-                      (i+1, _num_video_ids))
+                print('[+]Processing %d out of %d queries: %s' %
+                      (i+1, _num_video_ids, _dict_search['q']))
                 for _item in _dict_search['items'][0]:
                     args['id'] = _item['id']['videoId']
                     args['q'] = _dict_search['q']
@@ -144,21 +144,24 @@ class YouTubeVideos(YouTube):
             # Filter by q
             if options["filter_by_q"]:
                 # Temporary list
-                _list_items_new = list()
+                _list_items_temp = list()
                 # Filter each item
                 while _response["items"]:
                     _item = _response["items"].pop()
-                    if self.__q_in_fields(args["q"], _item, fields=("title", "description")):
+                    if self.__q_in_fields(options["q"], _item["snippet"], fields=("title", "description")):
                         # Append to temp list
-                        _list_items_new.append(_item)
+                        print("\t\t[+]Includes Q.")
+                        _list_items_temp.append(_item)
+                    else:
+                        print("\t\t[-]Q not included.")
                 # Replace old with new list
-                _response["items"] = _list_items_new
+                _response["items"] = _list_items_temp
 
         return _response
-    
-    def __q_in_fields(self, q, item, fields=("title", "description")):
+
+    def __q_in_fields(self, q, dict_snippet, fields=("title", "description")):
         for _field in fields:
-            if q.replace(" ", "").lower() in item[_field].replace(" ", "").lower():
+            if q.replace(" ", "").lower() in dict_snippet[_field].replace(" ", "").lower():
                 return True
         return False
 

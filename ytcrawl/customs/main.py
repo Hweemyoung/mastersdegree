@@ -481,6 +481,7 @@ def videos_by_video_ids():
     parser.add_argument('--maxHeight', default=None)
     parser.add_argument('--videoCategoryId', default=None)
     parser.add_argument('--fields', default='items(id, snippet(title, publishedAt, description, tags, defaultLanguage, defaultAudioLanguage, channelTitle, channelId), contentDetails(duration), statistics(viewCount, dislikeCount, commentCount, likeCount, favoriteCount), liveStreamingDetails(actualStartTime))')
+    parser.add_argument('--filter_by_q', action="store_true", default=False)
 
     args = vars(parser.parse_args())
     with open('./results/search/search_scopus_health_2014.txt', 'r') as f:
@@ -488,7 +489,7 @@ def videos_by_video_ids():
         _list_searches = [_dict_response for _dict_response in _list_searches if _dict_response["items"][0]]
     
     # Test
-    # _list_searches = _list_searches[:2]
+    _list_searches = _list_searches[:3]
 
     youtube_videos = YouTubeVideos(args)
     return youtube_videos.set_list_searches(_list_searches).start()
@@ -717,9 +718,9 @@ def preprocess_scopus():
 if __name__ == '__main__':
     # update_papers_from_arxiv_list()
     # altmetric_url_from_papers()
-    search_by_urls()
+    # search_by_urls()
     # upload_rel_paper_video()
-    # videos_by_video_ids()
+    videos_by_video_ids()
     # update_videos_by_list_videos('scopus_videos', './results/videos/videos_20200620_173158.txt')
     # channels_by_list_channel_ids('channels', table_name_videos="scopus_videos")
     # upload_channels_by_list_channels('channels', './results/channels/channels_20200621_180959.txt')

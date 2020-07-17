@@ -74,11 +74,13 @@ class YouTubeVideos(YouTube):
         self.list_searches = list_searches
         return self
 
-    def start(self, args=None, list_searches=None):
+    def start(self, args=None, list_searches=None, filter_by_q=False):
         if args == None:
             args = self.args
         if list_searches == None:
             list_searches = self.list_searches
+        args["filter_by_q"] = filter_by_q
+
         _list_responses = self.__search(args, list_searches)
         self.save_task(_list_responses, args)
         return _list_responses
@@ -138,8 +140,27 @@ class YouTubeVideos(YouTube):
             print('[-]Rebuilding youtube with new api key.')
             self.build_youtube()
             _response = False
+        else:
+            # Filter by q
+            if options["filter_by_q"]:
+                # Temporary list
+                _list_items_new = list()
+                # Filter each item
+                while _response["items"]:
+                    _item = _response["items"].pop()
+                    if self.__q_in_fields(args["q"], _item, fields=("title", "description")):
+                        # Append to temp list
+                        _list_items_new.append(_item)
+                # Replace old with new list
+                _response["items"] = _list_items_new
 
         return _response
+    
+    def __q_in_fields(self, q, item, fields=("title", "description")):
+        for _field in fields:
+            if q.replace(" ", "").lower() in item[_field].replace(" ", "").lower():
+                return True
+        return False
 
 
 def youtube_videos(options):

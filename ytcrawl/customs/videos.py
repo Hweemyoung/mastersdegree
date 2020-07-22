@@ -66,6 +66,10 @@ class YouTubeVideos(YouTube):
     #     'videoCategoryId': None,
     #     'fields': 'items(id, snippet(title, publishedAt, description, tags, defaultLanguage, defaultAudioLanguage, channelTitle, channelId), contentDetails(duration), statistics(viewCount, dislikeCount, commentCount, likeCount, favoriteCount), liveStreamingDetails(actualStartTime))'
     # }
+    num_papers = 0
+    num_videos = 0
+
+    fields_q_filter = ("title", "description")
 
     def __init__(self, args, method_name='videos'):
         super(YouTubeVideos, self).__init__(args, method_name)
@@ -79,13 +83,18 @@ class YouTubeVideos(YouTube):
             args = self.args
         if list_searches == None:
             list_searches = self.list_searches
-
+        
+        args["filter_by_q"] = filter_by_q
+        if filter_by_q:
+            print("[+]Filters By Q.")
+        
         _list_responses = self.__search(args, list_searches)
         self.save_task(_list_responses, args)
+        print("# papers: %d\t# videos: %d"%(self.num_papers, self.num_videos))
         return _list_responses
 
     def __search(self, args, list_searches=None):
-        print("[+]Filters By Q.")
+        
         _list_responses = list()
         if list_searches:
             _num_video_ids = len(list_searches)
@@ -145,10 +154,11 @@ class YouTubeVideos(YouTube):
             if options["filter_by_q"]:
                 # Temporary list
                 _list_items_temp = list()
+                
                 # Filter each item
                 while _response["items"]:
                     _item = _response["items"].pop()
-                    if self.__q_in_fields(options["q"], _item["snippet"], fields=("title", "description")):
+                    if self.__q_in_fields(options["q"], _item["snippet"]):
                         # Append to temp list
                         print("\t\t[+]Includes Q.")
                         _list_items_temp.append(_item)
@@ -157,45 +167,17 @@ class YouTubeVideos(YouTube):
                 # Replace old with new list
                 _response["items"] = _list_items_temp
 
+            if _response["items"]:
+                self.num_papers += 1
+                self.num_videos += len(_response["items"])
+
         return _response
 
-    def __q_in_fields(self, q, dict_snippet, fields=("title", "description")):
-        for _field in fields:
+    def __q_in_fields(self, q, dict_snippet):
+        for _field in self.fields_q_filter:
             if q.replace(" ", "").lower() in dict_snippet[_field].replace(" ", "").lower():
                 return True
         return False
-
-
-def youtube_videos(options):
-    youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
-                    developerKey=options.api_key if options.api_key else DEVELOPER_KEY)
-
-    fields = 'items(snippet(channelTitle, tags, title, defaultAudioLanguage, publishedAt, defaultLanguage, channelId, description), statistics(viewCount, dislikeCount, commentCount, likeCount, favoriteCount), contentDetails(duration))'
-    response = youtube.videos().list(
-        part='snippet, statistics, contentDetails',
-        hl=None,
-        maxWidth=None,
-        locale=None,
-        id=options.video_id,
-        onBehalfOfContentOwner=None,
-        regionCode=options.region_code,
-        pageToken=None,
-        maxResults=options.max_results,
-        chart=None,
-        myRating=None,
-        maxHeight=None,
-        videoCategoryId=None,
-        # fields='items(id)'
-        # fields='items(snippet(channelTitle, tags, localized, title, defaultAudioLanguage, publishedAt, defaultLanguage, categoryId, channelId, thumbnails, description, liveBroadcastContent))'
-        # fields='items(statistics(viewCount, dislikeCount, commentCount, likeCount, favoriteCount))'
-        # fields='items(contentDetails(definition, dimension, projection, caption, licensedContent, duration))'
-        # fields='items(snippet(channelTitle, description, publishedAt), statistics(viewCount, dislikeCount, commentCount, likeCount, favoriteCount))'
-        fields=options.fields
-    ).execute()
-
-    # print(response.get('items', []))
-
-    return response
 
 
 def filter_videos_by_viewcount(args, items):
@@ -240,17 +222,3 @@ if __name__ == '__main__':
     #     youtube_videos(args)
     # except (HttpError, e):
     #     print('An HTTP error %d occurred:\n%s' % (e.resp.status, e.content))
-
-    list_video_ids = []
-    for video_id in list_video_ids:
-        args.video_id = video_id
-
-        response = youtube_videos(args)
-        print(response)
-        with open(os.path.join('./results/videos', args.video_id + '.txt'), 'w') as new_json:
-            json.dump(response.get('items', []), new_json)
-        items = response.get('items')
-        print(items)
-
-        db_videos_uploader = DBVideosUploader()
-        db_videos_uploader.insert_into_videos(args, items)

@@ -280,11 +280,70 @@ def _add_stats(dict_stats_by_content, dict_attr_by_content, attribute='timedelta
                 _std, 2)
     return dict_stats_by_content
 
+def filter_by_q():
+    db_handler = DBHandler()
+    db_handler.sql_handler.select("scopus_videos", ["title", "description", "q", "idx"])
+    _results = db_handler.execute().fetchall()
+    num_delete = 0
+    for _row in _results:
+        _new_q = list()
+        _list_q = _row[2].split(", ")
+        for _q in _list_q:
+            if _q.lower() not in _row[0].lower() and _q not in _row[1].lower():
+                continue
+            _new_q.append(_q)
+        
+        if _new_q:
+            _new_q = ", ".join(_new_q)
+            db_handler.sql_handler.update("scopus_videos", dict_columns_values={"q": _new_q})
+            db_handler.execute()
+        else:
+            db_handler.sql_handler.delete("scopus_videos").where("idx", _row[3])
+            db_handler.execute()
+            num_delete += 1
+
+    print("# delete: %d" % num_delete)
+
+def cal_paper_video_interval(fp_csv):
+    from datetime import datetime, date
+    data = pd.read_csv(fp_csv, header=0)
+    
+    list_date_videos = list(map(lambda field: datetime.strptime(field, "%Y-%m-%d %H:%M:%S").date(), data["publishedAt"]))
+    list_date_papers = list(map(lambda field: datetime.strptime(field, "%Y-%m-%d").date(), data["paper_published"]))
+    list_days_interval = list()
+    for date_video, date_paper in zip(list_date_videos, list_date_papers):
+        date_interval = date_video - date_paper
+        list_days_interval.append(date_interval.days/365)
+    print(list_days_interval)
+    list_video_ids = data["videoId"]
+    return list_days_interval, list_video_ids
+
+def boxplot(list_days_interval, list_video_ids):
+    import pandas as pd
+    import numpy as np
+    df2 = pd.DataFrame(zip(list_days_interval, list_video_ids), columns=["days", "videoId"])
+    df2.sort_values(by=["days"])
+    print(df2)
+    xs = np.array(list_days_interval)
+    print("Mean: %f\tMedian: %f\tStdev: %f"%(np.average(xs), np.median(xs), np.std(xs)))
+    df = pd.DataFrame(xs, columns=["Age(Years)"])
+    plt.figure(figsize=(7, 6)) # 크기 지정
+    boxplot = df.boxplot(column=['Age(Years)'])
+    # plt.yticks(np.arange(0, 101, step=5))
+    plt.show()
+
 
 if __name__ == '__main__':
+    # 200720
+    list_days_interval, list_video_ids = cal_paper_video_interval("scopus/scopus_videos_200720_1630.csv")
+    boxplot(list_days_interval, list_video_ids)
+
+    # 200719
+    # filter_by_q()
+    
     # _temp()
     # test_plt(num_cols=6, max_fig=20)
-    interval_from_paper()
+    # interval_from_paper()
     # sql_handler = SQLHandler()
 
     # with open('table.csv', newline='') as f:

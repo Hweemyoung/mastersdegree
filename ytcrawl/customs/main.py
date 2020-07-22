@@ -18,7 +18,7 @@ from bs4 import BeautifulSoup
 import re
 
 from search_custom import YouTubeSearch
-from videos import youtube_videos, filter_videos_by_viewcount, YouTubeVideos
+from videos import filter_videos_by_viewcount, YouTubeVideos
 
 
 # Customize args: API key
@@ -334,104 +334,6 @@ def upload_channels_from_search():
 #     print('Merged urls:', db_papers_uploader.list_merged)
 
 
-def altmetric_url_from_papers():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '--table', help='Table of target papers')
-    parser.add_argument('--overwrite', dest='overwrite',
-                        help='Overwrite policy', action='store_true', default='incomplete')
-    parser.add_argument('--driver', help='Driver', default='chrome')
-    parser.add_argument('--p_driver', help='Driver path',
-                        default='./chromedriver_83')
-    parser.add_argument('--no_bookmarklet', help='Whether to install new bookmarklet or not',
-                        action='store_true', default=False)
-    parser.add_argument('--max_times_find', type=int,
-                        help='Max times to find', default=5)
-    parser.add_argument('--sec_sleep', type=float,
-                        help='Sleep seconds', default=1.0)
-
-    parser.add_argument('--news', help='Set news as target',
-                        action='store_true', default=False)
-    parser.add_argument('--blogs', help='Set blogs as target',
-                        action='store_true', default=False)
-    parser.add_argument('--twitter', help='Set twitter as target',
-                        action='store_true', default=False)
-    parser.add_argument('--wikipedia', help='Set wikipedia as target',
-                        action='store_true', default=False)
-    parser.add_argument('--google', help='Set google as target',
-                        action='store_true', default=False)
-    parser.add_argument('--reddit', help='Set reddit as target',
-                        action='store_true', default=False)
-    parser.add_argument('--video', help='Set video as target',
-                        action='store_true', default=False)
-    args = vars(parser.parse_args())
-    # args = dict()
-    # args['table'] = 'temp_papers'
-    # args['overwrite']='incomplete'
-    # args['driver']='chrome'
-    # args['p_driver']='./chromedriver_83'
-    # args['new_bookmarklet']=True
-    # args['max_times_find']=5
-    # args['sec_sleep']=1.0
-    # args['news']=False
-    # args['blogs']=False
-    # args['twitter']=False
-    # args['wikipedia']=False
-    # args['google']=False
-    # args['reddit']=False
-    # args['video']=False
-
-    # # Custom args
-    # parser.add_argument('--f-channel-ids',
-    #                     help='List of Channel IDs', default=None)
-
-    # args = parser.parse_args()
-
-    altmetric_it = AltmetricIt(args)
-    altmetric_it.crawl_altmetric_from_papers(overwrite='incomplete')
-
-    # Select urls from temp_papers
-    # altmetric_it.db_handler.sql_handler.select(args['table'], 'urls')
-    # _list_urls = altmetric_it.db_handler.execute().fetchall()
-    # _list_urls = list(map(lambda _row: _row[0], _list_urls))
-
-    # altmetric_it.crawl_altmetric_from_papers(overwrite='incompleted')
-    # altmetric_it.update_results(overwrite='incompleted')
-
-    # db_handler = DBHandler()
-    # db_handler.sql_handler.select('papers', 'idx, urls')
-    # sql = db_handler.sql_handler.get_sql()
-    # db_handler.mycursor.execute(sql)
-    # list_urls = db_handler.mycursor.fetchall()
-    # # list_urls = list_urls[:2]
-    # num_papers = len(list_urls)
-    # list_failed = dict()
-    # print('# of paper urls:', num_papers)
-
-    # # Twitter
-    # list_failed['twitter'] = list()
-    # regex_abs = re.compile(r'https?://arxiv.org/abs/\d{3,5}.\d{3,5}')
-    # for i, field in enumerate(list_urls):
-    #     print('Processing: %d out of %d papers' % (i+1, num_papers))
-    #     _str_urls = field[1]
-    #     _url_abs = regex_abs.findall(_str_urls)[0]
-    #     _success = altmetric_it.get_twitter_from_url(
-    #         _url_abs, overwrite='incompleted')
-    #     if not _success:
-    #         print('---------------Job failed: %s' % altmetric_it.msg_error)
-    #         list_failed['twitter'].append({
-    #             'idx': field[0],
-    #             'url': _url_abs,
-    #             'msg_error': altmetric_it.msg_error
-    #         })
-    #     else:
-    #         print('---------------Job successful.')
-    #         print('\n')
-
-    # with open('./altmetricit/log_fail_%s.txt' % datetime.now().strftime('%Y%m%d_%H%M%S'), 'w+') as f:
-    #     json.dump(list_failed, f)
-
-
 def organize_twitter():
 
     twitter_organizer = TwitterOrganizer()
@@ -456,7 +358,7 @@ def update_papers_from_arxiv_list():
         args, overwrite=args['overwrite'])
 
 
-def videos_by_video_ids():
+def videos_by_video_ids(fp_list_searches):
     parser = argparse.ArgumentParser()
 
     # Custom args
@@ -484,18 +386,19 @@ def videos_by_video_ids():
     parser.add_argument('--filter_by_q', action="store_true", default=False)
 
     args = vars(parser.parse_args())
-    with open('./results/search/search_scopus_health_2014.txt', 'r') as f:
+    with open(fp_list_searches, 'r') as f:
         _list_searches = json.load(f)
-        _list_searches = [_dict_response for _dict_response in _list_searches if _dict_response["items"][0]]
-    
+        _list_searches = [
+            _dict_response for _dict_response in _list_searches if _dict_response["items"][0]]
+
     # Test
-    _list_searches = _list_searches[:3]
+    # _list_searches = _list_searches[:3]
 
     youtube_videos = YouTubeVideos(args)
-    return youtube_videos.set_list_searches(_list_searches).start()
+    return youtube_videos.set_list_searches(_list_searches).start(filter_by_q=False)
 
 
-def search_by_urls():
+def search_by_q(fp_csv, column):
     parser = argparse.ArgumentParser()
 
     # Custom args
@@ -562,19 +465,32 @@ def search_by_urls():
     # _list_queries = _list_queries[:2]
     # print(_list_queries)
 
-    data = pd.read_csv("scopus/scopus_cs_LG_1901.csv", header=0, keep_default_na=False)
-    data = data[data["DOI"] != "nan"]
-    _list_queries = list(data["DOI"])
-    _list_idx_papers = list(data["DOI"])
-    args['list_idx_papers'] = _list_idx_papers
+    data_raw = pd.read_csv(
+        fp_csv, header=0, keep_default_na=False)
+    data_doi = data_raw[data_raw["DOI"] != "nan"]
+    if column == "DOI":
+        # Filter by DOI.
+        _list_idx_papers = list(data_doi["DOI"])
+        _list_queries = list(data_doi["DOI"])
+    elif column == "Redirection":
+        # Filter by redirection.
+        data = data_doi[data_doi["Redirection"] != "Err"]
+        _list_idx_papers = list(data["DOI"])
+        _list_queries = list(data["Redirection"])
+    elif column == "Title":
+        # By title
+        _list_idx_papers = list(data_doi["DOI"])
+        _list_queries = list(
+            map(lambda _title: _title.lower(), data_doi["Title"]))
 
+    args["list_idx_papers"] = _list_idx_papers
     youtube_search = YouTubeSearch(args)
-    youtube_search.set_list_queries(_list_queries)
-    _list_responses = youtube_search.start_search()
-    print(_list_responses)
+    _list_responses = youtube_search.set_list_queries(
+        _list_queries).start_search()
+    # print(_list_responses)
 
-    with open('list_searches_doi_health_2014.txt', 'w+') as fp:
-        json.dump(_list_responses, fp)
+    # with open('list_searches_doi_health_2014.txt', 'w+') as fp:
+    #     json.dump(_list_responses, fp)
 
 
 def num_of_videos():
@@ -641,23 +557,26 @@ def num_of_videos():
         _list_responses = youtube_search.start_search()
         print(_list_responses)
 
-def update_videos_by_list_videos(table_name, fp_list_videos):
+
+def update_videos_by_list_videos(table_name, fp_list_videos, filter_by_q, overwrite):
     db_videos_uploader = DBVideosUploader(table_name)
     with open(fp_list_videos, 'r') as f:
         _list_responses = json.load(f)
     # _list_responses = _list_responses[:1]
-    db_videos_uploader.upload_videos(_list_responses)
+    db_videos_uploader.upload_videos(
+        _list_responses, filter_by_q=filter_by_q, overwrite=overwrite)
 
 
-def upload_channels_by_list_channels(table_name, fp_list_channels):
+def upload_channels_by_list_channels(table_name, fp_list_channels, overwrite):
     db_channels_uploader = DBChannelsUploader(table_name)
     with open(fp_list_channels, 'r') as f:
         _list_responses = json.load(f)
-    _list_responses[:1]
-    db_channels_uploader.upload_channels(_list_responses)
+    # Test
+    # _list_responses[:1]
+    db_channels_uploader.upload_channels(_list_responses, overwrite=overwrite)
 
 
-def channels_by_list_channel_ids(table_name, fp_list_channel_ids=None, table_name_videos=None):
+def channels_by_list_channel_ids(fp_list_channel_ids=None, table_name_videos=None):
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--part', default='id, statistics, brandingSettings, snippet')
@@ -683,25 +602,45 @@ def channels_by_list_channel_ids(table_name, fp_list_channel_ids=None, table_nam
         _list_channel_ids = db_handler.execute().fetchall()
         _list_channel_ids = list(map(lambda _row: _row[0], _list_channel_ids))
     else:
-        raise ValueError("[-]Either argument fp_list_channel_ids or table_name_videos must be set.")
-    
+        raise ValueError(
+            "[-]Either argument fp_list_channel_ids or table_name_videos must be set.")
+
     youtube_channels = YouTubeChannels(args)
     youtube_channels.set_list_channel_ids(_list_channel_ids).start()
 
-def upload_rel_paper_video():
-    _fp_list_searches = "results/search/search_scopus_health_2014.txt"
-    with open(_fp_list_searches, 'r') as f:
+
+def upload_rel_paper_video(table_name, fp_list_searches):
+    with open(fp_list_searches, 'r') as f:
         _list_searches = json.load(f)
-    
+
+    num_responses = 0
+    num_insert = 0
+    num_pass = 0
+
     db_handler = DBHandler()
 
     for _response in _list_searches:
         if _response["items"][0]:
+            num_responses += 1
             for _dict_item in _response["items"][0]:
-                _dict = {"DOI": _response["idx_paper"], "videoId": _dict_item["id"]["videoId"]}
+                _dict = {"DOI": _response["idx_paper"],
+                         "videoId": _dict_item["id"]["videoId"]}
+                # Check if already exists
+                db_handler.sql_handler.select(table_name, "idx").where(
+                    "DOI", _dict["DOI"]).where("videoId", _dict["videoId"])
+                _result = db_handler.execute().fetchall()
                 print(_dict)
-                db_handler.sql_handler.insert("rel_paper_video", dict_columns_values=_dict)
+                if len(_result):
+                    print("\t[+]Already exists. Passing...")
+                    num_pass += 1
+                    continue
+                db_handler.sql_handler.insert(
+                    table_name, dict_columns_values=_dict)
                 db_handler.execute()
+                num_insert += 1
+    print("# responses: %d\t# insert: %d\t# pass: %d" %
+          (num_responses, num_insert, num_pass))
+
 
 def preprocess_scopus():
     parser = argparse.ArgumentParser()
@@ -709,19 +648,20 @@ def preprocess_scopus():
     parser.add_argument('--overwrite', action="store_true", default="Err")
     parser.add_argument('--shuffle', action="store_true", default=False)
     args = parser.parse_args()
-    
+
     from scopus_preprocessor import ScopusPreprocessor
-    scopus_preprocessor = ScopusPreprocessor(args.fpath, overwrite=args.overwrite, shuffle=args.shuffle)
+    scopus_preprocessor = ScopusPreprocessor(
+        args.fpath, overwrite=args.overwrite, shuffle=args.shuffle)
     scopus_preprocessor.preprocess_scopus_csv()
-    
+
 
 if __name__ == '__main__':
     # update_papers_from_arxiv_list()
     # altmetric_url_from_papers()
-    # search_by_urls()
-    # upload_rel_paper_video()
-    videos_by_video_ids()
-    # update_videos_by_list_videos('scopus_videos', './results/videos/videos_20200620_173158.txt')
-    # channels_by_list_channel_ids('channels', table_name_videos="scopus_videos")
-    # upload_channels_by_list_channels('channels', './results/channels/channels_20200621_180959.txt')
+    # search_by_q("scopus/scopus_math+comp_top5perc_1403.csv", column="Title")
+    # upload_rel_paper_video("rel_paper_video", "results/search/search_20200721_191317.txt")
+    # videos_by_video_ids("results/search/search_20200721_191317.txt")
+    update_videos_by_list_videos('scopus_videos', './results/videos/videos_20200721_191536.txt', filter_by_q=True, overwrite=True)
+    # channels_by_list_channel_ids(table_name_videos="scopus_videos")
+    # upload_channels_by_list_channels('channels', './results/channels/channels_20200719_152247.txt', overwrite=True)
     # num_of_videos()

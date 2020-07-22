@@ -6,30 +6,33 @@ from datetime import datetime
 class DBChannelsUploader:
     preprocessor = Preprocessor()
     db_handler = DBHandler()
+    num_insert = 0
+    num_update = 0
 
     def __init__(self, table_name='channels'):
         self.table_name = table_name
-    
-    def upload_channels(self, list_channels):
+
+    def upload_channels(self, list_channels, overwrite=True):
         _num_channels = len(list_channels)
         for i, _dict_response in enumerate(list_channels):
             print('Processing %d out of %d videos' % (i+1, _num_channels))
-            self.__upload_channel(_dict_response)
-        
+            self.__upload_channel(_dict_response, overwrite)
+        print("# channels: %d\t# insert: %d\t# update: %d" %
+              (_num_channels, self.num_insert, self.num_update))
         return True
-    
-    def __upload_channel(self, _dict_response):
-        print("\n\tdict_response:",_dict_response)
-        _channel_id = _dict_response['items'][0]['id']
+
+    def __upload_channel(self, dict_response, overwrite):
+        print("\n\tdict_response:", dict_response)
+        _channel_id = dict_response['items'][0]['id']
 
         # Check if channel already exists by channelID
         _idx_channel = self.__get_idx_by_channel_id(_channel_id)
-        if _idx_channel != False:
+        if _idx_channel != False and not overwrite:
             print('\tChannel already exists:', _channel_id)
             return True
 
-        items = _dict_response['items'][0]
-        
+        items = dict_response['items'][0]
+
         # Manual preprocessing
         # key 'id' to 'videoId'
         items['channelId'] = items.pop('id')
@@ -47,11 +50,19 @@ class DBChannelsUploader:
         values = tuple(values)
         # print('\tValues:', values)
 
-        self.db_handler.sql_handler.insert(
-            self.table_name, columns=columns, values=values)
+        if _idx_channel == False:
+            # Insert
+            self.db_handler.sql_handler.insert(
+                self.table_name, columns=columns, values=values)
+            self.num_insert += 1
+        else:
+            # Update
+            self.db_handler.sql_handler.update(
+                self.table_name, columns=columns, values=values).where("idx", _idx_channel)
+            self.num_update += 1
         self.db_handler.execute()
         return True
-    
+
     def __get_idx_by_channel_id(self, channel_id):
         self.db_handler.sql_handler.select(
             self.table_name, 'idx').where('channelId', channel_id, '=')
@@ -69,7 +80,6 @@ class DBChannelsUploader:
         if len(result):
             return result[0][0]
         return False
-
 
     # def insert_into_channels(self, args, items):
     #     print('\Inserting channel:', args.channel_id)

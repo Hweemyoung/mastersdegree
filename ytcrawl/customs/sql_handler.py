@@ -1,3 +1,5 @@
+from copy import copy
+
 class SQLHandler:
     command = None
     command_set = False
@@ -30,7 +32,7 @@ class SQLHandler:
         if dict_columns_values != None:
             columns = list(dict_columns_values.keys())
             values = tuple(dict_columns_values.values())
-        
+
         self.values = values
 
         key_val_pairs = ', '.join(tuple(map(lambda col: col + '=%s', columns)))
@@ -43,13 +45,19 @@ class SQLHandler:
         if dict_columns_values != None:
             columns = list(dict_columns_values.keys())
             values = tuple(dict_columns_values.values())
-        
+
         self.values = values
 
         # self.values = self.__preprocess_list_values(values)
         self.command = "INSERT INTO `%s` (%s) VALUES (" % (table, ', '.join(columns))\
             + ', '.join(['%s'] * len(columns))\
             + ")"
+        self.set_command_set()
+        return self
+
+    def delete(self, table):
+        self.command = "DELETE FROM `%s`" % table
+        self.values = True
         self.set_command_set()
         return self
 
@@ -128,14 +136,14 @@ class SQLHandler:
             else:
                 clause = "`%s`=%d" % (column, value) \
                     if type(value) != str else "`%s`='%s'" % (column, value)
-        
+
         elif mode == '<>':
             if value == None:
                 clause = "`%s` IS NOT NULL" % column
             else:
                 clause = "`%s`<>%d" % (column, value) \
                     if type(value) != str else "`%s`<>'%s'" % (column, value)
-        
+
         elif mode == '>':
             clause = "`%s`>%d" % (column, value) \
                 if type(value) != str else "`%s`>'%s'" % (column, value)
@@ -143,11 +151,11 @@ class SQLHandler:
         elif mode == '<':
             clause = "`%s`<%d" % (column, value) \
                 if type(value) != str else "`%s`<'%s'" % (column, value)
-        
+
         elif mode == 'like':
             clause = "`%s` LIKE %d" % (column, value) \
                 if type(value) != str else "`%s` LIKE '%s'" % (column, value)
-                
+
         elif mode == 'fulltext_list':
             value = str(value)
             # self.__check_type(value, 'str')
@@ -161,13 +169,15 @@ class SQLHandler:
             clause = self.get_where_from_list(list_clauses, 'or')
 
         elif mode == 'fulltext':
-            clause = "match(%s) against (\"%s\" in boolean mode)" % (column, value)
-        
+            clause = "match(%s) against (\"%s\" in boolean mode)" % (
+                column, value)
+
         elif mode == 'in':
             _list_vals_wrapped = list()
             for val in value:
-                _list_vals_wrapped.append(str(val)) if type(val) != str else _list_vals_wrapped.append('\'' + val + '\'')
-            clause = "%s IN (%s)"%(column, ', '.join(_list_vals_wrapped))
+                _list_vals_wrapped.append(str(val)) if type(
+                    val) != str else _list_vals_wrapped.append('\'' + val + '\'')
+            clause = "%s IN (%s)" % (column, ', '.join(_list_vals_wrapped))
 
         else:
             raise ValueError()

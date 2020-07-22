@@ -1,36 +1,46 @@
-Date : 2020-04-27 21:20:56
+Date : 2020-07-20 09:25:55
 Directory : /home/hweem/git/mastersdegree/ytcrawl/customs
-Total : 12 files,  644 codes, 927 comments, 257 blanks, all 1828 lines
+Total : 21 files,  3266 codes, 1734 comments, 808 blanks, all 5808 lines
 
 Languages
-+----------+------------+------------+------------+------------+------------+
-| language | files      | code       | comment    | blank      | total      |
-+----------+------------+------------+------------+------------+------------+
-| Python   |         12 |        644 |        927 |        257 |      1,828 |
-+----------+------------+------------+------------+------------+------------+
++------------+------------+------------+------------+------------+------------+
+| language   | files      | code       | comment    | blank      | total      |
++------------+------------+------------+------------+------------+------------+
+| Python     |         20 |      3,247 |      1,733 |        807 |      5,787 |
+| JavaScript |          1 |         19 |          1 |          1 |         21 |
++------------+------------+------------+------------+------------+------------+
 
 Directories
 +-----------------------------------------------------------------------+------------+------------+------------+------------+------------+
 | path                                                                  | files      | code       | comment    | blank      | total      |
 +-----------------------------------------------------------------------+------------+------------+------------+------------+------------+
-| .                                                                     |         12 |        644 |        927 |        257 |      1,828 |
+| .                                                                     |         21 |      3,266 |      1,734 |        808 |      5,808 |
 +-----------------------------------------------------------------------+------------+------------+------------+------------+------------+
 
 Files
-+-----------------------------------------------------------------------+----------+------------+------------+------------+------------+
-| filename                                                              | language | code       | comment    | blank      | total      |
-+-----------------------------------------------------------------------+----------+------------+------------+------------+------------+
-| /home/hweem/git/mastersdegree/ytcrawl/customs/channels.py             | Python   |         36 |        322 |         15 |        373 |
-| /home/hweem/git/mastersdegree/ytcrawl/customs/db_channels_uploader.py | Python   |         12 |         31 |         10 |         53 |
-| /home/hweem/git/mastersdegree/ytcrawl/customs/db_papers_uploader.py   | Python   |         83 |          8 |         15 |        106 |
-| /home/hweem/git/mastersdegree/ytcrawl/customs/db_uploader.py          | Python   |         57 |          9 |         12 |         78 |
-| /home/hweem/git/mastersdegree/ytcrawl/customs/db_videos_uploader.py   | Python   |         54 |          5 |         12 |         71 |
-| /home/hweem/git/mastersdegree/ytcrawl/customs/guide_categories.py     | Python   |         39 |         64 |         18 |        121 |
-| /home/hweem/git/mastersdegree/ytcrawl/customs/main.py                 | Python   |        102 |         92 |         67 |        261 |
-| /home/hweem/git/mastersdegree/ytcrawl/customs/preprocessor.py         | Python   |         74 |         11 |         19 |        104 |
-| /home/hweem/git/mastersdegree/ytcrawl/customs/search_custom.py        | Python   |         92 |        237 |         28 |        357 |
-| /home/hweem/git/mastersdegree/ytcrawl/customs/test.py                 | Python   |         10 |         52 |         23 |         85 |
-| /home/hweem/git/mastersdegree/ytcrawl/customs/video_categories.py     | Python   |         23 |         55 |         14 |         92 |
-| /home/hweem/git/mastersdegree/ytcrawl/customs/videos.py               | Python   |         62 |         41 |         24 |        127 |
-| Total                                                                 |          |        644 |        927 |        257 |      1,828 |
-+-----------------------------------------------------------------------+----------+------------+------------+------------+------------+
++-----------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| filename                                                              | language   | code       | comment    | blank      | total      |
++-----------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| /home/hweem/git/mastersdegree/ytcrawl/customs/altmetric-it.js         | JavaScript |         19 |          1 |          1 |         21 |
+| /home/hweem/git/mastersdegree/ytcrawl/customs/altmetric_it.py         | Python     |        355 |         89 |         73 |        517 |
+| /home/hweem/git/mastersdegree/ytcrawl/customs/channels.py             | Python     |        108 |        393 |         28 |        529 |
+| /home/hweem/git/mastersdegree/ytcrawl/customs/db_channels_uploader.py | Python     |         48 |         50 |         23 |        121 |
+| /home/hweem/git/mastersdegree/ytcrawl/customs/db_handler.py           | Python     |         69 |         10 |         15 |         94 |
+| /home/hweem/git/mastersdegree/ytcrawl/customs/db_papers_uploader.py   | Python     |        419 |        102 |         82 |        603 |
+| /home/hweem/git/mastersdegree/ytcrawl/customs/db_videos_uploader.py   | Python     |        148 |         43 |         34 |        225 |
+| /home/hweem/git/mastersdegree/ytcrawl/customs/guide_categories.py     | Python     |         39 |         64 |         18 |        121 |
+| /home/hweem/git/mastersdegree/ytcrawl/customs/main.py                 | Python     |        383 |        248 |        134 |        765 |
+| /home/hweem/git/mastersdegree/ytcrawl/customs/organizer.py            | Python     |         28 |          1 |          5 |         34 |
+| /home/hweem/git/mastersdegree/ytcrawl/customs/preprocessor.py         | Python     |        132 |         35 |         29 |        196 |
+| /home/hweem/git/mastersdegree/ytcrawl/customs/scopus_preprocessor.py  | Python     |        256 |        139 |         70 |        465 |
+| /home/hweem/git/mastersdegree/ytcrawl/customs/search_custom.py        | Python     |        166 |        216 |         26 |        408 |
+| /home/hweem/git/mastersdegree/ytcrawl/customs/springer_api.py         | Python     |         24 |          3 |         10 |         37 |
+| /home/hweem/git/mastersdegree/ytcrawl/customs/sql_handler.py          | Python     |        176 |         16 |         38 |        230 |
+| /home/hweem/git/mastersdegree/ytcrawl/customs/test.py                 | Python     |        222 |        144 |         81 |        447 |
+| /home/hweem/git/mastersdegree/ytcrawl/customs/twitter_organizer.py    | Python     |        152 |         15 |         37 |        204 |
+| /home/hweem/git/mastersdegree/ytcrawl/customs/video_categories.py     | Python     |         23 |         55 |         14 |         92 |
+| /home/hweem/git/mastersdegree/ytcrawl/customs/videos.py               | Python     |        156 |         75 |         40 |        271 |
+| /home/hweem/git/mastersdegree/ytcrawl/customs/videos_organizer.py     | Python     |        182 |         28 |         39 |        249 |
+| /home/hweem/git/mastersdegree/ytcrawl/customs/youtube.py              | Python     |        161 |          7 |         11 |        179 |
+| Total                                                                 |            |      3,266 |      1,734 |        808 |      5,808 |
++-----------------------------------------------------------------------+------------+------------+------------+------------+------------+

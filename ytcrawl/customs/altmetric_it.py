@@ -8,6 +8,8 @@ import re
 from random import randint
 from urllib.parse import urlparse
 
+import argparse
+
 from db_handler import DBHandler
 
 
@@ -172,9 +174,8 @@ class AltmetricIt:
                 _num_files, _num_failed))
 
     def crawl_altmetric_from_papers(self, overwrite='incomplete'):
-        # self.db_handler.sql_handler.select(self.table, ('idx', 'urls', 'altmetric_id'))
-        self.db_handler.sql_handler.select(self.table, ('idx', 'urls', 'altmetric_id')).where('altmetric_id', None).where('subject_1', 'Computer Science').where('subject_2', ['Machine Learning', 'Artificial Intelligence'], 'in').where('idx', 12209, '>')
-        # self.db_handler.sql_handler.select(self.table, ('idx', 'urls', 'altmetric_id')).order_by(dict_columns_orders={'idx': 'desc'})
+        # self.db_handler.sql_handler.select(self.table, ('idx', 'urls', 'altmetric_id')).where('altmetric_id', None).where('subject_1', 'Computer Science').where('subject_2', ['Machine Learning', 'Artificial Intelligence'], 'in')
+        self.db_handler.sql_handler.select(self.table, ('idx', 'urls', 'altmetric_id')).where("idx_arxiv", ["1902.00506"], "in")
         _records = self.db_handler.execute().fetchall()
         # _records = _records[:2]
         _num_papers = len(_records)
@@ -510,7 +511,101 @@ class AltmetricIt:
     def __driver_execute_script(self, script):
         self.driver.execute_script(script)
 
+def altmetric_url_from_papers():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--table', help='Table of target papers')
+    parser.add_argument('--overwrite', dest='overwrite',
+                        help='Overwrite policy', action='store_true', default='incomplete')
+    parser.add_argument('--driver', help='Driver', default='chrome')
+    parser.add_argument('--p_driver', help='Driver path',
+                        default='./chromedriver_83')
+    parser.add_argument('--no_bookmarklet', help='Whether to install new bookmarklet or not',
+                        action='store_true', default=False)
+    parser.add_argument('--max_times_find', type=int,
+                        help='Max times to find', default=5)
+    parser.add_argument('--sec_sleep', type=float,
+                        help='Sleep seconds', default=1.0)
 
-# if __name__ == '__main__':
-#     altmetric_it = AltmetricIt()
-#     altmetric_it.update_papers_set_altmetric_id()
+    parser.add_argument('--news', help='Set news as target',
+                        action='store_true', default=False)
+    parser.add_argument('--blogs', help='Set blogs as target',
+                        action='store_true', default=False)
+    parser.add_argument('--twitter', help='Set twitter as target',
+                        action='store_true', default=False)
+    parser.add_argument('--wikipedia', help='Set wikipedia as target',
+                        action='store_true', default=False)
+    parser.add_argument('--google', help='Set google as target',
+                        action='store_true', default=False)
+    parser.add_argument('--reddit', help='Set reddit as target',
+                        action='store_true', default=False)
+    parser.add_argument('--video', help='Set video as target',
+                        action='store_true', default=False)
+    args = vars(parser.parse_args())
+    # args = dict()
+    # args['table'] = 'temp_papers'
+    # args['overwrite']='incomplete'
+    # args['driver']='chrome'
+    # args['p_driver']='./chromedriver_83'
+    # args['new_bookmarklet']=True
+    # args['max_times_find']=5
+    # args['sec_sleep']=1.0
+    # args['news']=False
+    # args['blogs']=False
+    # args['twitter']=False
+    # args['wikipedia']=False
+    # args['google']=False
+    # args['reddit']=False
+    # args['video']=False
+
+    # # Custom args
+    # parser.add_argument('--f-channel-ids',
+    #                     help='List of Channel IDs', default=None)
+
+    # args = parser.parse_args()
+
+    altmetric_it = AltmetricIt(args)
+    altmetric_it.crawl_altmetric_from_papers(overwrite='incomplete')
+
+    # Select urls from temp_papers
+    # altmetric_it.db_handler.sql_handler.select(args['table'], 'urls')
+    # _list_urls = altmetric_it.db_handler.execute().fetchall()
+    # _list_urls = list(map(lambda _row: _row[0], _list_urls))
+
+    # altmetric_it.crawl_altmetric_from_papers(overwrite='incompleted')
+    # altmetric_it.update_results(overwrite='incompleted')
+
+    # db_handler = DBHandler()
+    # db_handler.sql_handler.select('papers', 'idx, urls')
+    # sql = db_handler.sql_handler.get_sql()
+    # db_handler.mycursor.execute(sql)
+    # list_urls = db_handler.mycursor.fetchall()
+    # # list_urls = list_urls[:2]
+    # num_papers = len(list_urls)
+    # list_failed = dict()
+    # print('# of paper urls:', num_papers)
+
+    # # Twitter
+    # list_failed['twitter'] = list()
+    # regex_abs = re.compile(r'https?://arxiv.org/abs/\d{3,5}.\d{3,5}')
+    # for i, field in enumerate(list_urls):
+    #     print('Processing: %d out of %d papers' % (i+1, num_papers))
+    #     _str_urls = field[1]
+    #     _url_abs = regex_abs.findall(_str_urls)[0]
+    #     _success = altmetric_it.get_twitter_from_url(
+    #         _url_abs, overwrite='incompleted')
+    #     if not _success:
+    #         print('---------------Job failed: %s' % altmetric_it.msg_error)
+    #         list_failed['twitter'].append({
+    #             'idx': field[0],
+    #             'url': _url_abs,
+    #             'msg_error': altmetric_it.msg_error
+    #         })
+    #     else:
+    #         print('---------------Job successful.')
+    #         print('\n')
+
+    # with open('./altmetricit/log_fail_%s.txt' % datetime.now().strftime('%Y%m%d_%H%M%S'), 'w+') as f:
+    #     json.dump(list_failed, f)
+
+if __name__ == '__main__':
+    altmetric_url_from_papers()

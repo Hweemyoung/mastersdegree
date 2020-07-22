@@ -1,11 +1,13 @@
 import pandas as pd
 import json
+import argparse
 
 # from urllib.request import urlopen
 from urllib.request import build_opener, HTTPCookieProcessor, Request
 from urllib.parse import urlparse
 from urllib.error import URLError
 from selenium import webdriver
+from time import sleep
 import socket
 
 from preprocessor import Preprocessor
@@ -18,11 +20,16 @@ class ScopusPreprocessor(Preprocessor):
     num_pass = 0
     num_fail = 0
     num_skip = 0
+    p_driver = "./chromedriver_83"
+    source_titles_by_driver = ("Briefings in Bioinformatics",
+                               "Database",
+                               "Bioinformatics")
 
     def __init__(
             self,
             fpath_scopus_csv,
             savepoint_interval=10,
+            process_interval=60.0,
             overwrite=False,
             set_redirection=False,
             set_pdf=False,
@@ -30,6 +37,7 @@ class ScopusPreprocessor(Preprocessor):
             postprocess_redirections=False):
         # super(ScopusPreprocessor, self).__init__()
         self.fpath_scopus_csv = fpath_scopus_csv
+        self.process_interval = process_interval
         self.savepoint_interval = savepoint_interval
         self.overwrite = overwrite
         self.set_redirection = set_redirection
@@ -78,7 +86,7 @@ class ScopusPreprocessor(Preprocessor):
     def __url_without_open(self, i):
         if self.data["DOI"][i] == "nan":
             return ("nan", "nan")
-        
+
         # Cannot be automated: "Briefings in Bioinformatics,Database,Bioinformatics"
         _source_title = self.data["Source title"][i]
         # If source title is in dict_source_pub keys:
@@ -117,12 +125,24 @@ class ScopusPreprocessor(Preprocessor):
             elif self.dict_source_pub[_source_title] == "The Royal Society":
                 # https://royalsocietypublishing.org/doi/10.1098/rsta.2012.0511
                 return ("royalsocietypublishing.org/doi/" + self.data["DOI"][i], "royalsocietypublishing.org/doi/pdf/" + self.data["DOI"][i])
-            
+
             # Case9: World Scientific
             elif self.dict_source_pub[_source_title] == "World Scientific":
                 # https://www.worldscientific.com/doi/abs/10.1142/S0129065714500051
                 return ("worldscientific.com/doi/abs/" + self.data["DOI"][i], "nan")
-        
+            
+            # Case12: International Journal of Bio-Inspired Computation
+            elif self.dict_source_pub[_source_title] == "Inderscience":
+                # http://www.inderscience.com/offer.php?id=64989
+                return ("inderscience.com/offer.php?id=" + str(int(self.data["DOI"][i].split(".")[-1])),  # inderscience.com/offer.php?id=66365
+                        "nan")
+            
+            # Case: Evolutionary Computation
+            elif self.dict_source_pub[_source_title] == "Evolutionary Computation":
+                # https://www.mitpressjournals.org/doi/10.1162/EVCO_a_00116
+                return ("mitpressjournals.org/doi/" + self.data["DOI"][i],  # mitpressjournals.org/doi/10.1162/EVCO_a_00116
+                        "nan")
+
         # Case8: Princeton
         if _source_title in ("Annals of Mathematics",):
             # https://annals.math.princeton.edu/2014/179-1/p06
@@ -161,12 +181,26 @@ class ScopusPreprocessor(Preprocessor):
             _ = self.data["DOI"][i].split("/")
             return ("vascularcell.com/index.php/vc/article/view/" + _[0] + "-" + _[1],  # content.iospress.com/articles/argument-and-computation/869766
                     "nan")
-        
+
         # Case12: International Journal of Bio-Inspired Computation
-        elif _source_title in ("International Journal of Bio-Inspired Computation",):
-            # http://www.inderscience.com/offer.php?id=64989
-            return ("inderscience.com/offer.php?id=" + str(int(self.data["DOI"][i].split(".")[-1])),  # content.iospress.com/articles/argument-and-computation/869766
+        # elif _source_title in ("International Journal of Bio-Inspired Computation",):
+        #     # http://www.inderscience.com/offer.php?id=64989
+        #     return ("inderscience.com/offer.php?id=" + str(int(self.data["DOI"][i].split(".")[-1])),  # content.iospress.com/articles/argument-and-computation/869766
+        #             "nan")
+
+        # Case12: Journal of Information Technology
+        # elif _source_title in ("Journal of Information Technology",):
+        #     # https://journals.sagepub.com/doi/10.1057/jit.2013.29
+        #     return ("inderscience.com/offer.php?id=" + str(int(self.data["DOI"][i].split(".")[-1])),  # content.iospress.com/articles/argument-and-computation/869766
+        #             "nan")
+
+        # Case13: Journal of Environmental Informatics
+        elif _source_title in ("Journal of Environmental Informatics",):
+            # 10.3808/jei.201400255
+            return ("jeionline.org/index.php?journal=mys&page=article&op=view&path%5B%5D=" + self.data["DOI"][i].split(".")[-1],  # jeionline.org/index.php?journal=mys&page=article&op=view&path%5B%5D=201400255
                     "nan")
+        
+        # http://www.jeionline.org/index.php?journal=mys&page=article&op=view&path%5B%5D=201400255
 
         return False
 
@@ -204,46 +238,18 @@ class ScopusPreprocessor(Preprocessor):
                     self.__write_redirection(_i, _url_redirected[0])
                 if self.set_pdf:
                     self.__write_pdf(_i, _url_redirected[1])
+
             else:
                 if self.set_redirection:
                     # Build up url
                     _url = "https://www.doi.org/" + self.data["DOI"][_i]
                     # Get redirection
-                    try:
-                        print("\t[+]Opening url:")
-                        print("\t\t%s" % _url)
-                        _res = self.opener.open(_url, timeout=30)
-                        # self.driver.get(_url)
-                    except URLError:
-                        # Invalid URL
-                        print("\t[-]Invalid URL.")
-                        _redirected_abs = "Err"
-                        self.num_fail += 1
-                    except socket.timeout:
-                        # Timeout
-                        print("\t[-]Timed out.")
-                        _redirected_abs = "Err"
-                        self.num_fail += 1
-                    except ConnectionResetError:
-                        # Connection reset
-                        print("\t[-]Connection reset error.")
-                        _redirected_abs = "Err"
-                        self.num_fail += 1
-                    else:
-                        print("\t[+]Opening url successful.")
-                        _redirected_abs = _res.geturl()
-                        # Close response
-                        _res.close()
-                        # _redirected_abs = self.driver.current_url
-                    finally:
-                        # Remove protocol(https?://www.), query, hash, ...
-                        _redirected_abs = urlparse(_redirected_abs)
-                        # Append
-                        _redirected_abs = _redirected_abs.netloc + _redirected_abs.path
-                        # Postprocess redirection
-                        _redirected_abs = self.__postprocess_redirected_url(
-                            _redirected_abs)
-                        self.__write_redirection(_i, _redirected_abs)
+                    # if self.data["Source title"][_i] in self.source_titles_by_driver:
+                    #     self.__write_redirection_by_driver(_i, _url)
+                    # else:
+                    #     self.__write_redirection_by_open(_i, _url)
+                    self.__write_redirection_by_driver(
+                        _i, _url) if self.data["Source title"][_i] in self.source_titles_by_driver else self.__write_redirection_by_open(_i, _url)
 
                 if self.set_pdf:
                     _redirected_pdf = self.__get_redirected_pdf(_i)
@@ -258,15 +264,72 @@ class ScopusPreprocessor(Preprocessor):
             #     self.data["Redirection_pdf"][_i] = _redirected_pdf
 
             self.__check_savepoint(_i, self.data)
+
         # Save
         self.data.astype(str).to_csv(self.fpath_scopus_csv, index=False)
 
         return self
-    
-    def __get_redirected_pdf(self, i):        
+
+    def __write_redirection_by_driver(self, i, url):
+        print("\t[+]Opening Driver.")
+        _driver = webdriver.Chrome(self.p_driver)
+        print("\t[+]Opening url:")
+        print("\t\t%s" % url)
+        _driver.get(url)
+        # Get raw url
+        # print("\t[+]Raw redirection:")
+        # print("\t\t%s" % _driver.current_url)
+        # Postprocess redirection
+        _redirected_abs = self.__postprocess_redirected_url(
+            _driver.current_url)
+        # Write
+        self.__write_redirection(i, _redirected_abs)
+        # Close _driver
+        _driver.close()
+        # Sleep
+        if self.process_interval != None:
+            print("\t[+]Sleeping for %f secs." % self.process_interval)
+            sleep(self.process_interval)
+
+        return self
+
+    def __write_redirection_by_open(self, i, url):
+        try:
+            print("\t[+]Opening url:")
+            print("\t\t%s" % url)
+            _res = self.opener.open(url, timeout=30)
+        except URLError:
+            # Invalid URL
+            print("\t[-]Invalid URL.")
+            _redirected_abs = "Err"
+            self.num_fail += 1
+        except socket.timeout:
+            # Timeout
+            print("\t[-]Timed out.")
+            _redirected_abs = "Err"
+            self.num_fail += 1
+        except ConnectionResetError:
+            # Connection reset
+            print("\t[-]Connection reset error.")
+            _redirected_abs = "Err"
+            self.num_fail += 1
+        else:
+            print("\t[+]Opening url successful.")
+            _redirected_abs = _res.geturl()
+            # Close response
+            _res.close()
+        finally:
+            # Postprocess redirection
+            _redirected_abs = self.__postprocess_redirected_url(
+                _redirected_abs)
+            self.__write_redirection(i, _redirected_abs)
+
+            return self
+
+    def __get_redirected_pdf(self, i):
         if self.data["Access Type"][i] == "nan":
             return "nan"
-        
+
         else:
             # Check format from Redirection
             _redirected_abs = self.data["Redirection"][i]
@@ -274,58 +337,82 @@ class ScopusPreprocessor(Preprocessor):
                 return "None"
 
             else:
-                if _redirected_abs.startswith("nature.com/articles"): # nature.com/articles/am201467
-                    return _redirected_abs + ".pdf" # https://www.nature.com/articles/am201467.pdf
-                
-                elif _redirected_abs.startswith("sciencedirect.com/science/article"): # sciencedirect.com/science/article/pii/S1532046413001536
-                    return "/".join((_redirected_abs, "pdf")) # sciencedirect.com/science/article/pii/S1532046413001536/pdf
+                # nature.com/articles/am201467
+                if _redirected_abs.startswith("nature.com/articles"):
+                    return _redirected_abs + ".pdf"  # https://www.nature.com/articles/am201467.pdf
 
-                elif _redirected_abs.startswith("ieeexplore.ieee.org/document"): # ieeexplore.ieee.org/document/6620957
-                    return "ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=" + _redirected_abs.split("/")[-1] # https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6620957
+                # sciencedirect.com/science/article/pii/S1532046413001536
+                elif _redirected_abs.startswith("sciencedirect.com/science/article"):
+                    # sciencedirect.com/science/article/pii/S1532046413001536/pdf
+                    return "/".join((_redirected_abs, "pdf"))
 
-                elif _redirected_abs.startswith("link.springer.com/article"): # link.springer.com/article/10.1007/s10994-013-5398-8
+                # ieeexplore.ieee.org/document/6620957
+                elif _redirected_abs.startswith("ieeexplore.ieee.org/document"):
+                    # https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6620957
+                    return "ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=" + _redirected_abs.split("/")[-1]
+
+                # link.springer.com/article/10.1007/s10994-013-5398-8
+                elif _redirected_abs.startswith("link.springer.com/article"):
                     _ = _redirected_abs.split("/")
-                    return "/".join(("link.springer.com/content/pdf", _[-2], _[-1] + ".pdf")) # "https://link.springer.com/content/pdf/10.1007/s10994-013-5398-8.pdf"
+                    # "https://link.springer.com/content/pdf/10.1007/s10994-013-5398-8.pdf"
+                    return "/".join(("link.springer.com/content/pdf", _[-2], _[-1] + ".pdf"))
 
-                elif _redirected_abs.startswith("bmcsystbiol.biomedcentral.com/articles"): # bmcsystbiol.biomedcentral.com/articles/10.1186/1752-0509-8-9
-                    return _redirected_abs.replace("articles", "track/pdf") # "https://bmcsystbiol.biomedcentral.com/track/pdf/10.1186/1752-0509-8-9"
+                # bmcsystbiol.biomedcentral.com/articles/10.1186/1752-0509-8-9
+                elif _redirected_abs.startswith("bmcsystbiol.biomedcentral.com/articles"):
+                    # "https://bmcsystbiol.biomedcentral.com/track/pdf/10.1186/1752-0509-8-9"
+                    return _redirected_abs.replace("articles", "track/pdf")
 
-                elif _redirected_abs.startswith("bmcbioinformatics.biomedcentral.com/articles"): # bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-15-23
-                    return _redirected_abs.replace("articles", "track/pdf") # "https://bmcbioinformatics.biomedcentral.com/track/pdf/10.1186/1471-2105-15-23"
+                # bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-15-23
+                elif _redirected_abs.startswith("bmcbioinformatics.biomedcentral.com/articles"):
+                    # "https://bmcbioinformatics.biomedcentral.com/track/pdf/10.1186/1471-2105-15-23"
+                    return _redirected_abs.replace("articles", "track/pdf")
 
-                elif _redirected_abs.startswith("gmd.copernicus.org/articles"): # gmd.copernicus.org/articles/7/175/2014
+                # gmd.copernicus.org/articles/7/175/2014
+                elif _redirected_abs.startswith("gmd.copernicus.org/articles"):
                     _ = _redirected_abs.split("/")
-                    return "-".join((_redirected_abs + "/gmd", _[-3], _[-2], _[-1] + ".pdf")) # https://gmd.copernicus.org/articles/7/175/2014/gmd-7-175-2014.pdf
+                    # https://gmd.copernicus.org/articles/7/175/2014/gmd-7-175-2014.pdf
+                    return "-".join((_redirected_abs + "/gmd", _[-3], _[-2], _[-1] + ".pdf"))
+
+                # https://academic.oup.com/bib/article/15/1/108/187383
+                elif _redirected_abs.startswith("academic.oup.com"):
+                    return "nan"  # Cannot be regularized...
 
                 else:
                     return "None"
-    
+
     def __write_redirection(self, i, redirected_abs):
         print("\t[+]Redirection: %s" % redirected_abs)
         self.data["Redirection"][i] = redirected_abs
-    
+
     def __write_pdf(self, i, redirected_pdf):
         print("\t[+]Redirection_pdf: %s" % redirected_pdf)
         self.data["Redirection_pdf"][i] = redirected_pdf
 
     def __postprocess_redirected_url(self, url_redirected):
+        # Remove protocol(https?://www.), query, hash, ...
+        url_redirected = urlparse(url_redirected)
+        # Append
+        url_redirected = url_redirected.netloc + url_redirected.path
         # Remove www.
         if url_redirected.startswith("www."):
             url_redirected = url_redirected[4:]
         # Remove /
         if url_redirected.endswith('/'):
             url_redirected = url_redirected[:-1]
-        
+
         # Replace %2F to /
         # url_redirected = url_redirected.replace("%2F", "/")
         # url_redirected = url_redirected.replace("%2f", "/")
         url_redirected = url_redirected.replace(r"%2[fF]", "/")
 
         # linkinghub
-        if url_redirected.startswith("linkinghub.elsevier"): # linkinghub.elsevier.com/retrieve/pii/S1364815213002338
+        # linkinghub.elsevier.com/retrieve/pii/S1364815213002338
+        if url_redirected.startswith("linkinghub.elsevier"):
             _ = url_redirected.split("/")
-            url_redirected = "/".join(("sciencedirect.com/science/article", _[-2], _[-1])) # sciencedirect.com/science/article/pii/S1364815213002338
-        
+            # sciencedirect.com/science/article/pii/S1364815213002338
+            url_redirected = "/".join(
+                ("sciencedirect.com/science/article", _[-2], _[-1]))
+
         return url_redirected
 
     def __check_savepoint(self, enum, df):
@@ -338,7 +425,7 @@ if __name__ == "__main__":
     # fpath = "scopus/scopus_math+comp_top5perc_1401.csv"
     # scopus_preprocessor = ScopusPreprocessor(fpath, overwrite=True, shuffle=True)
     # scopus_preprocessor.preprocess_scopus_csv()
-    import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--fpath')
     parser.add_argument('--overwrite', action="store_true", default="Err")
@@ -346,6 +433,7 @@ if __name__ == "__main__":
     parser.add_argument('--pdf', action="store_true", default=False)
     parser.add_argument('--shuffle', action="store_true", default=False)
     parser.add_argument('--savepoint_interval', type=int, default=10)
+    parser.add_argument('--process_interval', type=float, default=60.0)
     parser.add_argument('--postprocess_redirections',
                         action="store_true", default=False)
 
@@ -357,5 +445,20 @@ if __name__ == "__main__":
                                              set_redirection=args.redirection,
                                              set_pdf=args.pdf,
                                              savepoint_interval=args.savepoint_interval,
+                                             process_interval=args.process_interval,
                                              postprocess_redirections=args.postprocess_redirections)
     scopus_preprocessor.preprocess_scopus_csv()
+
+    # list_fpath = ["scopus/scopus_math+comp_top5perc_1407.csv",
+    #               "scopus/scopus_math+comp_top5perc_1408.csv", "scopus/scopus_math+comp_top5perc_1409.csv"]
+    # for _fpath in list_fpath:
+    #     args.fpath = _fpath
+    #     scopus_preprocessor = ScopusPreprocessor(args.fpath,
+    #                                              overwrite=args.overwrite,
+    #                                              shuffle=args.shuffle,
+    #                                              set_redirection=args.redirection,
+    #                                              set_pdf=args.pdf,
+    #                                              savepoint_interval=args.savepoint_interval,
+    #                                              process_interval=args.process_interval,
+    #                                              postprocess_redirections=args.postprocess_redirections)
+    #     scopus_preprocessor.preprocess_scopus_csv()

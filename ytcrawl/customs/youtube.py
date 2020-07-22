@@ -140,7 +140,7 @@ class YouTube:
             quit()
         
         _new_api_key = self.dict_api_keys[_new_project]
-        print('[+]New project: %s\tAPI key: %s\tRemaining projects: %d' % (_new_project, _new_api_key, len(self.list_responses)))
+        print('[+]New project: %s\tAPI key: %s\tRemaining projects: %d' % (_new_project, _new_api_key, len(self.list_projects)))
         try:
             self.youtube = build(self.YOUTUBE_API_SERVICE_NAME,
                                  self.YOUTUBE_API_VERSION, developerKey=_new_api_key)
@@ -172,7 +172,7 @@ class YouTube:
         _p = './logs/%s/log_%s_%s.txt' % (self.method_name,
                                           self.method_name, fname)
         print('[+]Saving log: %s' % _p)
-        print('\targs:', args)
+        # print('\targs:', args)
         with open(_p, 'w+') as fp:
             json.dump(args, fp)
         return self

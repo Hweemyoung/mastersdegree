@@ -8,17 +8,34 @@ class DBVideosUploader:
     preprocessor = Preprocessor()
     db_handler = DBHandler()
 
+    num_insert = 0
+    num_update = 0
+    num_pass = 0
+
+    fields_q_filter = ("title", "description")
+
     def __init__(self, table_name='temp_videos'):
         self.table_name = table_name
-    
-    def upload_videos(self, list_videos):
+
+    def upload_videos(self, list_videos, filter_by_q=False, overwrite=False):
         _num_videos = len(list_videos)
         for i, _dict_response in enumerate(list_videos):
             print('Processing %d out of %d videos' % (i+1, _num_videos))
-            self.__upload_video(_dict_response)
-        
+            if filter_by_q and not self.__q_in_fields(_dict_response):
+                print("[-]Q not included.")
+                continue
+            self.__upload_video(_dict_response, overwrite)
+        print("# videos: %d\t# insert: %d\t# update: %d\t# pass:%d" %
+              (_num_videos, self.num_insert, self.num_update, self.num_pass))
+
         return True
     
+    def __q_in_fields(self, dict_response):
+        for _field in self.fields_q_filter:
+            if dict_response["q"].replace(" ", "").lower() in dict_response["items"][0]["snippet"][_field].replace(" ", "").lower():
+                return True
+        return False
+
     def __update_idx_paper(self, idx_video, new_idx_paper):
         self.db_handler.sql_handler.select(
             self.table_name, 'idx_paper').where('idx', idx_video)
@@ -53,6 +70,7 @@ class DBVideosUploader:
         # self.conn.commit()
 
     def __get_idx_by_video_id(self, video_id):
+        self.db_handler.sql_handler.reset()
         self.db_handler.sql_handler.select(
             self.table_name, 'idx').where('videoId', video_id, '=')
         result = self.db_handler.execute().fetchall()
@@ -70,15 +88,19 @@ class DBVideosUploader:
             return result[0][0]
         return False
 
-    def __upload_video(self, _dict_response):
+    def __upload_video(self, _dict_response, overwrite):
+        if len(_dict_response["items"]) == 0:
+            return True
         _video_id = _dict_response['items'][0]['id']
 
         # Check if video already exists by videoID
         _idx_video = self.__get_idx_by_video_id(_video_id)
-        if _idx_video != False:
+        if _idx_video != False and not overwrite:
             print('\tVideo already exists:', _video_id)
             self.__update_q_if_not_exist(_idx_video, _dict_response['q'])
-            self.__update_idx_paper_if_not_exist(_idx_video, str(_dict_response['idx_paper']))
+            self.__update_idx_paper_if_not_exist(
+                _idx_video, str(_dict_response['idx_paper']))
+            self.num_pass += 1
             return True
 
         items = _dict_response['items'][0]
@@ -94,8 +116,8 @@ class DBVideosUploader:
 
         # Preprocess
         items = self.preprocessor.preprocess(items)
-        custom_fields = {
-            'q': _dict_response['q'], 'idx_paper': _dict_response['idx_paper']}
+        
+        custom_fields = {'q': _dict_response['q'], 'idx_paper': _dict_response['idx_paper']} if _idx_video == False else {}
 
         # Get columns, values
         columns, values = self.db_handler.get_columns_values(
@@ -107,11 +129,23 @@ class DBVideosUploader:
         values = tuple(values)
         # print('\tValues:', values)
 
-        self.db_handler.sql_handler.insert(
-            self.table_name, columns=columns, values=values)
-        self.db_handler.execute()
-        return True
+        if _idx_video == False:
+            self.db_handler.sql_handler.insert(
+                self.table_name, columns=columns, values=values)
+            self.db_handler.execute()
+            self.num_insert += 1
+        else:
+            self.db_handler.sql_handler.update(
+                self.table_name, columns=columns, values=values
+            ).where("idx", _idx_video)
+            self.db_handler.execute()
+            self.__update_q_if_not_exist(_idx_video, _dict_response['q'])
+            self.__update_idx_paper_if_not_exist(
+                _idx_video, str(_dict_response['idx_paper']))
+            self.num_update += 1
         
+        return True
+
     def __update_idx_paper_if_not_exist(self, idx_video, idx_paper):
         # Check if idx_paper exists
         self.db_handler.sql_handler.select(self.table_name, 'idx_paper').where(
@@ -173,7 +207,8 @@ class DBVideosUploader:
             self.db_handler.conn.commit()
 
     def set_iter_videoId(self):
-        self.db_handler.sql_handler.select(self.table_name, 'videoId').where('exposition', None)
+        self.db_handler.sql_handler.select(
+            self.table_name, 'videoId').where('exposition', None)
         _result = self.db_handler.mycursor.fetchall()
         print('result:', _result)
         self._iter = iter(_result)
@@ -198,5 +233,5 @@ class DBVideosUploader:
         assert len(self._list_video_ids) == len(self._list_expositions)
         for (_video_id, _expo) in zip(self._list_video_ids, self._list_expositions):
             self.db_handler.sql_handler.update(self.table_name, columns=['exposition'], values=[
-                                          _expo]).where('videoId', _video_id)
+                _expo]).where('videoId', _video_id)
             self.db_handler.execute()

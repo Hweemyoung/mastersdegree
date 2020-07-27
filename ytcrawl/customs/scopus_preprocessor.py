@@ -23,7 +23,10 @@ class ScopusPreprocessor(Preprocessor):
     p_driver = "./chromedriver_83"
     source_titles_by_driver = ("Briefings in Bioinformatics",
                                "Database",
-                               "Bioinformatics")
+                               "Bioinformatics",
+                               "Bulletin of the American Meteorological Society",
+                               "Molecular Biology and Evolution",
+                               "Systematic Biology",)
 
     def __init__(
             self,
@@ -52,7 +55,7 @@ class ScopusPreprocessor(Preprocessor):
             print("[+]Shuffling records.")
             self.data = self.data.sample(frac=1).reset_index(drop=True)
 
-        with open("read_only/source_pub_dict-math+comp.txt") as f:
+        with open("read_only/source_pub_dict.txt") as f:
             self.dict_source_pub = json.load(f)
 
     def preprocess_scopus_csv(self):
@@ -130,17 +133,41 @@ class ScopusPreprocessor(Preprocessor):
             elif self.dict_source_pub[_source_title] == "World Scientific":
                 # https://www.worldscientific.com/doi/abs/10.1142/S0129065714500051
                 return ("worldscientific.com/doi/abs/" + self.data["DOI"][i], "nan")
-            
+
             # Case12: International Journal of Bio-Inspired Computation
             elif self.dict_source_pub[_source_title] == "Inderscience":
                 # http://www.inderscience.com/offer.php?id=64989
                 return ("inderscience.com/offer.php?id=" + str(int(self.data["DOI"][i].split(".")[-1])),  # inderscience.com/offer.php?id=66365
                         "nan")
-            
+
             # Case: Evolutionary Computation
             elif self.dict_source_pub[_source_title] == "Evolutionary Computation":
                 # https://www.mitpressjournals.org/doi/10.1162/EVCO_a_00116
                 return ("mitpressjournals.org/doi/" + self.data["DOI"][i],  # mitpressjournals.org/doi/10.1162/EVCO_a_00116
+                        "nan")
+
+            # Case: "Annual Reviews Inc."
+            elif self.dict_source_pub[_source_title] == "Annual Reviews Inc.":
+                # https://www.annualreviews.org/doi/10.1146/annurev-ento-011613-162056
+                return ("annualreviews.org/doi/" + self.data["DOI"][i],  # mitpressjournals.org/doi/10.1162/EVCO_a_00116
+                        "nan")
+
+            # Case: "Environmental Health Perspectives"
+            elif self.dict_source_pub[_source_title] == "Environmental Health Perspectives":
+                # https://ehp.niehs.nih.gov/doi/10.1289/ehp.122-A20
+                return ("ehp.niehs.nih.gov/doi/" + self.data["DOI"][i],  # mitpressjournals.org/doi/10.1162/EVCO_a_00116
+                        "nan")
+
+            # Case: "Institute of Physics Publishing"
+            elif self.dict_source_pub[_source_title] == "Institute of Physics Publishing":
+                # https://iopscience.iop.org/article/10.1088/0004-637X/781/2/60
+                return ("iopscience.iop.org/article/" + self.data["DOI"][i],  # mitpressjournals.org/doi/10.1162/EVCO_a_00116
+                        "nan")
+            
+            # Case: "University of Chicago Press"
+            elif self.dict_source_pub[_source_title] == "University of Chicago Press":
+                # https://www.journals.uchicago.edu/doi/10.1086/674992
+                return ("journals.uchicago.edu/doi/" + self.data["DOI"][i],  # journals.uchicago.edu/doi/10.1086/674992
                         "nan")
 
         # Case8: Princeton
@@ -199,8 +226,22 @@ class ScopusPreprocessor(Preprocessor):
             # 10.3808/jei.201400255
             return ("jeionline.org/index.php?journal=mys&page=article&op=view&path%5B%5D=" + self.data["DOI"][i].split(".")[-1],  # jeionline.org/index.php?journal=mys&page=article&op=view&path%5B%5D=201400255
                     "nan")
-        
         # http://www.jeionline.org/index.php?journal=mys&page=article&op=view&path%5B%5D=201400255
+
+        elif _source_title in ("PLoS Biology",):
+            # 10.1371/journal.pbio.1001817
+            return ("journals.plos.org/plosbiology/article?id=" + self.data["DOI"][i],  # https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.1001817
+                    "nan")
+
+        elif _source_title in ("PLoS Genetics",):
+            # "10.1371/journal.pgen.1004148"
+            return ("journals.plos.org/plosgenetics/article?id=" + self.data["DOI"][i],  # https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1004148
+                    "nan")
+
+        elif _source_title in ("Environmental Health Perspectives",):
+            # 10.1289/ehp.1206324
+            return ("ehp.niehs.nih.gov/doi/" + self.data["DOI"][i],  # https://ehp.niehs.nih.gov/doi/10.1289/ehp.1306656
+                    "nan")
 
         return False
 
@@ -439,26 +480,30 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    scopus_preprocessor = ScopusPreprocessor(args.fpath,
-                                             overwrite=args.overwrite,
-                                             shuffle=args.shuffle,
-                                             set_redirection=args.redirection,
-                                             set_pdf=args.pdf,
-                                             savepoint_interval=args.savepoint_interval,
-                                             process_interval=args.process_interval,
-                                             postprocess_redirections=args.postprocess_redirections)
-    scopus_preprocessor.preprocess_scopus_csv()
+    # scopus_preprocessor = ScopusPreprocessor(args.fpath,
+    #                                          overwrite=args.overwrite,
+    #                                          shuffle=args.shuffle,
+    #                                          set_redirection=args.redirection,
+    #                                          set_pdf=args.pdf,
+    #                                          savepoint_interval=args.savepoint_interval,
+    #                                          process_interval=args.process_interval,
+    #                                          postprocess_redirections=args.postprocess_redirections)
+    # scopus_preprocessor.preprocess_scopus_csv()
 
-    # list_fpath = ["scopus/scopus_math+comp_top5perc_1407.csv",
-    #               "scopus/scopus_math+comp_top5perc_1408.csv", "scopus/scopus_math+comp_top5perc_1409.csv"]
-    # for _fpath in list_fpath:
-    #     args.fpath = _fpath
-    #     scopus_preprocessor = ScopusPreprocessor(args.fpath,
-    #                                              overwrite=args.overwrite,
-    #                                              shuffle=args.shuffle,
-    #                                              set_redirection=args.redirection,
-    #                                              set_pdf=args.pdf,
-    #                                              savepoint_interval=args.savepoint_interval,
-    #                                              process_interval=args.process_interval,
-    #                                              postprocess_redirections=args.postprocess_redirections)
-    #     scopus_preprocessor.preprocess_scopus_csv()
+    list_fpath = ["scopus/scopus_life+earch_top60_1403.csv",
+                  "scopus/scopus_life+earch_top60_1404.csv",
+                  "scopus/scopus_life+earch_top60_1405.csv",
+                  "scopus/scopus_life+earch_top60_1406.csv",
+                  ]
+    for _fpath in list_fpath:
+        args.fpath = _fpath
+        print("[+]fpath: %s" % args.fpath)
+        scopus_preprocessor = ScopusPreprocessor(args.fpath,
+                                                 overwrite=args.overwrite,
+                                                 shuffle=args.shuffle,
+                                                 set_redirection=args.redirection,
+                                                 set_pdf=args.pdf,
+                                                 savepoint_interval=args.savepoint_interval,
+                                                 process_interval=args.process_interval,
+                                                 postprocess_redirections=args.postprocess_redirections)
+        scopus_preprocessor.preprocess_scopus_csv()

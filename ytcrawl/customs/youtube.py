@@ -126,6 +126,7 @@ class YouTube:
         self.method_name = method_name
         self.args.update(args)
         self.build_youtube()
+        self.fname = datetime.now().strftime('%Y%m%d_%H%M%S')
         # 'fields':'items(id(channelId, videoId), snippet(title, channelId, liveBroadcastContent, channelTitle, description))'
         # 'fields':'items(snippet(channelTitle, title, description))'
         # 'fields':'nextPageToken, items(id(videoId), snippet(channelTitle))',
@@ -154,7 +155,6 @@ class YouTube:
         return self
     
     def save_task(self, list_responses, args):
-        self.fname = datetime.now().strftime('%Y%m%d_%H%M%S')
         self.__save_list_responses(list_responses, self.fname)
         self.__save_log(args, self.fname)
         sleep(1.0) # Prevent duplicating fname

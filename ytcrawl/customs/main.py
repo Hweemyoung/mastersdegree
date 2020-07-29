@@ -395,7 +395,8 @@ def videos_by_video_ids(fp_list_searches):
     # _list_searches = _list_searches[:3]
 
     youtube_videos = YouTubeVideos(args)
-    return youtube_videos.set_list_searches(_list_searches).start(filter_by_q=False)
+    youtube_videos.set_list_searches(_list_searches).start(filter_by_q=False)
+    return youtube_videos
 
 
 def search_by_q(fp_csv, column):
@@ -491,6 +492,7 @@ def search_by_q(fp_csv, column):
 
     # with open('list_searches_doi_health_2014.txt', 'w+') as fp:
     #     json.dump(_list_responses, fp)
+    return youtube_search
 
 
 def num_of_videos():
@@ -658,10 +660,17 @@ def preprocess_scopus():
 if __name__ == '__main__':
     # update_papers_from_arxiv_list()
     # altmetric_url_from_papers()
-    # search_by_q("scopus/scopus_life+earch_top60_1401.csv", column="DOI")
-    # upload_rel_paper_video("rel_paper_video", "results/search/search_20200727_010226.txt")
-    # videos_by_video_ids("results/search/search_20200727_010226.txt")
-    update_videos_by_list_videos('scopus_videos', './results/videos/videos_20200727_010400.txt', filter_by_q=True, overwrite=True)
+    # youtube_search = search_by_q("scopus/scopus_life+earch_top60_1404.csv", column="DOI")
+    # upload_rel_paper_video("rel_paper_video", "results/search/search_%s.txt" % youtube_search.fname)
+    # youtube_videos = videos_by_video_ids("results/search/search_%s.txt" % youtube_search.fname)
+    # update_videos_by_list_videos("scopus_videos", "./results/videos/videos_%s.txt" % youtube_videos.fname, filter_by_q=True, overwrite=True)
+    # print("search_%s.txt" % youtube_search.fname)
+    # print("videos_%s.txt" % youtube_videos.fname)
+    
+    # upload_rel_paper_video("rel_paper_video", "results/search/search_20200728_101953.txt")
+    # youtube_videos = videos_by_video_ids("results/search/search_20200728_104428.txt")
+    # update_videos_by_list_videos('scopus_videos', './results/videos/videos_20200728_105902.txt', filter_by_q=True, overwrite=True)
+    
     # channels_by_list_channel_ids(table_name_videos="scopus_videos")
     # upload_channels_by_list_channels('channels', './results/channels/channels_20200719_152247.txt', overwrite=True)
     # num_of_videos()

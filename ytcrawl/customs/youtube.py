@@ -154,9 +154,9 @@ class YouTube:
         return self
     
     def save_task(self, list_responses, args):
-        _fname = datetime.now().strftime('%Y%m%d_%H%M%S')
-        self.__save_list_responses(list_responses, _fname)
-        self.__save_log(args, _fname)
+        self.fname = datetime.now().strftime('%Y%m%d_%H%M%S')
+        self.__save_list_responses(list_responses, self.fname)
+        self.__save_log(args, self.fname)
         sleep(1.0) # Prevent duplicating fname
         return self
 

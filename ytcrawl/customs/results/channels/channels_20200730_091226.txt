@@ -1,0 +1,1 @@
+[{"items": [{"statistics": {"videoCount": "93", "viewCount": "14159", "commentCount": "0", "subscriberCount": "62"}, "brandingSettings": {"channel": {"title": "Omar Quintero", "description": "La Tecnologia es mi Pasion.\nMe fascina aprender y crear cosas nuevas."}}, "snippet": {"publishedAt": "2011-11-26T23:02:08Z"}, "id": "UCrTJmZ2k5qr4YVehzyy7rfQ"}]}]

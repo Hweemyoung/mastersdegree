@@ -24,11 +24,12 @@ import statistics
 
 import pandas as pd
 
+
 def scopus_csv():
     fpath = "scopus.csv"
     data = pd.read_csv(fpath)
     list_doi = list(data["DOI"])
-    
+
 
 def _check_arxiv_id_exists():
     with open('./test.txt') as fp:
@@ -280,9 +281,11 @@ def _add_stats(dict_stats_by_content, dict_attr_by_content, attribute='timedelta
                 _std, 2)
     return dict_stats_by_content
 
+
 def filter_by_q():
     db_handler = DBHandler()
-    db_handler.sql_handler.select("scopus_videos", ["title", "description", "q", "idx"])
+    db_handler.sql_handler.select(
+        "scopus_videos", ["title", "description", "q", "idx"])
     _results = db_handler.execute().fetchall()
     num_delete = 0
     for _row in _results:
@@ -292,24 +295,29 @@ def filter_by_q():
             if _q.lower() not in _row[0].lower() and _q not in _row[1].lower():
                 continue
             _new_q.append(_q)
-        
+
         if _new_q:
             _new_q = ", ".join(_new_q)
-            db_handler.sql_handler.update("scopus_videos", dict_columns_values={"q": _new_q})
+            db_handler.sql_handler.update(
+                "scopus_videos", dict_columns_values={"q": _new_q})
             db_handler.execute()
         else:
-            db_handler.sql_handler.delete("scopus_videos").where("idx", _row[3])
+            db_handler.sql_handler.delete(
+                "scopus_videos").where("idx", _row[3])
             db_handler.execute()
             num_delete += 1
 
     print("# delete: %d" % num_delete)
 
+
 def cal_paper_video_interval(fp_csv):
     from datetime import datetime, date
     data = pd.read_csv(fp_csv, header=0)
-    
-    list_date_videos = list(map(lambda field: datetime.strptime(field, "%Y-%m-%d %H:%M:%S").date(), data["publishedAt"]))
-    list_date_papers = list(map(lambda field: datetime.strptime(field, "%Y-%m-%d").date(), data["paper_published"]))
+
+    list_date_videos = list(map(lambda field: datetime.strptime(
+        field, "%Y-%m-%d %H:%M:%S").date(), data["publishedAt"]))
+    list_date_papers = list(map(lambda field: datetime.strptime(
+        field, "%Y-%m-%d").date(), data["paper_published"]))
     list_days_interval = list()
     for date_video, date_paper in zip(list_date_videos, list_date_papers):
         date_interval = date_video - date_paper
@@ -318,29 +326,200 @@ def cal_paper_video_interval(fp_csv):
     list_video_ids = data["videoId"]
     return list_days_interval, list_video_ids
 
+
 def boxplot(list_days_interval, list_video_ids):
     import pandas as pd
     import numpy as np
-    df2 = pd.DataFrame(zip(list_days_interval, list_video_ids), columns=["days", "videoId"])
+    df2 = pd.DataFrame(zip(list_days_interval, list_video_ids),
+                       columns=["days", "videoId"])
     df2.sort_values(by=["days"])
     print(df2)
     xs = np.array(list_days_interval)
-    print("Mean: %f\tMedian: %f\tStdev: %f"%(np.average(xs), np.median(xs), np.std(xs)))
+    print("Mean: %f\tMedian: %f\tStdev: %f" %
+          (np.average(xs), np.median(xs), np.std(xs)))
     df = pd.DataFrame(xs, columns=["Age(Years)"])
-    plt.figure(figsize=(7, 6)) # 크기 지정
+    plt.figure(figsize=(7, 6))  # 크기 지정
     boxplot = df.boxplot(column=['Age(Years)'])
     # plt.yticks(np.arange(0, 101, step=5))
     plt.show()
 
 
+def str_2_value(value):
+    return None if value == None else int(value)
+
+
 if __name__ == '__main__':
+    # 200730
+    db_handler = DBHandler()
+    _list_fields = [
+        "idx",
+        "idx_paper",
+        "content",
+        "video_visual",
+        "publishedAt",
+        "duration",
+        "channelId",
+        "viewCount",
+        "likeCount",
+        "dislikeCount",
+        "commentCount",
+        "favoriteCount",
+        "liveStreaming"
+    ]
+    db_handler.sql_handler.select(
+        "scopus_videos",
+        _list_fields
+        # ).where("idx", 135, "<").where("content", ["paper_explanation", "paper_reference"], "in")
+    ).where("idx", 135, "<")
+    # ).where("idx", 135, "<").where("content", "paper_supplementary")
+    _list_videos = db_handler.execute().fetchall()
+    _list_dict_videos = list(
+        map(lambda _row: dict(zip(_list_fields, _row)), _list_videos))
+
+    # Channels
+    db_handler.sql_handler.select(
+        "channels",
+        ["idx", "channelId", "subscriberCount"]
+    )
+    _list_channels = db_handler.execute().fetchall()
+    # {channelId : tuple(...), ...}
+    _dict_channels = dict(
+        zip(list(map(lambda _row: _row[1], _list_channels)), _list_channels))
+
+    dict_content_key = dict()
+    dict_content_key["paper_explanation"] = "paper_explanation"
+    dict_content_key["paper_reference"] = "paper_reference"
+    dict_content_key["paper_linked_supplementary"] = "paper_supplementary"
+    dict_content_key["paper_supplementary"] = "paper_supplementary"
+    dict_content_key["paper_application"] = "paper_assessment"
+    dict_content_key["paper_assessment"] = "paper_assessment"
+    dict_x = dict()
+    dict_x["paper_explanation"] = list()
+    dict_x["paper_reference"] = list()
+    dict_x["paper_supplementary"] = list()
+    dict_x["paper_assessment"] = list()
+    dict_y = dict()
+    dict_y["paper_explanation"] = list()
+    dict_y["paper_reference"] = list()
+    dict_y["paper_supplementary"] = list()
+    dict_y["paper_assessment"] = list()
+
+    for _i, _dict_row in enumerate(_list_dict_videos):
+        print("[+]Processing %d of %d videos" % (_i+1, len(_list_dict_videos)))
+        # Calc age
+        _date_video = _dict_row["publishedAt"].date()
+        _date_paper = datetime(2014, 4, 1).date()
+        _age = (_date_video - _date_paper).days/365
+        _dict_row["age"] = _age
+
+        # Age - Scaled View
+        # Calc view/subscriber
+        _dict_row["scaled_view"] = _dict_row["viewCount"] / _dict_channels[_dict_row["channelId"]
+                                                                           ][2] if _dict_channels[_dict_row["channelId"]][2] != 0 else _dict_row["viewCount"]
+        dict_y[dict_content_key[_dict_row["content"]]].append(_dict_row["scaled_view"])
+
+        # Age - Scaled Like
+        # Calc like/subscriber
+        # _dict_row["scaled_like"] = _dict_row["likeCount"] / _dict_channels[_dict_row["channelId"]
+        #                                                                    ][2] if _dict_channels[_dict_row["channelId"]][2] != 0 else _dict_row["likeCount"]
+        # dict_y[dict_content_key[_dict_row["content"]]].append(
+        #     _dict_row["scaled_like"])
+
+        # Age - View
+        # dict_y[dict_content_key[_dict_row["content"]]].append(_dict_row["viewCount"])
+
+        # Age - Like
+        # dict_y[dict_content_key[_dict_row["content"]]].append(
+        #     _dict_row["likeCount"])
+
+        # Boxplot: like/dislike
+        # if _dict_row["likeCount"] in (None, 0) or _dict_row["dislikeCount"] == None:
+        #     continue
+        # _dict_row["r_like_dislike"] = _dict_row["likeCount"] / _dict_row["dislikeCount"] if _dict_row["dislikeCount"] != 0 else _dict_row["likeCount"]
+        # dict_y[dict_content_key[_dict_row["content"]]].append(_dict_row["r_like_dislike"])
+
+        # Add x
+        dict_x[dict_content_key[_dict_row["content"]]].append(_dict_row["age"])
+
+    # Boxplot
+    # Multiple box plots on one Axes
+    # fig, ax = plt.subplots()
+    # ax.boxplot(list(dict_y.values()), sym="b*")
+    # ax.set_yscale("log")
+    # plt.title('Excluding: count unavailable or like == 0')
+    # list_xticks = list()
+    # for _key in dict_y.keys():
+    #     list_xticks.append("%s\n(N=%d)"%(_key, len(dict_y[_key])))
+    # plt.xticks([1, 2, 3, 4],
+    #            list_xticks)
+    # plt.show()
+
+    # Scatter
+    exp = plt.scatter(x=dict_x["paper_explanation"],
+                      y=dict_y["paper_explanation"], s=12, marker="o", color="blue")
+    ref = plt.scatter(x=dict_x["paper_reference"],
+                      y=dict_y["paper_reference"], s=12, marker="x", color="black")
+    sup = plt.scatter(x=dict_x["paper_supplementary"],
+                      y=dict_y["paper_supplementary"], s=12, marker="o", color="green")
+    ass = plt.scatter(x=dict_x["paper_assessment"],
+                      y=dict_y["paper_assessment"], s=12, marker="o", color="red")
+
+    plt.legend((ref, sup, exp, ass),
+               (
+                   "paper_reference(N=%d)" % len(dict_y["paper_reference"]),
+                   "paper_supplementary(N=%d)" % len(dict_y["paper_supplementary"]),
+                   "paper_explanation(N=%d)" % len(dict_y["paper_explanation"]),
+                   "paper_assessment(N=%d)" % len(dict_y["paper_assessment"]),
+                ),
+               scatterpoints=1,
+               loc='upper left',
+               fontsize=10)
+
+    # xs = dict_x["paper_explanation"] + dict_x["paper_reference"] + \
+    #     dict_x["paper_supplementary"] + dict_x["paper_assessment"]
+    # ys = dict_y["paper_explanation"] + dict_y["paper_reference"] + \
+    #     dict_y["paper_supplementary"] + dict_y["paper_assessment"]
+    # cs = ["blue"] * len(dict_y["paper_explanation"]) + ["black"] * len(dict_y["paper_reference"]) + \
+    #     ["green"] * len(dict_y["paper_supplementary"]) + \
+    #     ["red"] * len(dict_y["paper_assessment"])
+    # plt.scatter(x=xs, y=ys, s=10, c=cs)
+
+    plt.show()
+
+    # 200729
+
+    # db_handler.sql_handler.select("channels", [
+    #                               "idx", "commentCount", "subscriberCount", "videoCount", "viewCount"])
+    # _list_scopus_videos = db_handler.execute().fetchall()
+    # for _row in _list_scopus_videos:
+    #     db_handler.sql_handler.update("channels", dict_columns_values={
+    #         "commentInt": str_2_value(_row[1]),
+    #         "subscriberInt": str_2_value(_row[2]),
+    #         "videoInt": str_2_value(_row[3]),
+    #         "viewInt": str_2_value(_row[4])
+    #         }).where("idx", _row[0])
+    #     db_handler.execute()
+
+    # db_handler.sql_handler.select("scopus_videos", ["idx", "duration"])
+    # _list_scopus_videos = db_handler.execute().fetchall()
+    # for _row in _list_scopus_videos:
+    #     db_handler.sql_handler.update("scopus_videos", dict_columns_values={
+    #         "durationInt": str_2_value(_row[1])}).where("idx", _row[0])
+    #     db_handler.execute()
+
+    # db_handler.sql_handler.update("scopus_videos", dict_columns_values={
+    #     "likeInt": "2"
+    # }).where("idx", 1)
+    # db_handler.execute()
+
     # 200720
-    list_days_interval, list_video_ids = cal_paper_video_interval("scopus/scopus_videos_200720_1630.csv")
-    boxplot(list_days_interval, list_video_ids)
+    # list_days_interval, list_video_ids = cal_paper_video_interval(
+    #     "scopus/scopus_videos_200720_1630.csv")
+    # boxplot(list_days_interval, list_video_ids)
 
     # 200719
     # filter_by_q()
-    
+
     # _temp()
     # test_plt(num_cols=6, max_fig=20)
     # interval_from_paper()

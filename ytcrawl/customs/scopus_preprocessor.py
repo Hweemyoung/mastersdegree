@@ -490,10 +490,10 @@ if __name__ == "__main__":
     #                                          postprocess_redirections=args.postprocess_redirections)
     # scopus_preprocessor.preprocess_scopus_csv()
 
-    list_fpath = ["scopus/scopus_life+earch_top60_1403.csv",
-                  "scopus/scopus_life+earch_top60_1404.csv",
-                  "scopus/scopus_life+earch_top60_1405.csv",
-                  "scopus/scopus_life+earch_top60_1406.csv",
+    list_fpath = ["scopus/scopus_math+comp_top5perc_1902.csv",
+                  "scopus/scopus_math+comp_top5perc_1903.csv",
+                  "scopus/scopus_math+comp_top5perc_1904.csv",
+                  "scopus/scopus_math+comp_top5perc_1905.csv",
                   ]
     for _fpath in list_fpath:
         args.fpath = _fpath

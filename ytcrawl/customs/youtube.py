@@ -3,6 +3,7 @@ from googleapiclient.errors import HttpError
 from datetime import datetime
 from time import sleep
 import json
+from random import randint
 
 
 class YouTube:
@@ -59,7 +60,17 @@ class YouTube:
         'ytcrawl47',
         'ytcrawl48',
         'ytcrawl49',
-        'ytcrawl50'
+        'ytcrawl50',
+        'ytcrawl51',
+        'ytcrawl52',
+        'ytcrawl53',
+        'ytcrawl54',
+        'ytcrawl55',
+        'ytcrawl56',
+        'ytcrawl57',
+        'ytcrawl58',
+        'ytcrawl59',
+        'ytcrawl60',
     ]
     dict_api_keys = {
         'ytcrawl': 'AIzaSyCVMEUGxxsSw-BKH4c06PHKr_F4qjSdwJw',
@@ -113,6 +124,16 @@ class YouTube:
         'ytcrawl48': 'AIzaSyA1ZNQ_Gt5bnPLEZ4p_bBmkK4hGvBKPv78',
         'ytcrawl49': 'AIzaSyBMJNQqmaaBZgUz0A99RqipLYhgVTyF4lM',
         'ytcrawl50': 'AIzaSyA3mLSfPq3O8zLdqtbuSsVbj1w0SkXFeSI',
+        'ytcrawl51': 'AIzaSyC8jLTCz-CD6SIloWrxvmtjfvdQxnNFpAc',
+        'ytcrawl52': 'AIzaSyCsCEt897lhkRIfP3SaxinoYMl2XMdRdT4',
+        'ytcrawl53': 'AIzaSyBJa0xTEV7laKb9h-G_y0TjQSWqddo7oms',
+        'ytcrawl54': 'AIzaSyD6K_3Qk68EhPKhJ211cuaAsfyk_gCbmhw',
+        'ytcrawl55': 'AIzaSyA3q_bCEZ_omog0dK03FrDCwgdx-hlT9_c',
+        'ytcrawl56': 'AIzaSyDT2mYnCHg5ES4Yt60tiQ02uqa8hLCXLpM',
+        'ytcrawl57': 'AIzaSyDxAASi7QiUApJ_4E37OG-I-AyIGOEB3DQ',
+        'ytcrawl58': 'AIzaSyDxjZ4sQHqfFpXcGkMIQEsaufvHHivLiFo',
+        'ytcrawl59': 'AIzaSyBh6N5D1dJsUep0Y5t1CMQbsAw96_D9VEo',
+        'ytcrawl60': 'AIzaSyAZg6H6GuX0nMWUqmZYubskNRT5run4Sd0',
     }
     list_projects_unavailable = list()
     list_responses = list()
@@ -134,14 +155,16 @@ class YouTube:
 
     def build_youtube(self):
         try:
-            _new_project = self.list_projects.pop(0)
-        except IndexError:
+            # Select a project randomly
+            _new_project = self.list_projects.pop(randint(0, len(self.list_projects) - 1))
+        except ValueError:
             print('[-]No available project.')
             self.save_task(self.list_responses, self.args)
             quit()
-        
-        _new_api_key = self.dict_api_keys[_new_project]
-        print('[+]New project: %s\tAPI key: %s\tRemaining projects: %d' % (_new_project, _new_api_key, len(self.list_projects)))
+
+        _new_api_key = self.dict_api_keys.pop(_new_project)
+        print('[+]New project: %s\tAPI key: %s\tRemaining projects: %d' %
+              (_new_project, _new_api_key, len(self.list_projects)))
         try:
             self.youtube = build(self.YOUTUBE_API_SERVICE_NAME,
                                  self.YOUTUBE_API_VERSION, developerKey=_new_api_key)
@@ -153,11 +176,11 @@ class YouTube:
         self.list_projects_unavailable.append(_new_project)
         sleep(1.0)
         return self
-    
+
     def save_task(self, list_responses, args):
         self.__save_list_responses(list_responses, self.fname)
         self.__save_log(args, self.fname)
-        sleep(1.0) # Prevent duplicating fname
+        sleep(1.0)  # Prevent duplicating fname
         return self
 
     def __save_list_responses(self, list_responses, fname):
@@ -176,3 +199,4 @@ class YouTube:
         with open(_p, 'w+') as fp:
             json.dump(args, fp)
         return self
+

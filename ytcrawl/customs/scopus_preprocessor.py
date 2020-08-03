@@ -490,8 +490,7 @@ if __name__ == "__main__":
     #                                          postprocess_redirections=args.postprocess_redirections)
     # scopus_preprocessor.preprocess_scopus_csv()
 
-    list_fpath = ["scopus/scopus_math+comp_top5perc_1902.csv",
-                  "scopus/scopus_math+comp_top5perc_1903.csv",
+    list_fpath = ["scopus/scopus_math+comp_top5perc_1903.csv",
                   "scopus/scopus_math+comp_top5perc_1904.csv",
                   "scopus/scopus_math+comp_top5perc_1905.csv",
                   ]

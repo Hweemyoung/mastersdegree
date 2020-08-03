@@ -500,28 +500,28 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    scopus_preprocessor = ScopusPreprocessor(args.fpath,
-                                             overwrite=args.overwrite,
-                                             shuffle=args.shuffle,
-                                             set_redirection=args.redirection,
-                                             set_pdf=args.pdf,
-                                             savepoint_interval=args.savepoint_interval,
-                                             process_interval=args.process_interval,
-                                             postprocess_redirections=args.postprocess_redirections)
-    scopus_preprocessor.preprocess_scopus_csv()
+    # scopus_preprocessor = ScopusPreprocessor(args.fpath,
+    #                                          overwrite=args.overwrite,
+    #                                          shuffle=args.shuffle,
+    #                                          set_redirection=args.redirection,
+    #                                          set_pdf=args.pdf,
+    #                                          savepoint_interval=args.savepoint_interval,
+    #                                          process_interval=args.process_interval,
+    #                                          postprocess_redirections=args.postprocess_redirections)
+    # scopus_preprocessor.preprocess_scopus_csv()
 
-    # list_fpath = ["scopus/scopus_math+comp_top5perc_1904.csv",
-    #               "scopus/scopus_math+comp_top5perc_1905.csv",
-    #               ]
-    # for _fpath in list_fpath:
-    #     args.fpath = _fpath
-    #     print("[+]fpath: %s" % args.fpath)
-    #     scopus_preprocessor = ScopusPreprocessor(args.fpath,
-    #                                              overwrite=args.overwrite,
-    #                                              shuffle=args.shuffle,
-    #                                              set_redirection=args.redirection,
-    #                                              set_pdf=args.pdf,
-    #                                              savepoint_interval=args.savepoint_interval,
-    #                                              process_interval=args.process_interval,
-    #                                              postprocess_redirections=args.postprocess_redirections)
-    #     scopus_preprocessor.preprocess_scopus_csv()
+    list_fpath = ["scopus/scopus_math+comp_top5perc_1905.csv",
+                  "scopus/scopus_math+comp_top5perc_1906.csv",
+                  ]
+    for _fpath in list_fpath:
+        args.fpath = _fpath
+        print("[+]fpath: %s" % args.fpath)
+        scopus_preprocessor = ScopusPreprocessor(args.fpath,
+                                                 overwrite=args.overwrite,
+                                                 shuffle=args.shuffle,
+                                                 set_redirection=args.redirection,
+                                                 set_pdf=args.pdf,
+                                                 savepoint_interval=args.savepoint_interval,
+                                                 process_interval=args.process_interval,
+                                                 postprocess_redirections=args.postprocess_redirections)
+        scopus_preprocessor.preprocess_scopus_csv()

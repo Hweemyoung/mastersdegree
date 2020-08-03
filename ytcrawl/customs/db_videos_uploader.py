@@ -11,6 +11,7 @@ class DBVideosUploader:
     num_insert = 0
     num_update = 0
     num_pass = 0
+    num_warning = 0
 
     fields_q_filter = ("title", "description")
 
@@ -25,11 +26,11 @@ class DBVideosUploader:
                 print("[-]Q not included.")
                 continue
             self.__upload_video(_dict_response, overwrite)
-        print("# videos: %d\t# insert: %d\t# update: %d\t# pass:%d" %
-              (_num_videos, self.num_insert, self.num_update, self.num_pass))
+        print("# videos: %d\t# insert: %d\t# update: %d\t# pass: %d\t# warning: %d" %
+              (_num_videos, self.num_insert, self.num_update, self.num_pass, self.num_warning))
 
         return True
-    
+
     def __q_in_fields(self, dict_response):
         for _field in self.fields_q_filter:
             if dict_response["q"].replace(" ", "").lower() in dict_response["items"][0]["snippet"][_field].replace(" ", "").lower():
@@ -69,10 +70,11 @@ class DBVideosUploader:
         # self.mycursor.execute(sql)
         # self.conn.commit()
 
-    def __get_idx_by_video_id(self, video_id):
+    def __get_idx_by_video_id(self, video_id, idx_paper):
         self.db_handler.sql_handler.reset()
         self.db_handler.sql_handler.select(
-            self.table_name, 'idx').where('videoId', video_id, '=')
+            # self.table_name, 'idx').where('videoId', video_id, '=')
+            self.table_name, 'idx').where('videoId', video_id, '=').where("idx_paper", idx_paper, "=")
         result = self.db_handler.execute().fetchall()
 
         # sql = "SELECT 1 FROM videos WHERE videos.videoId='%s';" % (video_id)
@@ -84,44 +86,55 @@ class DBVideosUploader:
         #     print('\tVideo already exists:', video_id)
         #     if args.q:
         #         self.q_exists(video_id, args.q)
-        if len(result):
-            return result[0][0]
-        return False
+
+        # if len(result):
+        #     return result[0][0]
+        # return False
+        if len(result) > 1:
+            print("\t[!]Multiple indices found for videoId<%s> and idx_paper<%s>." % (video_id, idx_paper))
+            self.num_warning += 1
+            
+        return result[0][0] if len(result) else False
 
     def __upload_video(self, _dict_response, overwrite):
         if len(_dict_response["items"]) == 0:
             return True
         _video_id = _dict_response['items'][0]['id']
+        _idx_paper = _dict_response["idx_paper"]
 
-        # Check if video already exists by videoID
-        _idx_video = self.__get_idx_by_video_id(_video_id)
+        # Check if video already exists by videoID and idx_paper
+        _idx_video = self.__get_idx_by_video_id(_video_id, _idx_paper)
         if _idx_video != False and not overwrite:
             print('\tVideo already exists:', _video_id)
             self.__update_q_if_not_exist(_idx_video, _dict_response['q'])
-            self.__update_idx_paper_if_not_exist(
-                _idx_video, str(_dict_response['idx_paper']))
+
+            # Column idx_paper already has _idx_paper: verified by self.__get_idx_by_video_id()
+            # self.__update_idx_paper_if_not_exist(
+            #     _idx, str(_dict_response['idx_paper']))
+
             self.num_pass += 1
             return True
 
-        items = _dict_response['items'][0]
+        _items = _dict_response['items'][0]
         # Manual preprocessing
         # liveStreaming: set True if exists
-        if 'liveStreamingDetails' in items.keys():
-            items.pop('liveStreamingDetails')
-            items['liveStreaming'] = 1
+        if 'liveStreamingDetails' in _items.keys():
+            _items.pop('liveStreamingDetails')
+            _items['liveStreaming'] = 1
         else:
-            items['liveStreaming'] = 0
+            _items['liveStreaming'] = 0
         # key 'id' to 'videoId'
-        items['videoId'] = items.pop('id')
+        _items['videoId'] = _items.pop('id')
 
         # Preprocess
-        items = self.preprocessor.preprocess(items)
-        
-        custom_fields = {'q': _dict_response['q'], 'idx_paper': _dict_response['idx_paper']} if _idx_video == False else {}
+        _items = self.preprocessor.preprocess(_items)
+
+        custom_fields = {
+            'q': _dict_response['q'], 'idx_paper': _dict_response['idx_paper']} if _idx_video == False else {}
 
         # Get columns, values
         columns, values = self.db_handler.get_columns_values(
-            items, custom_fields)
+            _items, custom_fields)
 
         # Wrap columns
         # columns = self.preprocessor.wrap_columns(columns)
@@ -140,10 +153,10 @@ class DBVideosUploader:
             ).where("idx", _idx_video)
             self.db_handler.execute()
             self.__update_q_if_not_exist(_idx_video, _dict_response['q'])
-            self.__update_idx_paper_if_not_exist(
-                _idx_video, str(_dict_response['idx_paper']))
+            # self.__update_idx_paper_if_not_exist(
+            #     _idx_video, str(_dict_response['idx_paper']))
             self.num_update += 1
-        
+
         return True
 
     def __update_idx_paper_if_not_exist(self, idx_video, idx_paper):

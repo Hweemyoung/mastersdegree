@@ -997,4 +997,6 @@
 "Australian Journal of Agricultural and Resource Economics": "Wiley-Blackwell",
 "Australian Systematic Botany": "CSIRO",
 "Biological Bulletin": "University of Chicago Press",
-"Breeding Science": "Japanese Society of Breeding"}
+"Breeding Science": "Japanese Society of Breeding",
+"ACM Transactions on Interactive Intelligent Systems" : "ACM"
+}

@@ -37,7 +37,8 @@ class ScopusPreprocessor(Preprocessor):
             set_redirection=False,
             set_pdf=False,
             shuffle=False,
-            postprocess_redirections=False):
+            postprocess_redirections=False,
+            driver=True):
         # super(ScopusPreprocessor, self).__init__()
         self.fpath_scopus_csv = fpath_scopus_csv
         self.process_interval = process_interval
@@ -47,6 +48,7 @@ class ScopusPreprocessor(Preprocessor):
         self.set_pdf = set_pdf
         self.shuffle = shuffle
         self.postprocess_redirections = postprocess_redirections
+        self.driver = driver
 
         self.data = pd.read_csv(fpath_scopus_csv, header=0, sep=",", dtype=str)
         self.data = self.data.astype(str)
@@ -66,13 +68,31 @@ class ScopusPreprocessor(Preprocessor):
             except KeyError:
                 self.data[_col] = "None"
 
+        # Preprocess given columns
+        self.__preprocess_default_columns()
+
         # Get youtube search queries
         self.__add_yt_direct_queries()
         # self.driver.close()
 
         # Report
 
-        return self.data
+        return self
+
+    def __preprocess_default_columns(self):
+        # DOI
+        for _i, _doi in enumerate(self.data["DOI"]):
+            # TCYB
+            # 10.1109/TCYB.2017.2765343Y
+            if "/TCYB" in _doi and _doi.endswith("Y"):
+                self.data["DOI"][_i] = _doi[:-1]  # 10.1109/TCYB.2017.2765343
+
+            # TPDS
+            # 10.1109/TPDS.2018.2864184Y
+            elif "/TPDS" in _doi and _doi.endswith("Y"):
+                self.data["DOI"][_i] = _doi[:-1]  # 10.1109/TPDS.2018.2864184
+
+        return self
 
     def __add_yt_direct_queries(self):
         # DOI
@@ -163,7 +183,7 @@ class ScopusPreprocessor(Preprocessor):
                 # https://iopscience.iop.org/article/10.1088/0004-637X/781/2/60
                 return ("iopscience.iop.org/article/" + self.data["DOI"][i],  # mitpressjournals.org/doi/10.1162/EVCO_a_00116
                         "nan")
-            
+
             # Case: "University of Chicago Press"
             elif self.dict_source_pub[_source_title] == "University of Chicago Press":
                 # https://www.journals.uchicago.edu/doi/10.1086/674992
@@ -468,41 +488,40 @@ if __name__ == "__main__":
     # scopus_preprocessor.preprocess_scopus_csv()
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--fpath')
+    parser.add_argument('--fpath', default=None)
     parser.add_argument('--overwrite', action="store_true", default="Err")
     parser.add_argument('--redirection', action="store_true", default=False)
     parser.add_argument('--pdf', action="store_true", default=False)
     parser.add_argument('--shuffle', action="store_true", default=False)
     parser.add_argument('--savepoint_interval', type=int, default=10)
     parser.add_argument('--process_interval', type=float, default=60.0)
-    parser.add_argument('--postprocess_redirections',
-                        action="store_true", default=False)
+    parser.add_argument('--postprocess_redirections', action="store_true", default=False)
+    parser.add_argument('--no_driver', action="store_false", default=True)
 
     args = parser.parse_args()
 
-    # scopus_preprocessor = ScopusPreprocessor(args.fpath,
-    #                                          overwrite=args.overwrite,
-    #                                          shuffle=args.shuffle,
-    #                                          set_redirection=args.redirection,
-    #                                          set_pdf=args.pdf,
-    #                                          savepoint_interval=args.savepoint_interval,
-    #                                          process_interval=args.process_interval,
-    #                                          postprocess_redirections=args.postprocess_redirections)
-    # scopus_preprocessor.preprocess_scopus_csv()
+    scopus_preprocessor = ScopusPreprocessor(args.fpath,
+                                             overwrite=args.overwrite,
+                                             shuffle=args.shuffle,
+                                             set_redirection=args.redirection,
+                                             set_pdf=args.pdf,
+                                             savepoint_interval=args.savepoint_interval,
+                                             process_interval=args.process_interval,
+                                             postprocess_redirections=args.postprocess_redirections)
+    scopus_preprocessor.preprocess_scopus_csv()
 
-    list_fpath = ["scopus/scopus_math+comp_top5perc_1903.csv",
-                  "scopus/scopus_math+comp_top5perc_1904.csv",
-                  "scopus/scopus_math+comp_top5perc_1905.csv",
-                  ]
-    for _fpath in list_fpath:
-        args.fpath = _fpath
-        print("[+]fpath: %s" % args.fpath)
-        scopus_preprocessor = ScopusPreprocessor(args.fpath,
-                                                 overwrite=args.overwrite,
-                                                 shuffle=args.shuffle,
-                                                 set_redirection=args.redirection,
-                                                 set_pdf=args.pdf,
-                                                 savepoint_interval=args.savepoint_interval,
-                                                 process_interval=args.process_interval,
-                                                 postprocess_redirections=args.postprocess_redirections)
-        scopus_preprocessor.preprocess_scopus_csv()
+    # list_fpath = ["scopus/scopus_math+comp_top5perc_1904.csv",
+    #               "scopus/scopus_math+comp_top5perc_1905.csv",
+    #               ]
+    # for _fpath in list_fpath:
+    #     args.fpath = _fpath
+    #     print("[+]fpath: %s" % args.fpath)
+    #     scopus_preprocessor = ScopusPreprocessor(args.fpath,
+    #                                              overwrite=args.overwrite,
+    #                                              shuffle=args.shuffle,
+    #                                              set_redirection=args.redirection,
+    #                                              set_pdf=args.pdf,
+    #                                              savepoint_interval=args.savepoint_interval,
+    #                                              process_interval=args.process_interval,
+    #                                              postprocess_redirections=args.postprocess_redirections)
+    #     scopus_preprocessor.preprocess_scopus_csv()

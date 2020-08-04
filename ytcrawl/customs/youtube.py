@@ -134,6 +134,16 @@ class YouTube:
         'ytcrawl58': 'AIzaSyDxjZ4sQHqfFpXcGkMIQEsaufvHHivLiFo',
         'ytcrawl59': 'AIzaSyBh6N5D1dJsUep0Y5t1CMQbsAw96_D9VEo',
         'ytcrawl60': 'AIzaSyAZg6H6GuX0nMWUqmZYubskNRT5run4Sd0',
+        'ytcrawl61': 'AIzaSyCowxKRoyVv-NXUeMOOcMsMChppMX0dNdo',
+        'ytcrawl62': 'AIzaSyDi8qvpQbIbljuXmwsdMrqezo2VyHIo9ng',
+        'ytcrawl63': 'AIzaSyBVSMlJVS3ac0oHJK4U6cTPX52SyjeGGsU',
+        'ytcrawl64': 'AIzaSyCe-7nUxNw-gdC0MdflpcFGmfZyvaceKbo',
+        'ytcrawl65': 'AIzaSyCBjD3-TmBPuoWS2koF6Ybbh0Tpqo6hCnM',
+        'ytcrawl66': 'AIzaSyDBycXWvdwwukRTzQ61s4TX6k7JjBu_G3g',
+        'ytcrawl67': 'AIzaSyAdrBh5YcKRpjap0FoTFqZEVxwCVgXvnFk',
+        'ytcrawl68': 'AIzaSyBKr0fJV_aLGyUIbYLkfSyOYm2L-7XMYQA',
+        'ytcrawl69': 'AIzaSyCkR-cr0nLUNtK5CPdah0NA7uqjD89ft-4',
+        'ytcrawl70': 'AIzaSyAbfnwMvY0W9t7z5J9ADWP_WOAlTx_-Cdw',
     }
     list_projects_unavailable = list()
     list_responses = list()
@@ -155,9 +165,13 @@ class YouTube:
 
     def build_youtube(self):
         try:
-            # Select a project randomly
-            _new_project = self.list_projects.pop(randint(0, len(self.list_projects) - 1))
-        except ValueError:
+            if "random_project" in self.args.keys() and self.args["random_project"]:
+                _new_project = self.list_projects.pop(randint(0, len(self.list_projects) - 1))
+            else:
+                _new_project = self.list_projects.pop()
+        except (ValueError, IndexError):
+            # ValueError: randint
+            # IndexError: dict.pop
             print('[-]No available project.')
             self.save_task(self.list_responses, self.args)
             quit()

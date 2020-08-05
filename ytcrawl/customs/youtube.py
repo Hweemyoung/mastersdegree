@@ -71,6 +71,16 @@ class YouTube:
         'ytcrawl58',
         'ytcrawl59',
         'ytcrawl60',
+        'ytcrawl61',
+        'ytcrawl62',
+        'ytcrawl63',
+        'ytcrawl64',
+        'ytcrawl65',
+        'ytcrawl66',
+        'ytcrawl67',
+        'ytcrawl68',
+        'ytcrawl69',
+        'ytcrawl70',
     ]
     dict_api_keys = {
         'ytcrawl': 'AIzaSyCVMEUGxxsSw-BKH4c06PHKr_F4qjSdwJw',
@@ -144,6 +154,16 @@ class YouTube:
         'ytcrawl68': 'AIzaSyBKr0fJV_aLGyUIbYLkfSyOYm2L-7XMYQA',
         'ytcrawl69': 'AIzaSyCkR-cr0nLUNtK5CPdah0NA7uqjD89ft-4',
         'ytcrawl70': 'AIzaSyAbfnwMvY0W9t7z5J9ADWP_WOAlTx_-Cdw',
+        'ytcrawl71': 'AIzaSyDycEBIZvza9PA9Xcpsj7R0uDaUWb_v52M',
+        'ytcrawl72': '',
+        'ytcrawl73': '',
+        'ytcrawl74': '',
+        'ytcrawl75': '',
+        'ytcrawl76': '',
+        'ytcrawl77': '',
+        'ytcrawl78': '',
+        'ytcrawl79': '',
+        'ytcrawl80': '',
     }
     list_projects_unavailable = list()
     list_responses = list()
@@ -168,7 +188,7 @@ class YouTube:
             if "random_project" in self.args.keys() and self.args["random_project"]:
                 _new_project = self.list_projects.pop(randint(0, len(self.list_projects) - 1))
             else:
-                _new_project = self.list_projects.pop()
+                _new_project = self.list_projects.pop(0)
         except (ValueError, IndexError):
             # ValueError: randint
             # IndexError: dict.pop

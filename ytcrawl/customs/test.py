@@ -348,143 +348,217 @@ def str_2_value(value):
     return None if value == None else int(value)
 
 
-if __name__ == '__main__':
-    # 200730
-    db_handler = DBHandler()
-    _list_fields = [
-        "idx",
-        "idx_paper",
-        "content",
-        "video_visual",
-        "publishedAt",
-        "duration",
-        "channelId",
-        "viewCount",
-        "likeCount",
-        "dislikeCount",
-        "commentCount",
-        "favoriteCount",
-        "liveStreaming"
-    ]
-    db_handler.sql_handler.select(
-        "scopus_videos",
-        _list_fields
-        # ).where("idx", 135, "<").where("content", ["paper_explanation", "paper_reference"], "in")
-    ).where("idx", 135, "<")
-    # ).where("idx", 135, "<").where("content", "paper_supplementary")
-    _list_videos = db_handler.execute().fetchall()
-    _list_dict_videos = list(
-        map(lambda _row: dict(zip(_list_fields, _row)), _list_videos))
+def heatmap_from_csv(fpath=None, arr=None, title=None):
+    # Values must be already calculated on csv.
 
-    # Channels
-    db_handler.sql_handler.select(
-        "channels",
-        ["idx", "channelId", "subscriberCount"]
-    )
-    _list_channels = db_handler.execute().fetchall()
-    # {channelId : tuple(...), ...}
-    _dict_channels = dict(
-        zip(list(map(lambda _row: _row[1], _list_channels)), _list_channels))
+    # with open(fpath, newline='') as f:
+    #     table = list(csv.reader(f))
+    # print(table)
 
-    dict_content_key = dict()
-    dict_content_key["paper_explanation"] = "paper_explanation"
-    dict_content_key["paper_reference"] = "paper_reference"
-    dict_content_key["paper_linked_supplementary"] = "paper_supplementary"
-    dict_content_key["paper_supplementary"] = "paper_supplementary"
-    dict_content_key["paper_application"] = "paper_assessment"
-    dict_content_key["paper_assessment"] = "paper_assessment"
-    dict_x = dict()
-    dict_x["paper_explanation"] = list()
-    dict_x["paper_reference"] = list()
-    dict_x["paper_supplementary"] = list()
-    dict_x["paper_assessment"] = list()
-    dict_y = dict()
-    dict_y["paper_explanation"] = list()
-    dict_y["paper_reference"] = list()
-    dict_y["paper_supplementary"] = list()
-    dict_y["paper_assessment"] = list()
+    if fpath != None:
+        intersection_matrix = np.genfromtxt(fpath, delimiter=',')
+    elif type(arr) != type(None):
+        intersection_matrix = arr
 
-    for _i, _dict_row in enumerate(_list_dict_videos):
-        print("[+]Processing %d of %d videos" % (_i+1, len(_list_dict_videos)))
-        # Calc age
-        _date_video = _dict_row["publishedAt"].date()
-        _date_paper = datetime(2014, 4, 1).date()
-        _age = (_date_video - _date_paper).days/365
-        _dict_row["age"] = _age
+    print(intersection_matrix)
+    intersection_matrix = np.round(intersection_matrix, 2)
 
-        # Age - Scaled View
-        # Calc view/subscriber
-        _dict_row["scaled_view"] = _dict_row["viewCount"] / _dict_channels[_dict_row["channelId"]
-                                                                           ][2] if _dict_channels[_dict_row["channelId"]][2] != 0 else _dict_row["viewCount"]
-        dict_y[dict_content_key[_dict_row["content"]]].append(_dict_row["scaled_view"])
+    fig, ax = plt.subplots()
 
-        # Age - Scaled Like
-        # Calc like/subscriber
-        # _dict_row["scaled_like"] = _dict_row["likeCount"] / _dict_channels[_dict_row["channelId"]
-        #                                                                    ][2] if _dict_channels[_dict_row["channelId"]][2] != 0 else _dict_row["likeCount"]
-        # dict_y[dict_content_key[_dict_row["content"]]].append(
-        #     _dict_row["scaled_like"])
+    if title != None:
+        ax.set_title(title)
 
-        # Age - View
-        # dict_y[dict_content_key[_dict_row["content"]]].append(_dict_row["viewCount"])
+    ax.matshow(intersection_matrix, cmap=plt.cm.coolwarm, vmin=-1.0, vmax=1.0)
 
-        # Age - Like
-        # dict_y[dict_content_key[_dict_row["content"]]].append(
-        #     _dict_row["likeCount"])
+    cols = ['Duration', '#View', '#Like', '#Dislike', '#Comment']
+    x_pos = np.arange(len(cols))
+    plt.xticks(x_pos, cols)
+    y_pos = np.arange(len(cols))
+    plt.yticks(y_pos, cols)
 
-        # Boxplot: like/dislike
-        # if _dict_row["likeCount"] in (None, 0) or _dict_row["dislikeCount"] == None:
-        #     continue
-        # _dict_row["r_like_dislike"] = _dict_row["likeCount"] / _dict_row["dislikeCount"] if _dict_row["dislikeCount"] != 0 else _dict_row["likeCount"]
-        # dict_y[dict_content_key[_dict_row["content"]]].append(_dict_row["r_like_dislike"])
+    for i in range(len(cols)):
+        for j in range(len(cols)):
+            c = intersection_matrix[j, i]
+            ax.text(i, j, str(c), va='center', ha='center')
 
-        # Add x
-        dict_x[dict_content_key[_dict_row["content"]]].append(_dict_row["age"])
-
-    # Boxplot
-    # Multiple box plots on one Axes
-    # fig, ax = plt.subplots()
-    # ax.boxplot(list(dict_y.values()), sym="b*")
-    # ax.set_yscale("log")
-    # plt.title('Excluding: count unavailable or like == 0')
-    # list_xticks = list()
-    # for _key in dict_y.keys():
-    #     list_xticks.append("%s\n(N=%d)"%(_key, len(dict_y[_key])))
-    # plt.xticks([1, 2, 3, 4],
-    #            list_xticks)
-    # plt.show()
-
-    # Scatter
-    exp = plt.scatter(x=dict_x["paper_explanation"],
-                      y=dict_y["paper_explanation"], s=12, marker="o", color="blue")
-    ref = plt.scatter(x=dict_x["paper_reference"],
-                      y=dict_y["paper_reference"], s=12, marker="x", color="black")
-    sup = plt.scatter(x=dict_x["paper_supplementary"],
-                      y=dict_y["paper_supplementary"], s=12, marker="o", color="green")
-    ass = plt.scatter(x=dict_x["paper_assessment"],
-                      y=dict_y["paper_assessment"], s=12, marker="o", color="red")
-
-    plt.legend((ref, sup, exp, ass),
-               (
-                   "paper_reference(N=%d)" % len(dict_y["paper_reference"]),
-                   "paper_supplementary(N=%d)" % len(dict_y["paper_supplementary"]),
-                   "paper_explanation(N=%d)" % len(dict_y["paper_explanation"]),
-                   "paper_assessment(N=%d)" % len(dict_y["paper_assessment"]),
-                ),
-               scatterpoints=1,
-               loc='upper left',
-               fontsize=10)
-
-    # xs = dict_x["paper_explanation"] + dict_x["paper_reference"] + \
-    #     dict_x["paper_supplementary"] + dict_x["paper_assessment"]
-    # ys = dict_y["paper_explanation"] + dict_y["paper_reference"] + \
-    #     dict_y["paper_supplementary"] + dict_y["paper_assessment"]
-    # cs = ["blue"] * len(dict_y["paper_explanation"]) + ["black"] * len(dict_y["paper_reference"]) + \
-    #     ["green"] * len(dict_y["paper_supplementary"]) + \
-    #     ["red"] * len(dict_y["paper_assessment"])
-    # plt.scatter(x=xs, y=ys, s=10, c=cs)
-
+    # plt.clim(-1, 1)
     plt.show()
+
+
+if __name__ == '__main__':
+    # 200805
+
+    heatmap_from_csv(fpath="scopus/corr/scopus_videos_2014_comp.csv", title="2014 COMP all")
+
+    # Split 2014: comp / life
+    # db_handler = DBHandler()
+    # _list_columns = ["videoId",
+    #                  "content",
+    #                  "video_visual",
+    #                  "paper_visual",
+    #                  "audio_style",
+    #                  "idx_paper",
+    #                  "q",
+    #                  "title",
+    #                  "description",
+    #                  "publishedAt",
+    #                  "tags",
+    #                  "defaultLanguage",
+    #                  "defaultAudioLanguage",
+    #                  "channelTitle",
+    #                  "channelId",
+    #                  "duration",
+    #                  "viewCount",
+    #                  "likeCount",
+    #                  "dislikeCount",
+    #                  "commentCount",
+    #                  "favoriteCount",
+    #                  "liveStreaming",
+    #                  "queriedAt", ]
+    # db_handler.sql_handler.select("scopus_videos_2014").where("idx", 143, ">")
+    # _records_comp = db_handler.execute().fetchall()
+    # # Exclude "idx"
+    # _records_comp = list(map(lambda _row: _row[1:], _records_comp))
+    # for _row in _records_comp:
+    #     db_handler.sql_handler.insert("scopus_videos_life_2014", columns=_list_columns, values=_row)
+    #     db_handler.execute()
+
+    # 200730
+    # db_handler = DBHandler()
+    # _list_fields = [
+    #     "idx",
+    #     "idx_paper",
+    #     "content",
+    #     "video_visual",
+    #     "publishedAt",
+    #     "duration",
+    #     "channelId",
+    #     "viewCount",
+    #     "likeCount",
+    #     "dislikeCount",
+    #     "commentCount",
+    #     "favoriteCount",
+    #     "liveStreaming"
+    # ]
+    # db_handler.sql_handler.select(
+    #     "scopus_videos",
+    #     _list_fields
+    #     # ).where("idx", 135, "<").where("content", ["paper_explanation", "paper_reference"], "in")
+    # ).where("idx", 135, "<")
+    # # ).where("idx", 135, "<").where("content", "paper_supplementary")
+    # _list_videos = db_handler.execute().fetchall()
+    # _list_dict_videos = list(
+    #     map(lambda _row: dict(zip(_list_fields, _row)), _list_videos))
+
+    # # Channels : Get subscriber count
+    # db_handler.sql_handler.select(
+    #     "channels",
+    #     ["idx", "channelId", "subscriberCount"]
+    # )
+    # _list_channels = db_handler.execute().fetchall()
+    # # {channelId : tuple(...), ...}
+    # _dict_channels = dict(
+    #     zip(list(map(lambda _row: _row[1], _list_channels)), _list_channels))
+
+    # dict_content_key = dict()
+    # dict_content_key["paper_explanation"] = "paper_explanation"
+    # dict_content_key["paper_reference"] = "paper_reference"
+    # dict_content_key["paper_linked_supplementary"] = "paper_supplementary"
+    # dict_content_key["paper_supplementary"] = "paper_supplementary"
+    # dict_content_key["paper_application"] = "paper_assessment"
+    # dict_content_key["paper_assessment"] = "paper_assessment"
+    # dict_x = dict()
+    # dict_x["paper_explanation"] = list()
+    # dict_x["paper_reference"] = list()
+    # dict_x["paper_supplementary"] = list()
+    # dict_x["paper_assessment"] = list()
+    # dict_y = dict()
+    # dict_y["paper_explanation"] = list()
+    # dict_y["paper_reference"] = list()
+    # dict_y["paper_supplementary"] = list()
+    # dict_y["paper_assessment"] = list()
+
+    # for _i, _dict_row in enumerate(_list_dict_videos):
+    #     print("[+]Processing %d of %d videos" % (_i+1, len(_list_dict_videos)))
+    #     # Calc age
+    #     _date_video = _dict_row["publishedAt"].date()
+    #     _date_paper = datetime(2014, 4, 1).date()
+    #     _age = (_date_video - _date_paper).days/365
+    #     _dict_row["age"] = _age
+
+    #     # Age - Scaled View
+    #     # Calc view/subscriber
+    #     _dict_row["scaled_view"] = _dict_row["viewCount"] / _dict_channels[_dict_row["channelId"]
+    #                                                                        ][2] if _dict_channels[_dict_row["channelId"]][2] != 0 else _dict_row["viewCount"]
+    #     dict_y[dict_content_key[_dict_row["content"]]].append(_dict_row["scaled_view"])
+
+    #     # Age - Scaled Like
+    #     # Calc like/subscriber
+    #     # _dict_row["scaled_like"] = _dict_row["likeCount"] / _dict_channels[_dict_row["channelId"]
+    #     #                                                                    ][2] if _dict_channels[_dict_row["channelId"]][2] != 0 else _dict_row["likeCount"]
+    #     # dict_y[dict_content_key[_dict_row["content"]]].append(
+    #     #     _dict_row["scaled_like"])
+
+    #     # Age - View
+    #     # dict_y[dict_content_key[_dict_row["content"]]].append(_dict_row["viewCount"])
+
+    #     # Age - Like
+    #     # dict_y[dict_content_key[_dict_row["content"]]].append(
+    #     #     _dict_row["likeCount"])
+
+    #     # Boxplot: like/dislike
+    #     # if _dict_row["likeCount"] in (None, 0) or _dict_row["dislikeCount"] == None:
+    #     #     continue
+    #     # _dict_row["r_like_dislike"] = _dict_row["likeCount"] / _dict_row["dislikeCount"] if _dict_row["dislikeCount"] != 0 else _dict_row["likeCount"]
+    #     # dict_y[dict_content_key[_dict_row["content"]]].append(_dict_row["r_like_dislike"])
+
+    #     # Add x
+    #     dict_x[dict_content_key[_dict_row["content"]]].append(_dict_row["age"])
+
+    # # Boxplot
+    # # Multiple box plots on one Axes
+    # # fig, ax = plt.subplots()
+    # # ax.boxplot(list(dict_y.values()), sym="b*")
+    # # ax.set_yscale("log")
+    # # plt.title('Excluding: count unavailable or like == 0')
+    # # list_xticks = list()
+    # # for _key in dict_y.keys():
+    # #     list_xticks.append("%s\n(N=%d)"%(_key, len(dict_y[_key])))
+    # # plt.xticks([1, 2, 3, 4],
+    # #            list_xticks)
+    # # plt.show()
+
+    # # Scatter
+    # exp = plt.scatter(x=dict_x["paper_explanation"],
+    #                   y=dict_y["paper_explanation"], s=12, marker="o", color="blue")
+    # ref = plt.scatter(x=dict_x["paper_reference"],
+    #                   y=dict_y["paper_reference"], s=12, marker="x", color="black")
+    # sup = plt.scatter(x=dict_x["paper_supplementary"],
+    #                   y=dict_y["paper_supplementary"], s=12, marker="o", color="green")
+    # ass = plt.scatter(x=dict_x["paper_assessment"],
+    #                   y=dict_y["paper_assessment"], s=12, marker="o", color="red")
+
+    # plt.legend((ref, sup, exp, ass),
+    #            (
+    #                "paper_reference(N=%d)" % len(dict_y["paper_reference"]),
+    #                "paper_supplementary(N=%d)" % len(dict_y["paper_supplementary"]),
+    #                "paper_explanation(N=%d)" % len(dict_y["paper_explanation"]),
+    #                "paper_assessment(N=%d)" % len(dict_y["paper_assessment"]),
+    #             ),
+    #            scatterpoints=1,
+    #            loc='upper left',
+    #            fontsize=10)
+
+    # # xs = dict_x["paper_explanation"] + dict_x["paper_reference"] + \
+    # #     dict_x["paper_supplementary"] + dict_x["paper_assessment"]
+    # # ys = dict_y["paper_explanation"] + dict_y["paper_reference"] + \
+    # #     dict_y["paper_supplementary"] + dict_y["paper_assessment"]
+    # # cs = ["blue"] * len(dict_y["paper_explanation"]) + ["black"] * len(dict_y["paper_reference"]) + \
+    # #     ["green"] * len(dict_y["paper_supplementary"]) + \
+    # #     ["red"] * len(dict_y["paper_assessment"])
+    # # plt.scatter(x=xs, y=ys, s=10, c=cs)
+
+    # plt.show()
 
     # 200729
 
@@ -525,33 +599,7 @@ if __name__ == '__main__':
     # interval_from_paper()
     # sql_handler = SQLHandler()
 
-    # with open('table.csv', newline='') as f:
-    # table = csv.reader(f)
-    # print(list(table))
-
-    # table = np.genfromtxt('table.csv', delimiter=',')
-    # table = np.round(table, 2)
-    # print(table)
-
-    # fig, ax = plt.subplots()
-
-    # intersection_matrix = table
-
-    # ax.matshow(intersection_matrix, cmap=plt.cm.Reds)
-
-    # cols = ['#contents', 'Duration', '#View',
-    #         '#Like', '#Dislike', '#Comment']
-    # x_pos = np.arange(len(cols))
-    # plt.xticks(x_pos, cols)
-    # y_pos = np.arange(len(cols))
-    # plt.yticks(y_pos, cols)
-
-    # for i in range(len(cols)):
-    #     for j in range(len(cols)):
-    #         c = intersection_matrix[j, i]
-    #         ax.text(i, j, str(c), va='center', ha='center')
-
-    # plt.show()
+    # heatmap_from_csv("table.csv")
 
     # db_papers_uploader = DBPapersUploader()
 

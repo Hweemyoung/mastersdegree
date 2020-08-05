@@ -187,7 +187,7 @@ class SQLHandler:
         print('\tCurrent list_where_clauses:', self.list_where_clauses)
         return self
 
-    def order_by(self, columns=None, orders=None, dict_columns_orders=None):
+    def order_by(self, columns=["idx"], orders=["asc"], dict_columns_orders=None):
         if dict_columns_orders != None:
             columns = tuple(dict_columns_orders.keys())
             # print('dict_columns_orders.values(): ', dict_columns_orders.values())

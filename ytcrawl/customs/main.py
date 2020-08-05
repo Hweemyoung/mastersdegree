@@ -664,7 +664,7 @@ if __name__ == '__main__':
     # update_papers_from_arxiv_list()
     # altmetric_url_from_papers()
     
-    youtube_search = search_by_q("scopus/scopus_math+comp_top5perc_1904.csv", column="DOI")
+    # youtube_search = search_by_q("scopus/scopus_math+comp_top5perc_1904.csv", column="Redirection")
 
     # upload_rel_paper_video("rel_paper_video", "results/search/search_%s.txt" % youtube_search.fname)
     # youtube_videos = videos_by_video_ids("results/search/search_%s.txt" % youtube_search.fname) # Accepts arg --random_project
@@ -672,9 +672,9 @@ if __name__ == '__main__':
     # print("search_%s.txt" % youtube_search.fname)
     # print("videos_%s.txt" % youtube_videos.fname)
     
-    # upload_rel_paper_video("rel_paper_video", "results/search/search_20200804_163216.txt")
-    # youtube_videos = videos_by_video_ids("results/search/search_20200804_163216.txt")
-    # update_videos_by_list_videos("scopus_videos_comp_2019", "./results/videos/videos_20200804_164026.txt", filter_by_q=True, overwrite=True)
+    # upload_rel_paper_video("rel_paper_video", "results/search/search_20200805_175023.txt")
+    # youtube_videos = videos_by_video_ids("results/search/search_20200805_175023.txt")
+    # update_videos_by_list_videos("scopus_videos_2019_comp", "./results/videos/videos_20200805_180834.txt", filter_by_q=True, overwrite=True)
     
     # channels_by_list_channel_ids(table_name_videos="scopus_videos")
     # upload_channels_by_list_channels('channels', './results/channels/channels_20200730_083658.txt', overwrite=True)

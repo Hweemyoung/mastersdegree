@@ -92,6 +92,11 @@ class ScopusPreprocessor(Preprocessor):
             elif "/TPDS" in _doi and _doi.endswith("Y"):
                 self.data["DOI"][_i] = _doi[:-1]  # 10.1109/TPDS.2018.2864184
 
+            # TIP
+            # 10.1109/TIP.2018.2883554Y
+            elif "/TIP" in _doi and _doi.endswith("Y"):
+                self.data["DOI"][_i] = _doi[:-1]  # 10.1109/TIP.2018.2883554
+
         return self
 
     def __add_yt_direct_queries(self):
@@ -101,6 +106,7 @@ class ScopusPreprocessor(Preprocessor):
         self.__set_redirections()
         print("\n# papers: %d\t# fail: %d\t# pass: %d\t# skip: %d" %
               (self.num_papers, self.num_fail, self.num_pass, self.num_skip))
+
         print("Done.")
 
         # pd.Series.astype(str) + ',' + pd.Series.astype(str)
@@ -499,22 +505,23 @@ if __name__ == "__main__":
     parser.add_argument('--shuffle', action="store_true", default=False)
     parser.add_argument('--savepoint_interval', type=int, default=10)
     parser.add_argument('--process_interval', type=float, default=60.0)
-    parser.add_argument('--postprocess_redirections', action="store_true", default=False)
+    parser.add_argument('--postprocess_redirections',
+                        action="store_true", default=False)
     parser.add_argument('--no_driver', action="store_false", default=True)
 
     args = parser.parse_args()
 
     if args.fpath != None:
         scopus_preprocessor = ScopusPreprocessor(args.fpath,
-                                                overwrite=args.overwrite,
-                                                shuffle=args.shuffle,
-                                                set_redirection=args.redirection,
-                                                set_pdf=args.pdf,
-                                                savepoint_interval=args.savepoint_interval,
-                                                process_interval=args.process_interval,
-                                                postprocess_redirections=args.postprocess_redirections)
+                                                 overwrite=args.overwrite,
+                                                 shuffle=args.shuffle,
+                                                 set_redirection=args.redirection,
+                                                 set_pdf=args.pdf,
+                                                 savepoint_interval=args.savepoint_interval,
+                                                 process_interval=args.process_interval,
+                                                 postprocess_redirections=args.postprocess_redirections)
         scopus_preprocessor.preprocess_scopus_csv()
-    
+
     else:
         # _list_fpath = ["scopus/scopus_math+comp_top5perc_1905.csv",
         #             "scopus/scopus_math+comp_top5perc_1906.csv",
@@ -523,11 +530,11 @@ if __name__ == "__main__":
             args.fpath = _fpath
             print("[+]fpath: %s" % args.fpath)
             scopus_preprocessor = ScopusPreprocessor(args.fpath,
-                                                    overwrite=args.overwrite,
-                                                    shuffle=args.shuffle,
-                                                    set_redirection=args.redirection,
-                                                    set_pdf=args.pdf,
-                                                    savepoint_interval=args.savepoint_interval,
-                                                    process_interval=args.process_interval,
-                                                    postprocess_redirections=args.postprocess_redirections)
+                                                     overwrite=args.overwrite,
+                                                     shuffle=args.shuffle,
+                                                     set_redirection=args.redirection,
+                                                     set_pdf=args.pdf,
+                                                     savepoint_interval=args.savepoint_interval,
+                                                     process_interval=args.process_interval,
+                                                     postprocess_redirections=args.postprocess_redirections)
             scopus_preprocessor.preprocess_scopus_csv()

@@ -33,7 +33,7 @@ class DBVideosUploader:
 
     def __q_in_fields(self, dict_response):
         for _field in self.fields_q_filter:
-            if dict_response["q"].replace(" ", "").lower() in dict_response["items"][0]["snippet"][_field].replace(" ", "").lower():
+            if dict_response["q"].replace(" ", "").replace("\n", "").lower() in dict_response["items"][0]["snippet"][_field].replace(" ", "").replace("\n", "").lower():
                 return True
         return False
 

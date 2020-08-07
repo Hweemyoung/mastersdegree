@@ -998,5 +998,6 @@
 "Australian Systematic Botany": "CSIRO",
 "Biological Bulletin": "University of Chicago Press",
 "Breeding Science": "Japanese Society of Breeding",
-"ACM Transactions on Interactive Intelligent Systems" : "ACM"
+"ACM Transactions on Interactive Intelligent Systems" : "ACM",
+"Proceedings of the Annual ACM Symposium on Theory of Computing": "ACM"
 }

@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 from urllib.error import URLError
 from selenium import webdriver
 from time import sleep
+from datetime import datetime
 import socket
 
 from preprocessor import Preprocessor
@@ -20,6 +21,7 @@ class ScopusPreprocessor(Preprocessor):
     num_pass = 0
     num_fail = 0
     num_skip = 0
+    num_new_domains = 0
     fp_driver = "./chromedriver_83"
     source_titles_by_driver = ("Briefings in Bioinformatics",
                                "Database",
@@ -27,6 +29,10 @@ class ScopusPreprocessor(Preprocessor):
                                "Bulletin of the American Meteorological Society",
                                "Molecular Biology and Evolution",
                                "Systematic Biology",)
+
+    fp_dict_redirection_domains = "read_only/dict_redirection_domains.json"
+    with open(fp_dict_redirection_domains, "r") as f:
+        dict_redirection_domains = json.load(f)
 
     def __init__(
             self,
@@ -109,8 +115,8 @@ class ScopusPreprocessor(Preprocessor):
         # _S_doi = data["DOI"]
         # Redirected urls
         self.__set_redirections()
-        print("\n# papers: %d\t# fail: %d\t# pass: %d\t# skip: %d" %
-              (self.num_papers, self.num_fail, self.num_pass, self.num_skip))
+        print("\n# papers: %d\t# fail: %d\t# pass: %d\t# skip: %d\t# new domains: %d" %
+              (self.num_papers, self.num_fail, self.num_pass, self.num_skip, self.num_new_domains))
 
         print("Done.")
 
@@ -298,7 +304,7 @@ class ScopusPreprocessor(Preprocessor):
                         self.data["Redirection"][_i])
                 print("\t[+]Passing.")
                 self.num_pass += 1
-                self.__check_savepoint(_i, self.data)
+                self.__check_savepoint(_i)
                 continue
 
             # Skip opening?
@@ -339,10 +345,10 @@ class ScopusPreprocessor(Preprocessor):
             #     print("\t[+]Redirection_pdf: %s" % _redirected_pdf)
             #     self.data["Redirection_pdf"][_i] = _redirected_pdf
 
-            self.__check_savepoint(_i, self.data)
+            self.__check_savepoint(_i)
 
         # Save
-        self.data.astype(str).to_csv(self.fpath_scopus_csv, index=False)
+        self.__save()
 
         return self
 
@@ -467,6 +473,7 @@ class ScopusPreprocessor(Preprocessor):
     def __postprocess_redirected_url(self, url_redirected):
         # Remove protocol(https?://www.), query, hash, ...
         url_redirected = urlparse(url_redirected)
+
         # Append
         url_redirected = url_redirected.netloc + url_redirected.path
         # Remove www.
@@ -488,13 +495,31 @@ class ScopusPreprocessor(Preprocessor):
             # sciencedirect.com/science/article/pii/S1364815213002338
             url_redirected = "/".join(
                 ("sciencedirect.com/science/article", _[-2], _[-1]))
+        
+        # Add to dict_redirection_domains.json
+        _domain = url_redirected.split("/")[0]
+        if _domain not in self.dict_redirection_domains:
+            _datetime = datetime.now().strftime("%Y-%m-%dT%XZ")
+            self.dict_redirection_domains[_domain] = {"datetime": _datetime}
+            self.num_new_domains += 1
+            print("\t[+]Domain added.")
+            print("\t\tDomain: %s\tDatetime: %s" % (_domain, _datetime))
 
         return url_redirected
 
-    def __check_savepoint(self, enum, df):
+    def __check_savepoint(self, enum):
         if (enum+1) % self.savepoint_interval == 0:
-            df.astype(str).to_csv(self.fpath_scopus_csv, index=False)
+            self.__save()
+
         return self
+
+    def __save(self):
+        # data
+        self.data.astype(str).to_csv(self.fpath_scopus_csv, index=False)
+
+        # redirection domains
+        with open(self.fp_dict_redirection_domains, "w") as f:
+            json.dump(self.dict_redirection_domains, f)
 
 
 if __name__ == "__main__":

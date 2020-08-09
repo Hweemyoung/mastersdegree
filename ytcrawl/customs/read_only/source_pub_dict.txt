@@ -999,5 +999,6 @@
 "Biological Bulletin": "University of Chicago Press",
 "Breeding Science": "Japanese Society of Breeding",
 "ACM Transactions on Interactive Intelligent Systems" : "ACM",
-"Proceedings of the Annual ACM Symposium on Theory of Computing": "ACM"
+"Proceedings of the Annual ACM Symposium on Theory of Computing": "ACM",
+"Proceedings of the VLDB Endowment": "ACM"
 }

@@ -270,7 +270,6 @@ class YouTubeSearch(YouTube):
 
 	def __search(self, args, list_queries=None, list_channel_ids=None, recursive=True):
 		# q(, channelId) must be already set when list_queries == None
-		_list_responses = list()
 		if list_queries:
 			_num_queries = len(list_queries)
 			print('# of queries: ', _num_queries)
@@ -339,7 +338,8 @@ class YouTubeSearch(YouTube):
 			while _response == False:
 				_response = self.__youtube_search(args)
 
-			_dict_responses['items'].append(_response['items'])
+			# _dict_responses['items'].append(_response['items']) # list(list(dict,dict,...), list(), ...)
+			_dict_responses['items'] = _dict_responses['items'] + _response['items'] # list(dict,dict,...)
 			# _dict_responses['totalResults'].append(_response['pageInfo']['totalResults'])
 
 			if not recursive:

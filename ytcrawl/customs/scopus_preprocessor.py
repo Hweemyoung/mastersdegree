@@ -20,7 +20,7 @@ class ScopusPreprocessor(Preprocessor):
     num_pass = 0
     num_fail = 0
     num_skip = 0
-    p_driver = "./chromedriver_83"
+    fp_driver = "./chromedriver_83"
     source_titles_by_driver = ("Briefings in Bioinformatics",
                                "Database",
                                "Bioinformatics",
@@ -38,7 +38,7 @@ class ScopusPreprocessor(Preprocessor):
             set_pdf=False,
             shuffle=False,
             postprocess_redirections=False,
-            driver=True):
+            use_driver=True):
         # super(ScopusPreprocessor, self).__init__()
         self.fpath_scopus_csv = fpath_scopus_csv
         self.process_interval = process_interval
@@ -48,7 +48,10 @@ class ScopusPreprocessor(Preprocessor):
         self.set_pdf = set_pdf
         self.shuffle = shuffle
         self.postprocess_redirections = postprocess_redirections
-        self.driver = driver
+        self.use_driver = use_driver
+        if use_driver:
+            print("[+]Opening Driver.")
+            self.driver = webdriver.Chrome(self.fp_driver)
 
         self.data = pd.read_csv(fpath_scopus_csv, header=0, sep=",", dtype=str)
         self.data = self.data.astype(str)
@@ -73,13 +76,15 @@ class ScopusPreprocessor(Preprocessor):
 
         # Get youtube search queries
         self.__add_yt_direct_queries()
-        # self.driver.close()
 
-        # Report
+        # Close _driver
+        if self.use_driver:
+            self.driver.close()
 
         return self
 
     def __preprocess_default_columns(self):
+        print("[+]Preprocessing DOIs.")
         # DOI
         for _i, _doi in enumerate(self.data["DOI"]):
             # TCYB
@@ -312,7 +317,7 @@ class ScopusPreprocessor(Preprocessor):
                     _url = "https://www.doi.org/" + self.data["DOI"][_i]
                     # Get redirection
                     if self.data["Source title"][_i] in self.source_titles_by_driver:
-                        if self.driver:
+                        if self.use_driver:
                             self.__write_redirection_by_driver(_i, _url)
                         else:
                             print("\t[-]Driver required but not available.")
@@ -342,21 +347,21 @@ class ScopusPreprocessor(Preprocessor):
         return self
 
     def __write_redirection_by_driver(self, i, url):
-        print("\t[+]Opening Driver.")
-        _driver = webdriver.Chrome(self.p_driver)
+        # print("\t[+]Opening Driver.")
+        # _driver = webdriver.Chrome(self.fp_driver)
         print("\t[+]Opening url:")
         print("\t\t%s" % url)
-        _driver.get(url)
+        self.driver.get(url)
         # Get raw url
         # print("\t[+]Raw redirection:")
-        # print("\t\t%s" % _driver.current_url)
+        # print("\t\t%s" % self.driver.current_url)
         # Postprocess redirection
         _redirected_abs = self.__postprocess_redirected_url(
-            _driver.current_url)
+            self.driver.current_url)
         # Write
         self.__write_redirection(i, _redirected_abs)
         # Close _driver
-        _driver.close()
+        # _driver.close()
         # Sleep
         if self.process_interval != None:
             print("\t[+]Sleeping for %f secs." % self.process_interval)
@@ -519,7 +524,8 @@ if __name__ == "__main__":
                                                  set_pdf=args.pdf,
                                                  savepoint_interval=args.savepoint_interval,
                                                  process_interval=args.process_interval,
-                                                 postprocess_redirections=args.postprocess_redirections)
+                                                 postprocess_redirections=args.postprocess_redirections,
+                                                 use_driver=args.no_driver)
         scopus_preprocessor.preprocess_scopus_csv()
 
     else:

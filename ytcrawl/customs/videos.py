@@ -94,7 +94,6 @@ class YouTubeVideos(YouTube):
         return _list_responses
 
     def __search(self, args, list_searches=None):
-        
         _list_responses = list()
         if list_searches:
             _num_video_ids = len(list_searches)
@@ -102,7 +101,8 @@ class YouTubeVideos(YouTube):
             for i, _dict_search in enumerate(list_searches):
                 print('[+]Processing %d out of %d queries: %s' %
                       (i+1, _num_video_ids, _dict_search['q']))
-                for _item in _dict_search['items'][0]:
+                # for _item in _dict_search['items'][0]:
+                for _item in _dict_search['items']:
                     args['id'] = _item['id']['videoId']
                     args['q'] = _dict_search['q']
                     args['idx_paper'] = _dict_search['idx_paper']

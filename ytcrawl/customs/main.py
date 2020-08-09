@@ -392,7 +392,7 @@ def videos_by_video_ids(fp_list_searches):
     with open(fp_list_searches, 'r') as f:
         _list_searches = json.load(f)
         _list_searches = [
-            _dict_response for _dict_response in _list_searches if _dict_response["items"][0]]
+            _dict_response for _dict_response in _list_searches if _dict_response["items"]]
 
     # Test
     # _list_searches = _list_searches[:3]
@@ -625,9 +625,9 @@ def upload_rel_paper_video(table_name, fp_list_searches):
     db_handler = DBHandler()
 
     for _response in _list_searches:
-        if _response["items"][0]:
+        if _response["items"]:
             num_responses += 1
-            for _dict_item in _response["items"][0]:
+            for _dict_item in _response["items"]:
                 _dict = {"DOI": _response["idx_paper"],
                          "videoId": _dict_item["id"]["videoId"]}
                 # Check if already exists
@@ -659,12 +659,69 @@ def preprocess_scopus():
         args.fpath, overwrite=args.overwrite, shuffle=args.shuffle)
     scopus_preprocessor.preprocess_scopus_csv()
 
+def test():
+    parser = argparse.ArgumentParser()
+
+    # Custom args
+    # parser.add_argument('--list-channel-ids',
+    # help='List of Channel IDs', default='fromdb')
+    parser.add_argument(
+        '--up-to', help='Number of results queried up to. None indicates unlimited.', default=None)
+    parser.add_argument(
+        '--no-recursive', help='Call search API for a single time per query.', action='store_true', default=False)
+    # parser.add_argument('--api-key', help='API key', default=api_key)
+
+    # Search args
+    parser.add_argument('--part', default='id')
+    parser.add_argument('--eventType', default=None)
+    parser.add_argument('--channelId', default=None)
+    parser.add_argument('--forDeveloper', default=None)
+    parser.add_argument('--videoSyndicated', default=None)
+    parser.add_argument('--channelType', default=None)
+    parser.add_argument('--videoCaption', default=None)
+    parser.add_argument('--publishedAfter', default=None)
+    parser.add_argument('--publishedBefore', default=None)
+    parser.add_argument('--onBehalfOfContentOwner', default=None)
+    parser.add_argument('--forContentOwner', default=None)
+    parser.add_argument('--regionCode', default=None)
+    parser.add_argument('--location', default=None)
+    parser.add_argument('--locationRadius', default=None)
+    parser.add_argument('--topicId', default=None)
+    parser.add_argument('--videoDimension', default=None)
+    parser.add_argument('--videoLicense', default=None)
+    parser.add_argument('--maxResults', default=50)
+    parser.add_argument('--videoType', default=None)
+    parser.add_argument('--videoDefinition', default=None)
+    parser.add_argument('--pageToken', default=None)
+    parser.add_argument('--relatedToVideoId', default=None)
+    parser.add_argument('--relevanceLanguage', default=None)
+    parser.add_argument('--videoDuration', default=None)
+    parser.add_argument('--forMine', default=None)
+    parser.add_argument('--q', default='Google')
+    parser.add_argument('--safeSearch', default=None)
+    parser.add_argument('--videoEmbeddable', default=None)
+    parser.add_argument('--videoCategoryId', default=None)
+    parser.add_argument('--order', default=None)
+    parser.add_argument(
+        '--fields', default='nextPageToken, items(id(videoId))')
+
+    args = vars(parser.parse_args())
+    args["list_idx_papers"] = ["temp_idx_paper"]
+    args["random_project"] = True
+    youtube_search = YouTubeSearch(args)
+    _list_responses = youtube_search.set_list_queries(["scopus"]).start_search()
+    # print(_list_responses)
+
+    # with open('list_searches_doi_health_2014.txt', 'w+') as fp:
+    #     json.dump(_list_responses, fp)
+    return youtube_search
+
 
 if __name__ == '__main__':
     # update_papers_from_arxiv_list()
     # altmetric_url_from_papers()
     
-    # youtube_search = search_by_q("scopus/scopus_math+comp_top5perc_1906.csv", column="DOI")
+    # youtube_search = search_by_q("scopus/scopus_math+comp_top5perc_1703.csv", column="DOI")
 
     # upload_rel_paper_video("rel_paper_video", "results/search/search_%s.txt" % youtube_search.fname)
     # youtube_videos = videos_by_video_ids("results/search/search_%s.txt" % youtube_search.fname) # Accepts arg --random_project
@@ -672,10 +729,12 @@ if __name__ == '__main__':
     # print("search_%s.txt" % youtube_search.fname)
     # print("videos_%s.txt" % youtube_videos.fname)
     
-    # upload_rel_paper_video("rel_paper_video", "results/search/search_20200807_121054.txt")
-    # youtube_videos = videos_by_video_ids("results/search/search_20200807_121054.txt")
-    # update_videos_by_list_videos("", "./results/videos/videos_20200807_121942.txt", filter_by_q=True, overwrite=True)
+    # upload_rel_paper_video("rel_paper_video", "results/search/search_20200808_203230.txt")
+    # youtube_videos = videos_by_video_ids("results/search/search_20200808_203230.txt")
+    update_videos_by_list_videos("scopus_videos_2017_comp", "./results/videos/videos_20200808_204832.txt", filter_by_q=True, overwrite=True)
     
     # channels_by_list_channel_ids(table_name_videos="scopus_videos")
     # upload_channels_by_list_channels('channels', './results/channels/channels_20200730_083658.txt', overwrite=True)
     # num_of_videos()
+
+    # test()

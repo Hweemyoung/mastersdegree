@@ -592,7 +592,11 @@ def search_by_domains():
             args["publishedBefore"] = (datetime.strptime(args["publishedBefore"], _dt_format) + _td).strftime(_dt_format)\
                     if (datetime.strptime(args["publishedBefore"], _dt_format) + _td) < _dt_up_to\
                     else _dt_up_to.strftime(_dt_format)
-        
+
+        print("[+]Logs:")
+        for _dict_log in _list_log:
+            print("\tfname: %s\n\t\tpublishedAfter: %s\tpublishedBefore: %s"%(_dict_log["fname"], _dict_log["publishedAfter"], _dict_log["publishedBefore"]))
+
         return (_youtube_search, _list_log)
 
     else:
@@ -827,27 +831,19 @@ if __name__ == '__main__':
     # update_papers_from_arxiv_list()
     # altmetric_url_from_papers()
 
-    # youtube_search = search_by_q("scopus/scopus_math+comp_top5perc_1703.csv", column="DOI")
+    # _result = search_by_domains()
 
-    _result = search_by_domains()
-    try:
-        _result[1]
-    except:
-        print("No interval.")
-    else:
-        print("[+]Logs:")
-        for _dict_log in _result[1]:
-            print("\tfname: %s\n\t\tpublishedAfter: %s\tpublishedBefore: %s"%(_dict_log["fname"], _dict_log["publishedAfter"], _dict_log["publishedBefore"]))
-
+    # youtube_search = search_by_q("scopus/scopus_math+comp_top5perc_1706.csv", column="DOI")
+    
     # upload_rel_paper_video("rel_paper_video", "results/search/search_%s.txt" % youtube_search.fname)
     # youtube_videos = videos_by_video_ids("results/search/search_%s.txt" % youtube_search.fname) # Accepts arg --random_project
     # update_videos_by_list_videos("scopus_videos", "./results/videos/videos_%s.txt" % youtube_videos.fname, filter_by_q=True, overwrite=True)
     # print("search_%s.txt" % youtube_search.fname)
     # print("videos_%s.txt" % youtube_videos.fname)
 
-    # upload_rel_paper_video("rel_paper_video", "results/search/search_20200808_203230.txt")
-    # youtube_videos = videos_by_video_ids("results/search/search_20200808_203230.txt")
-    # update_videos_by_list_videos("scopus_videos_2017_comp", "./results/videos/videos_20200808_204832.txt", filter_by_q=True, overwrite=True)
+    # upload_rel_paper_video("rel_paper_video", "results/search/search_20200810_112813.txt")
+    # youtube_videos = videos_by_video_ids("results/search/search_20200810_112813.txt")
+    update_videos_by_list_videos("scopus_videos_2017_comp", "./results/videos/videos_20200810_114305.txt", filter_by_q=True, overwrite=True)
 
     # channels_by_list_channel_ids(table_name_videos="scopus_videos")
     # upload_channels_by_list_channels('channels', './results/channels/channels_20200730_083658.txt', overwrite=True)

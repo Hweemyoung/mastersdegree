@@ -1000,5 +1000,6 @@
 "Breeding Science": "Japanese Society of Breeding",
 "ACM Transactions on Interactive Intelligent Systems" : "ACM",
 "Proceedings of the Annual ACM Symposium on Theory of Computing": "ACM",
-"Proceedings of the VLDB Endowment": "ACM"
+"Proceedings of the VLDB Endowment": "ACM",
+"Annual Review of Statistics and Its Application": "Annual Reviews Inc."
 }

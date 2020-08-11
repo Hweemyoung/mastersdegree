@@ -471,6 +471,9 @@ class ScopusPreprocessor(Preprocessor):
         self.data["Redirection_pdf"][i] = redirected_pdf
 
     def __postprocess_redirected_url(self, url_redirected):
+        if url_redirected == "Err":
+            return url_redirected
+        
         # Remove protocol(https?://www.), query, hash, ...
         url_redirected = urlparse(url_redirected)
 

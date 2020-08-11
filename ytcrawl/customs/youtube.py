@@ -184,14 +184,18 @@ class YouTube:
     def __init__(self, args, method_name):
         # self.list_api_keys = args['list_api_keys']
         # Update with new args
-        self.method_name = method_name
-        self.args.update(args)
         self.build_youtube()
-        self.fname = datetime.now().strftime('%Y%m%d_%H%M%S')
+        self.method_name = method_name
         # 'fields':'items(id(channelId, videoId), snippet(title, channelId, liveBroadcastContent, channelTitle, description))'
         # 'fields':'items(snippet(channelTitle, title, description))'
         # 'fields':'nextPageToken, items(id(videoId), snippet(channelTitle))',
         # 'fields': options.fields
+        self.reset_props(args)
+    
+    def reset_props(self, args):
+        self.args.update(args)
+        self.fname = datetime.now().strftime('%Y%m%d_%H%M%S')
+        
 
     def build_youtube(self):
         try:

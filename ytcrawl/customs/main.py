@@ -498,114 +498,6 @@ def search_by_q(fp_csv, column):
     #     json.dump(_list_responses, fp)
     return youtube_search
 
-
-def search_by_domains():
-    parser = argparse.ArgumentParser()
-
-    # Custom args
-    # parser.add_argument('--list-channel-ids',
-    # help='List of Channel IDs', default='fromdb')
-    parser.add_argument(
-        '--up-to', help='Number of results queried up to. None indicates unlimited.', default=None)
-    parser.add_argument(
-        '--no-recursive', help='Call search API for a single time per query.', action='store_true', default=False)
-    # parser.add_argument('--api-key', help='API key', default=api_key)
-    parser.add_argument('--added_since', default=None) # Domains added since
-    
-    parser.add_argument('--days_interval', type=int, default=None) # Videos published
-    parser.add_argument('--published_up_to', default=None)
-
-    # Search args
-    parser.add_argument('--part', default='id')
-    parser.add_argument('--eventType', default=None)
-    parser.add_argument('--channelId', default=None)
-    parser.add_argument('--forDeveloper', default=None)
-    parser.add_argument('--videoSyndicated', default=None)
-    parser.add_argument('--channelType', default=None)
-    parser.add_argument('--videoCaption', default=None)
-    parser.add_argument('--publishedAfter', default=None)
-    parser.add_argument('--publishedBefore', default=None)
-    parser.add_argument('--onBehalfOfContentOwner', default=None)
-    parser.add_argument('--forContentOwner', default=None)
-    parser.add_argument('--regionCode', default=None)
-    parser.add_argument('--location', default=None)
-    parser.add_argument('--locationRadius', default=None)
-    parser.add_argument('--topicId', default=None)
-    parser.add_argument('--videoDimension', default=None)
-    parser.add_argument('--videoLicense', default=None)
-    parser.add_argument('--maxResults', default=50)
-    parser.add_argument('--videoType', default=None)
-    parser.add_argument('--videoDefinition', default=None)
-    parser.add_argument('--pageToken', default=None)
-    parser.add_argument('--relatedToVideoId', default=None)
-    parser.add_argument('--relevanceLanguage', default=None)
-    parser.add_argument('--videoDuration', default=None)
-    parser.add_argument('--forMine', default=None)
-    parser.add_argument('--q', default='Google')
-    parser.add_argument('--safeSearch', default=None)
-    parser.add_argument('--videoEmbeddable', default=None)
-    parser.add_argument('--videoCategoryId', default=None)
-    parser.add_argument('--order', default=None)
-    parser.add_argument(
-        '--fields', default='nextPageToken, items(id(videoId))')
-
-    args = vars(parser.parse_args())
-
-    with open("read_only/dict_redirection_domains.json", "r") as f:
-        _dict_domains = json.load(f)
-
-    _dt_format = "%Y-%m-%dT%XZ"
-
-    # Filter by added_since
-    if args["added_since"] != None:
-        args["added_since"] = datetime.strptime(
-            args["added_since"], _dt_format)
-        for _domain in _dict_domains:
-            if args["added_since"] > datetime.strptime(_dict_domains[_domain]["added_at"], _dt_format):
-                _dict_domains.pop(_domain)
-
-    args["list_idx_papers"] = list(_dict_domains.keys())
-
-    if args["days_interval"] != None:
-        _list_log = list()
-        # Set timedelta
-        _td = timedelta(days=args["days_interval"])
-        # Reset publishedBefore
-        args["publishedBefore"] = (datetime.strptime(args["publishedAfter"], _dt_format) + _td).strftime(_dt_format)
-        # Limit range
-        _dt_up_to = datetime.now() if args["published_up_to"] == None else datetime.strptime(args["published_up_to"], _dt_format)
-
-        while datetime.strptime(args["publishedAfter"], _dt_format) < _dt_up_to:
-            print("[+]Video publication range: %s ~ %s" %
-                  (args["publishedAfter"], args["publishedBefore"]))
-            _youtube_search = YouTubeSearch(args)
-            _youtube_search.set_list_queries(list(_dict_domains.keys())).start_search()
-            _list_log.append(
-                {
-                    "fname": _youtube_search.fname + ".txt",
-                    "publishedAfter": args["publishedAfter"],
-                    "publishedBefore": args["publishedBefore"]
-                }
-            )
-            args["publishedAfter"] = (datetime.strptime(
-                args["publishedAfter"], _dt_format) + _td).strftime(_dt_format)
-            args["publishedBefore"] = (datetime.strptime(args["publishedBefore"], _dt_format) + _td).strftime(_dt_format)\
-                    if (datetime.strptime(args["publishedBefore"], _dt_format) + _td) < _dt_up_to\
-                    else _dt_up_to.strftime(_dt_format)
-
-        print("[+]Logs:")
-        for _dict_log in _list_log:
-            print("\tfname: %s\n\t\tpublishedAfter: %s\tpublishedBefore: %s"%(_dict_log["fname"], _dict_log["publishedAfter"], _dict_log["publishedBefore"]))
-
-        return (_youtube_search, _list_log)
-
-    else:
-        _youtube_search = YouTubeSearch(args)
-        _youtube_search.set_list_queries(
-            list(_dict_domains.keys())).start_search()
-        return (_youtube_search,)
-
-
 def num_of_videos():
     parser = argparse.ArgumentParser()
 
@@ -830,8 +722,8 @@ def test():
 if __name__ == '__main__':
     # update_papers_from_arxiv_list()
     # altmetric_url_from_papers()
-
-    # _result = search_by_domains()
+    from search_custom import search_by_domains
+    _result = search_by_domains()
 
     # youtube_search = search_by_q("scopus/scopus_math+comp_top5perc_1706.csv", column="DOI")
     
@@ -843,7 +735,7 @@ if __name__ == '__main__':
 
     # upload_rel_paper_video("rel_paper_video", "results/search/search_20200810_112813.txt")
     # youtube_videos = videos_by_video_ids("results/search/search_20200810_112813.txt")
-    update_videos_by_list_videos("scopus_videos_2017_comp", "./results/videos/videos_20200810_114305.txt", filter_by_q=True, overwrite=True)
+    # update_videos_by_list_videos("scopus_videos_2017_comp", "./results/videos/videos_20200810_114305.txt", filter_by_q=True, overwrite=True)
 
     # channels_by_list_channel_ids(table_name_videos="scopus_videos")
     # upload_channels_by_list_channels('channels', './results/channels/channels_20200730_083658.txt', overwrite=True)

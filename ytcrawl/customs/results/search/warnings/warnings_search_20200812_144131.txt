@@ -1,0 +1,1 @@
+[{"q": "doi.apa.org", "publishedBefore": "2014-01-02T00:00:00Z", "publishedAfter": "2014-01-01T00:00:00Z"}, {"q": "doi.apa.org", "publishedBefore": "2014-01-03T00:00:00Z", "publishedAfter": "2014-01-02T00:00:00Z"}]

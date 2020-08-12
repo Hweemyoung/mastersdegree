@@ -15,7 +15,9 @@ from preprocessor import Preprocessor
 
 
 class ScopusPreprocessor(Preprocessor):
-    tup_new_columns = ("Redirection", "Redirection_pdf")
+    tup_new_columns = ("Redirection", "Redirection_pdf",)
+    tup_domains_exception = ("doi.apa.org",)
+
     opener = build_opener(HTTPCookieProcessor())
     # driver = webdriver.Chrome("./chromedriver_83")
     num_pass = 0
@@ -178,7 +180,7 @@ class ScopusPreprocessor(Preprocessor):
                         "nan")
 
             # Case: Evolutionary Computation
-            elif self.dict_source_pub[_source_title] == "Evolutionary Computation":
+            elif self.dict_source_pub[_source_title] == "MIT Press":
                 # https://www.mitpressjournals.org/doi/10.1162/EVCO_a_00116
                 return ("mitpressjournals.org/doi/" + self.data["DOI"][i],  # mitpressjournals.org/doi/10.1162/EVCO_a_00116
                         "nan")
@@ -186,7 +188,7 @@ class ScopusPreprocessor(Preprocessor):
             # Case: "Annual Reviews Inc."
             elif self.dict_source_pub[_source_title] == "Annual Reviews Inc.":
                 # https://www.annualreviews.org/doi/10.1146/annurev-ento-011613-162056
-                return ("annualreviews.org/doi/" + self.data["DOI"][i],  # mitpressjournals.org/doi/10.1162/EVCO_a_00116
+                return ("annualreviews.org/doi/" + self.data["DOI"][i],  # annualreviews.org/doi/10.1146/annurev-ento-011613-162056
                         "nan")
 
             # Case: "Environmental Health Perspectives"
@@ -500,15 +502,21 @@ class ScopusPreprocessor(Preprocessor):
                 ("sciencedirect.com/science/article", _[-2], _[-1]))
         
         # Add to dict_redirection_domains.json
-        _domain = url_redirected.split("/")[0]
-        if _domain not in self.dict_redirection_domains:
-            _datetime = datetime.now().strftime("%Y-%m-%dT%XZ")
-            self.dict_redirection_domains[_domain] = {"datetime": _datetime}
-            self.num_new_domains += 1
-            print("\t[+]Domain added.")
-            print("\t\tDomain: %s\tDatetime: %s" % (_domain, _datetime))
+        self.__append_to_domains(url_redirected.split("/")[0])
 
         return url_redirected
+    
+    def __append_to_domains(self, domain_name):
+        if domain_name in self.tup_domains_exception:
+            pass
+        elif domain_name not in self.dict_redirection_domains:
+            _datetime = datetime.now().strftime("%Y-%m-%dT%XZ")
+            self.dict_redirection_domains[domain_name] = {"datetime": _datetime}
+            self.num_new_domains += 1
+            print("\t[+]Domain added.")
+            print("\t\tDomain: %s\tDatetime: %s" % (domain_name, _datetime))
+        
+        return self
 
     def __check_savepoint(self, enum):
         if (enum+1) % self.savepoint_interval == 0:

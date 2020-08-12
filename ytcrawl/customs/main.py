@@ -387,7 +387,7 @@ def videos_by_video_ids(fp_list_searches):
     parser.add_argument('--filter_by_q', action="store_true", default=False)
 
     # Custom args
-    parser.add_argument('--random_project', action="store_true", default=False)
+    parser.add_argument('--random-project', action="store_true", default=False)
 
     args = vars(parser.parse_args())
     with open(fp_list_searches, 'r') as f:
@@ -472,14 +472,20 @@ def search_by_q(fp_csv, column):
 
     data_raw = pd.read_csv(
         fp_csv, header=0, keep_default_na=False)
+    print("# raw:\t%d" % len(data_raw))
     data_doi = data_raw[data_raw["DOI"] != "nan"]
+    data_doi = data_doi[data_doi["DOI"].notna()]
+    print("# DOI:\t%d" % len(data_doi))
     if column == "DOI":
         # Filter by DOI.
-        _list_idx_papers = list(data_doi["DOI"])
-        _list_queries = list(data_doi["DOI"])
+        data = data_doi[~data_doi["DOI"] != ""]
+        print("# data:\t%d" % len(data))
+        _list_idx_papers = list(data["DOI"])
+        _list_queries = list(data["DOI"])
     elif column == "Redirection":
         # Filter by redirection.
-        data = data_doi[data_doi["Redirection"] != "Err"]
+        data = data_doi[~data_doi["Redirection"].isin(["Err", "None"])]
+        print("# data:\t%d" % len(data))
         _list_idx_papers = list(data["DOI"])
         _list_queries = list(data["Redirection"])
     elif column == "Title":
@@ -497,6 +503,7 @@ def search_by_q(fp_csv, column):
     # with open('list_searches_doi_health_2014.txt', 'w+') as fp:
     #     json.dump(_list_responses, fp)
     return youtube_search
+
 
 def num_of_videos():
     parser = argparse.ArgumentParser()
@@ -722,20 +729,20 @@ def test():
 if __name__ == '__main__':
     # update_papers_from_arxiv_list()
     # altmetric_url_from_papers()
-    from search_custom import search_by_domains
-    _result = search_by_domains()
+    # from search_custom import search_by_domains
+    # _result = search_by_domains()
 
-    # youtube_search = search_by_q("scopus/scopus_math+comp_top5perc_1706.csv", column="DOI")
-    
+    # youtube_search = search_by_q("scopus/scopus_math+comp_top5perc_1705.csv", column="Redirection")
+
     # upload_rel_paper_video("rel_paper_video", "results/search/search_%s.txt" % youtube_search.fname)
     # youtube_videos = videos_by_video_ids("results/search/search_%s.txt" % youtube_search.fname) # Accepts arg --random_project
     # update_videos_by_list_videos("scopus_videos", "./results/videos/videos_%s.txt" % youtube_videos.fname, filter_by_q=True, overwrite=True)
     # print("search_%s.txt" % youtube_search.fname)
     # print("videos_%s.txt" % youtube_videos.fname)
 
-    # upload_rel_paper_video("rel_paper_video", "results/search/search_20200810_112813.txt")
-    # youtube_videos = videos_by_video_ids("results/search/search_20200810_112813.txt")
-    # update_videos_by_list_videos("scopus_videos_2017_comp", "./results/videos/videos_20200810_114305.txt", filter_by_q=True, overwrite=True)
+    # upload_rel_paper_video("rel_paper_video", "results/search/search_20200812_163518.txt")
+    # youtube_videos = videos_by_video_ids("results/search/search_20200812_163518.txt")
+    update_videos_by_list_videos("scopus_videos_2017_comp", "./results/videos/videos_20200812_164230.txt", filter_by_q=True, overwrite=True)
 
     # channels_by_list_channel_ids(table_name_videos="scopus_videos")
     # upload_channels_by_list_channels('channels', './results/channels/channels_20200730_083658.txt', overwrite=True)

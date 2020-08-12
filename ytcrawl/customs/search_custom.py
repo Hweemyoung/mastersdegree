@@ -441,15 +441,11 @@ def search_by_domains():
 	# Custom args
 	# parser.add_argument('--list-channel-ids',
 	# help='List of Channel IDs', default='fromdb')
-	parser.add_argument(
-		'--up-to', help='Number of results queried up to. None indicates unlimited.', default=None)
-	parser.add_argument(
-		'--no-recursive', help='Call search API for a single time per query.', action='store_true', default=False)
-	# parser.add_argument('--api-key', help='API key', default=api_key)
+	parser.add_argument('--up-to', help='Number of results queried up to. None indicates unlimited.', default=None)
+	parser.add_argument('--no-recursive', help='Call search API for a single time per query.', action='store_true', default=False)
 	parser.add_argument('--added-since', default=None)  # Domains added since
-
-	parser.add_argument('--days-interval', type=int,
-						default=None)  # Videos published
+	parser.add_argument('--added-until', default=None)  # Domains added until
+	parser.add_argument('--days-interval', type=int, default=1)  # Videos published
 	parser.add_argument('--published-up-to', default=None)
 
 	# Search args
@@ -500,6 +496,13 @@ def search_by_domains():
 		for _domain in _dict_domains:
 			if args["added_since"] > datetime.strptime(_dict_domains[_domain]["added_at"], _dt_format):
 				_dict_domains.pop(_domain)
+	
+	if args["added_until"] != None:
+		args["added_until"] = datetime.strptime(
+			args["added_until"], _dt_format)
+		for _domain in _dict_domains:
+			if args["added_until"] < datetime.strptime(_dict_domains[_domain]["added_at"], _dt_format):
+				_dict_domains.pop(_domain)
 
 	args["list_idx_papers"] = list(_dict_domains.keys())
 
@@ -520,6 +523,7 @@ def search_by_domains():
 		while datetime.strptime(args["publishedAfter"], _dt_format) < _dt_up_to:
 			# Reinitialize with new args.
 			_youtube_search.reset_props(args)
+			_youtube_search.reset_list_warnings()
 			print("[+]Video publication range: %s ~ %s" %
 				  (args["publishedAfter"], args["publishedBefore"]))
 			_youtube_search.start_search()

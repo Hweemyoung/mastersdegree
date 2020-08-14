@@ -7,34 +7,55 @@ from urllib.request import build_opener, HTTPCookieProcessor, Request
 from urllib.parse import urlparse
 from urllib.error import URLError
 from selenium import webdriver
-from time import sleep
+from time import sleep, time
 from datetime import datetime
+from random import randint
 import socket
 
 from preprocessor import Preprocessor
+from altmetric_it import AltmetricIt
 
 
 class ScopusPreprocessor(Preprocessor):
-    tup_new_columns = ("Redirection", "Redirection_pdf",)
-    tup_domains_exception = ("doi.apa.org",)
 
+    tup_new_columns = ("Redirection", "Redirection_pdf", "Altmetric ID", "AAS")
+    tup_domains_exception = ("doi.apa.org",)
+    
     opener = build_opener(HTTPCookieProcessor())
     # driver = webdriver.Chrome("./chromedriver_83")
+
     num_pass = 0
     num_fail = 0
     num_skip = 0
     num_new_domains = 0
+    num_processed = 0
+
     fp_driver = "./chromedriver_83"
-    source_titles_by_driver = ("Briefings in Bioinformatics",
-                               "Database",
-                               "Bioinformatics",
-                               "Bulletin of the American Meteorological Society",
-                               "Molecular Biology and Evolution",
-                               "Systematic Biology",)
+
+    domains_aas_unavailable = (
+        "dl.acm.org/doi/",
+        "ieeexplore.ieee.org/document/",
+        "inderscience.com/offer.php?id=",
+        "misq.org/",
+    )
 
     fp_dict_redirection_domains = "read_only/dict_redirection_domains.json"
     with open(fp_dict_redirection_domains, "r") as f:
         dict_redirection_domains = json.load(f)
+    
+    script_altmetricit = 'javascript:((function(){var a;a=function(){var a,b,c,d,e;b=document,e=b.createElement("script"),a=b.body,d=b.location;try{if(!a)throw 0;c="d1bxh8uas1mnw7.cloudfront.net";if(typeof runInject!="function")return e.setAttribute("src",""+d.protocol+"//"+c+"/assets/content.js?cb="+Date.now()),e.setAttribute("type","text/javascript"),e.setAttribute("onload","runInject()"),a.appendChild(e)}catch(f){return console.log(f),alert("Please wait until the page has loaded.")}},a(),void 0})).call(this);'
+    max_times_find = 10
+    sec_sleep = 0.5
+
+    dict_domain_by_source_title_by_driver = {
+        "Briefings in Bioinformatics": "academic.oup.com",
+        "Database": "academic.oup.com",
+        "Bioinformatics": "academic.oup.com",
+        "Bulletin of the American Meteorological Society": "journals.ametsoc.org",
+        "Molecular Biology and Evolution": "academic.oup.com",
+        "Systematic Biology": "academic.oup.com"
+    }
+    dict_queue_by_domains = dict()  # {<domain>: {"last_time": time, "queue": [i, ...]}, ...}
 
     def __init__(
             self,
@@ -44,6 +65,7 @@ class ScopusPreprocessor(Preprocessor):
             overwrite=False,
             set_redirection=False,
             set_pdf=False,
+            set_aas=False,
             shuffle=False,
             postprocess_redirections=False,
             use_driver=True):
@@ -54,16 +76,23 @@ class ScopusPreprocessor(Preprocessor):
         self.overwrite = overwrite
         self.set_redirection = set_redirection
         self.set_pdf = set_pdf
+        self.set_aas = set_aas
         self.shuffle = shuffle
         self.postprocess_redirections = postprocess_redirections
-        self.use_driver = use_driver
+        self.use_driver = use_driver if not set_aas else True
         if use_driver:
             print("[+]Opening Driver.")
             self.driver = webdriver.Chrome(self.fp_driver)
+            if set_aas:
 
+                self.__install_bookmarklet()
+            
         self.data = pd.read_csv(fpath_scopus_csv, header=0, sep=",", dtype=str)
         self.data = self.data.astype(str)
+        
         self.num_papers = len(self.data)
+        self.iter_i = iter(range(self.num_papers))
+
         if shuffle:
             print("[+]Shuffling records.")
             self.data = self.data.sample(frac=1).reset_index(drop=True)
@@ -83,7 +112,7 @@ class ScopusPreprocessor(Preprocessor):
         self.__preprocess_default_columns()
 
         # Get youtube search queries
-        self.__add_yt_direct_queries()
+        self.__add_yt_direct_queries(overwrite=self.overwrite)
 
         # Close _driver
         if self.use_driver:
@@ -111,18 +140,302 @@ class ScopusPreprocessor(Preprocessor):
                 self.data["DOI"][_i] = _doi[:-1]  # 10.1109/TIP.2018.2883554
 
         return self
+    
+    def __write_data_by_i(self, i, overwrite):
+        _flag_driver_opened = False
+        # Redirection & pdf
+        if (self.set_redirection or self.set_pdf)\
+            and (self.data["Redirection"][i] in ("None", "Err", "nan") or overwrite == True):
+            _url_redirected = self.__url_without_open(i)
+            if _url_redirected != False:
+                self.num_skip += 1
+                print("\t[+]Skip opening.")
+                if self.set_redirection:
+                    self.__write_redirection(i, _url_redirected[0])
+                if self.set_pdf:
+                    self.__write_pdf(i, _url_redirected[1])
+                if self.set_aas:
+                    # Open url
+                    self.driver.get(_url_redirected[0])
+                    _flag_driver_opened = True
+        
+            else:
+                # Build up url
+                _url = "https://www.doi.org/" + self.data["DOI"][i]
+                # Get redirection
+                if self.data["Source title"][i] in self.dict_domain_by_source_title_by_driver.keys():
+                    if self.use_driver:
+                        self.__write_redirection_by_driver(i, _url)
+                        _flag_driver_opened = True
+                    else:
+                        print("\t[-]Driver required but not available.")
+                        self.num_pass += 1
+                else:
+                    self.__write_redirection_by_open(i, _url)
+                # self.__write_redirection_by_driver(
+                #     i, _url) if self.data["Source title"][i] in self.dict_domain_by_source_title_by_driver.keys() else self.__write_redirection_by_open(i, _url)
 
-    def __add_yt_direct_queries(self):
-        # DOI
-        # _S_doi = data["DOI"]
-        # Redirected urls
-        self.__set_redirections()
-        print("\n# papers: %d\t# fail: %d\t# pass: %d\t# skip: %d\t# new domains: %d" %
-              (self.num_papers, self.num_fail, self.num_pass, self.num_skip, self.num_new_domains))
+            if self.set_pdf:
+                _redirected_pdf = self.__get_redirected_pdf(i)
+                self.__write_pdf(i, _redirected_pdf)
+        
+        # Altmetric ID & AAS
+        if self.set_aas\
+            and (self.data["Altmetric ID"][i] in ("None", "Err", "nan") or overwrite == True):
+            _citation_id, _aas = self.__get_cid_aas(i, _flag_driver_opened)
+            self.__write_altmetric_id(i, _citation_id)
+            self.__write_aas(i, _aas)
+            
+            # if self.data["Source title"][i] in self.dict_domain_by_source_title_by_driver.keys():
+            #     self.__sleep_process()
+        
+        self.num_processed += 1
+        
+    
+    def __get_next_i(self):
+        _current_time = time()
+        _i = self.__get_next_i_from_queue(_current_time)
+        if _i == None:
+            try:
+                _i = next(self.iter_i)
+            except StopIteration:
+                # Only queues remain.
+                return None
+            else:
+                _next_source_title = self.data["Source title"][_i]
+                # print("\tNext title: %s" % _next_source_title)
+                if _next_source_title in self.dict_domain_by_source_title_by_driver:
+                    _next_domain = self.dict_domain_by_source_title_by_driver[_next_source_title]
+                    print("\tNext domain: %s" % _next_domain)
+                    if _next_domain in self.dict_queue_by_domains:
+                        # Append
+                        self.dict_queue_by_domains[_next_domain]["queue"].append(_i)
+                        return None
+                    else:
+                        # Create empty queue
+                        print("\t[+]Create empty queue.")
+                        self.dict_queue_by_domains[_next_domain] = {
+                            "last_time": _current_time,
+                            "queue": list()
+                        }
+                return _i
+        return _i
 
-        print("Done.")
+    def __add_yt_direct_queries(self, overwrite):
+        while True:
+            print("[+]Domains in queue:", self.dict_queue_by_domains.keys())
+            _i = self.__get_next_i()
+            print("[+]i = %s\t%d out of %d papers remaining." % (_i, self.num_papers - self.num_processed, self.num_papers))
+            if _i == None:
+                if len(self.dict_queue_by_domains) == 0:
+                    # Done
+                    # Save
+                    self.__save()
+                    # Report
+                    print("\n# papers: %d\t# fail: %d\t# pass: %d\t# skip: %d\t# new domains: %d" %
+                        (self.num_papers, self.num_fail, self.num_pass, self.num_skip, self.num_new_domains))
+                    print("Done.")
+                    # pd.Series.astype(str) + ',' + pd.Series.astype(str)
+                    return self
+                else:
+                    print("[-]No available paper at the moment.")
+                    sleep(1.0)
+                    continue
+            else:
+                self.__write_data_by_i(_i, overwrite)
+                # Checkpoint
+                self.__check_savepoint(_i)
+    
+    def __get_cid_aas(self, i, flag_driver_opened):
+        _redirection = self.data["Redirection"][i]
+        if _redirection in ("Err", "None", "nan"):
+            print("\t[-]Cannot Altmetric-it as Redirection not available.")
+            return False, False
+        
+        # Check altmetric available for redirection
+        for _domain in self.domains_aas_unavailable:
+            if _redirection.startswith(_domain):
+                print("\t[-]Altmetric-it unavailable for domain: %s" % _domain)
+                return False, False
 
-        # pd.Series.astype(str) + ',' + pd.Series.astype(str)
+        if not flag_driver_opened:
+            self.driver.get("http://" + self.data["Redirection"][i])
+        
+        return self.__get_cid_aas_from_current_page()
+    
+    def __get_cid_aas_from_current_page(self):        
+        # Get div.wrapper
+        _div_wrapper = self.__get_div_wrapper_from_current_page()
+        if _div_wrapper == False:
+            return False, False
+
+        # Get Altmetric ID, AAS
+        _citation_id, _aas = self.__get_cid_aas_from_div_wrapper(_div_wrapper)
+        if _citation_id == False:  # Cannot altmetric-it.
+            self.msg_error = '[-]Cannot altmetric-it.'
+            print('\t%s' % self.msg_error)
+
+        return _citation_id, _aas
+
+    def __get_div_wrapper_from_current_page(self):
+        self.driver.execute_script(self.script_altmetricit)
+
+        _div_wrapper = self.__find_recursive(
+            self.driver, 'altmetric-wrapper', 'id', max_times_find=self.max_times_find)
+        if _div_wrapper == False:
+            return False
+
+        # Case1: error
+        _error = self.__find_recursive(
+            _div_wrapper, 'error', 'class', max_times_find=1)
+        if _error != False:
+            return False
+
+        # Case2: No altmetric
+        # if not self.__altmetric_exists(_div_wrapper):
+            # return False
+
+        return _div_wrapper
+    
+    def __get_cid_aas_from_div_wrapper(self, div_wrapper):
+        _citation_id, _aas = False, False
+
+        _div_donut = self.__find_recursive(div_wrapper, 'donut', 'class', max_times_find=3)
+        if _div_donut == False:
+            # Absence of div.donut means AAS not assigned.
+            return _citation_id, _aas
+        _a_donut = self.__find_recursive(_div_donut, 'a', 'tag', max_times_find=3)
+        if _a_donut == False:
+            return _citation_id, _aas
+
+        # Search for cid
+        for _query in urlparse(_a_donut.get_attribute('href')).query.split('&'):
+            if _query.startswith("citation_id="):
+                _citation_id = _query[12:]
+        
+        _img_donut = self.__find_recursive(_div_donut, 'img', 'tag', max_times_find=3)
+        if _img_donut == False:
+            print("[-]img donut: FALSE")
+            return _citation_id, _aas
+        
+        # Search for score
+        for _query in urlparse(_img_donut.get_attribute('src')).query.split('&'):
+            if _query.startswith("score="):
+                _aas = int(_query[6:])
+        
+        if _aas == False:
+            _aas = 0
+        
+        return _citation_id, _aas
+    
+    def __find_recursive(self, WebElement, name, by='class', multiple=False, max_times_find=1):
+        _method = self.__get_find_method(WebElement, multiple, by)
+        _times_find = 0
+
+        while True:
+            _times_find += 1
+            try:
+                print('\tFind by %s: %s(%d th try)' % (by, name, _times_find))
+
+                _elements = _method(name)
+            except:  # NoSuchElementException
+                print('\t%s %s not found.' % (by, name))
+                if _times_find < max_times_find:
+                    print('\tRetrying...')
+                    sleep(self.sec_sleep)
+                    pass
+                else:
+                    print('\tExceeded max_times_find.')
+                    return False
+            else:
+                print('\t%s %s found.' % (by, name))
+                return _elements
+    
+    def __get_find_method(self, WebElement, multiple, by):
+        _dict_find_methods = {
+            True: {
+                'class': WebElement.find_elements_by_class_name,
+                'tag': WebElement.find_elements_by_tag_name
+            },
+            False: {
+                'id': WebElement.find_element_by_id,
+                'class': WebElement.find_element_by_class_name,
+                'tag': WebElement.find_element_by_tag_name
+            }
+        }
+        return _dict_find_methods[multiple][by]
+    
+    def __set_redirections(self):
+        print("[+]Getting redirected urls...")
+        # S_DOI == data["DOI"]
+        _list_urls_redirected = list()
+        self.num_pass = 0
+        self.num_fail = 0
+        self.num_skip = 0
+        for _i in range(self.num_papers):
+            print("[+]Processing %d out of %d papers..." %
+                  (_i+1, self.num_papers))
+            # Overwrite: False or "Err"
+            if (self.overwrite == False and not ((self.set_redirection and self.data["Redirection"][_i] == "None") or (self.set_pdf and self.data["Redirection_pdf"][_i] == "None")))\
+                    or (self.overwrite == "Err" and not ((self.set_redirection and self.data["Redirection"][_i] in ("None", "Err")) or (self.set_pdf and self.data["Redirection_pdf"][_i] in ("None", "Err")))):
+                # if (self.overwrite == False and self.data["Redirection"][_i] != "None" and self.data["Redirection_pdf"][_i] != "None") or\
+                #     (self.overwrite == "Err" and self.data["Redirection"][_i] not in ("None", "Err") and self.data["Redirection_pdf"][_i] not in ("None", "Err")):
+                # Already done.
+                # Preprocess?
+                if self.postprocess_redirections:
+                    self.data["Redirection"][_i] = self.__postprocess_redirected_url(
+                        self.data["Redirection"][_i])
+                print("\t[+]Passing.")
+                self.num_pass += 1
+                self.__check_savepoint(_i)
+                continue
+
+            # Skip opening?
+            _url_redirected = self.__url_without_open(_i)
+            if _url_redirected != False:
+                self.num_skip += 1
+                print("\t[+]Skip opening.")
+                if self.set_redirection:
+                    self.__write_redirection(_i, _url_redirected[0])
+                if self.set_pdf:
+                    self.__write_pdf(_i, _url_redirected[1])
+                if self.set_aas:
+                    # Open
+                    self.driver.get(_url_redirected[0])
+
+            else:
+                if self.set_redirection:
+                    # Build up url
+                    _url = "https://www.doi.org/" + self.data["DOI"][_i]
+                    # Get redirection
+                    if self.data["Source title"][_i] in self.dict_domain_by_source_title_by_driver.keys():
+                        if self.use_driver:
+                            self.__write_redirection_by_driver(_i, _url)
+                        else:
+                            print("\t[-]Driver required but not available.")
+                            self.num_pass += 1
+                    else:
+                        self.__write_redirection_by_open(_i, _url)
+                    # self.__write_redirection_by_driver(
+                    #     _i, _url) if self.data["Source title"][_i] in self.dict_domain_by_source_title_by_driver.keys() else self.__write_redirection_by_open(_i, _url)
+
+                if self.set_pdf:
+                    _redirected_pdf = self.__get_redirected_pdf(_i)
+                    self.__write_pdf(_i, _redirected_pdf)
+
+            # Write on DataFrame
+            # if self.set_redirection:
+            #     print("\t[+]Redirection: %s" % _redirected_abs)
+            #     self.data["Redirection"][_i] = _redirected_abs
+            # if self.set_pdf:
+            #     print("\t[+]Redirection_pdf: %s" % _redirected_pdf)
+            #     self.data["Redirection_pdf"][_i] = _redirected_pdf
+
+            self.__check_savepoint(_i)
+
+        # Save
+        self.__save()
+
         return self
 
     def __url_without_open(self, i):
@@ -284,76 +597,6 @@ class ScopusPreprocessor(Preprocessor):
 
         return False
 
-    def __set_redirections(self):
-        print("[+]Getting redirected urls...")
-        # S_DOI == data["DOI"]
-        _list_urls_redirected = list()
-        self.num_pass = 0
-        self.num_fail = 0
-        self.num_skip = 0
-        for _i in range(self.num_papers):
-            print("[+]Processing %d out of %d papers..." %
-                  (_i+1, self.num_papers))
-            # Overwrite: False or "Err"
-            if (self.overwrite == False and not ((self.set_redirection and self.data["Redirection"][_i] == "None") or (self.set_pdf and self.data["Redirection_pdf"][_i] == "None")))\
-                    or (self.overwrite == "Err" and not ((self.set_redirection and self.data["Redirection"][_i] in ("None", "Err")) or (self.set_pdf and self.data["Redirection_pdf"][_i] in ("None", "Err")))):
-                # if (self.overwrite == False and self.data["Redirection"][_i] != "None" and self.data["Redirection_pdf"][_i] != "None") or\
-                #     (self.overwrite == "Err" and self.data["Redirection"][_i] not in ("None", "Err") and self.data["Redirection_pdf"][_i] not in ("None", "Err")):
-                # Already done.
-                # Preprocess?
-                if self.postprocess_redirections:
-                    self.data["Redirection"][_i] = self.__postprocess_redirected_url(
-                        self.data["Redirection"][_i])
-                print("\t[+]Passing.")
-                self.num_pass += 1
-                self.__check_savepoint(_i)
-                continue
-
-            # Skip opening?
-            _url_redirected = self.__url_without_open(_i)
-            if _url_redirected != False:
-                self.num_skip += 1
-                print("\t[+]Skip opening.")
-                if self.set_redirection:
-                    self.__write_redirection(_i, _url_redirected[0])
-                if self.set_pdf:
-                    self.__write_pdf(_i, _url_redirected[1])
-
-            else:
-                if self.set_redirection:
-                    # Build up url
-                    _url = "https://www.doi.org/" + self.data["DOI"][_i]
-                    # Get redirection
-                    if self.data["Source title"][_i] in self.source_titles_by_driver:
-                        if self.use_driver:
-                            self.__write_redirection_by_driver(_i, _url)
-                        else:
-                            print("\t[-]Driver required but not available.")
-                            self.num_pass += 1
-                    else:
-                        self.__write_redirection_by_open(_i, _url)
-                    # self.__write_redirection_by_driver(
-                    #     _i, _url) if self.data["Source title"][_i] in self.source_titles_by_driver else self.__write_redirection_by_open(_i, _url)
-
-                if self.set_pdf:
-                    _redirected_pdf = self.__get_redirected_pdf(_i)
-                    self.__write_pdf(_i, _redirected_pdf)
-
-            # Write on DataFrame
-            # if self.set_redirection:
-            #     print("\t[+]Redirection: %s" % _redirected_abs)
-            #     self.data["Redirection"][_i] = _redirected_abs
-            # if self.set_pdf:
-            #     print("\t[+]Redirection_pdf: %s" % _redirected_pdf)
-            #     self.data["Redirection_pdf"][_i] = _redirected_pdf
-
-            self.__check_savepoint(_i)
-
-        # Save
-        self.__save()
-
-        return self
-
     def __write_redirection_by_driver(self, i, url):
         # print("\t[+]Opening Driver.")
         # _driver = webdriver.Chrome(self.fp_driver)
@@ -371,10 +614,41 @@ class ScopusPreprocessor(Preprocessor):
         # Close _driver
         # _driver.close()
         # Sleep
+        # self.__sleep_process()
+
+        return self
+
+    def __get_next_i_from_queue(self, current_time):
+        _max_interval = 0.0
+        _target_domain = None
+        _domains_to_be_removed = list()
+        for _domain in self.dict_queue_by_domains:
+            _interval = current_time - self.dict_queue_by_domains[_domain]["last_time"]
+            if _interval > self.process_interval:
+                if len(self.dict_queue_by_domains[_domain]["queue"]) == 0:
+                    _domains_to_be_removed.append(_domain)
+                elif _interval > _max_interval and len(self.dict_queue_by_domains[_domain]["queue"]) > 0:
+                    _max_interval = _interval
+                    _target_domain = _domain
+        
+        # Remove domains
+        for _domain in _domains_to_be_removed:
+            self.dict_queue_by_domains.pop(_domain)
+        
+        if _target_domain != None:
+            _i = self.dict_queue_by_domains[_target_domain]["queue"].pop(0)
+            # Replace last_time
+            self.dict_queue_by_domains[_target_domain]["last_time"] = current_time
+            
+            return _i
+        
+        return None
+    
+    def __sleep_process(self):
         if self.process_interval != None:
             print("\t[+]Sleeping for %f secs." % self.process_interval)
             sleep(self.process_interval)
-
+        
         return self
 
     def __write_redirection_by_open(self, i, url):
@@ -471,6 +745,18 @@ class ScopusPreprocessor(Preprocessor):
     def __write_pdf(self, i, redirected_pdf):
         print("\t[+]Redirection_pdf: %s" % redirected_pdf)
         self.data["Redirection_pdf"][i] = redirected_pdf
+    
+    def __write_altmetric_id(self, i, altmetric_id):
+        if altmetric_id == False:
+            altmetric_id = "None"
+        print("\t[+]Altmetric ID: %s" % altmetric_id)
+        self.data["Altmetric ID"][i] = altmetric_id
+    
+    def __write_aas(self, i, aas):
+        if aas == False:
+            aas = "None"
+        print("\t[+]AAS: %s" % aas)
+        self.data["AAS"][i] = aas
 
     def __postprocess_redirected_url(self, url_redirected):
         if url_redirected == "Err":
@@ -500,7 +786,7 @@ class ScopusPreprocessor(Preprocessor):
             # sciencedirect.com/science/article/pii/S1364815213002338
             url_redirected = "/".join(
                 ("sciencedirect.com/science/article", _[-2], _[-1]))
-        
+
         # Add to dict_redirection_domains.json
         self.__append_to_domains(url_redirected.split("/")[0])
 
@@ -531,6 +817,76 @@ class ScopusPreprocessor(Preprocessor):
         # redirection domains
         with open(self.fp_dict_redirection_domains, "w") as f:
             json.dump(self.dict_redirection_domains, f)
+    
+    def __install_bookmarklet(self, first_name=None, last_name=None, email=None):
+        print("[+]Installing bookmarklet.")
+        self.driver.get(
+            'https://www.altmetric.com/products/free-tools/bookmarklet/')
+        sleep(15)
+        self.driver.switch_to_frame(
+            self.driver.find_element_by_tag_name('iframe'))
+        if first_name == None:
+            first_name = self.__get_random_str(3, 'char')
+            print('Randomize first name:', first_name)
+        if last_name == None:
+            last_name = self.__get_random_str(2, 'char')
+            print('Randomize last name:', last_name)
+        if email == None:
+            email = self.__get_random_str(10, 'num') + '@g.ecc.u-tokyo.ac.jp'
+            print('Randomize email:', email)
+        job = 'Student'
+        organization = 'The Univ. of Tokyo'
+
+        _script_first_name = "document.getElementsByClassName('first_name')[0].children[1].setAttribute('value', '%s');" % first_name
+        _script_last_name = "document.getElementsByClassName('last_name')[0].children[1].setAttribute('value', '%s');" % last_name
+        _script_email = "document.getElementsByClassName('email')[0].children[1].setAttribute('value', '%s');" % email
+        _script_job = "document.getElementsByClassName('job_title')[0].children[1].setAttribute('value', '%s');" % job
+        _script_organization = "document.getElementsByClassName('company')[0].children[1].setAttribute('value', '%s');" % organization
+        _script_org_type = "document.getElementsByClassName('Organization_Type')[0].children[1].lastElementChild.setAttribute('selected', 'selected');document.getElementsByClassName('Organization_Type')[0].children[1].firstElementChild.removeAttribute('selected');"
+
+        self.driver.execute_script(_script_first_name)
+        self.driver.execute_script(_script_last_name)
+        self.driver.execute_script(_script_email)
+        self.driver.execute_script(_script_job)
+        self.driver.execute_script(_script_organization)
+        self.driver.execute_script(_script_org_type)
+
+        _input_submit = self.__find_recursive(
+            self.driver, 'submit', 'class', max_times_find=self.max_times_find).find_element_by_tag_name('input')
+        print(_input_submit)
+        _input_submit.click()
+        sleep(5)
+
+        _a_install_bookmarklet = self.__find_recursive(
+            self.driver, 'install-bookmarklet', 'id', max_times_find=self.max_times_find)
+        print('Clicking: #install-bookmarket')
+        _a_install_bookmarklet.click()
+        sleep(1)
+
+        # _href = self.driver.execute_script("document.getElementById('install-bookmarklet').getAttribute('href')")
+        # _href = _a_install_bookmarklet.get_attribute('href')
+        self.driver.switch_to_default_content()
+        print('Executing script:', self.script_altmetricit)
+        self.driver.execute_script(self.script_altmetricit)
+        sleep(5)
+
+        return self
+    
+    def __get_random_str(self, length, content_type=None):
+        _chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
+        if content_type == 'char':
+            _chars = _chars[:-10]
+        elif content_type == 'num':
+            _chars = _chars[-10:]
+        _num_chars = len(_chars)
+        _rand_str = ''
+        cur_len = 0
+        while True:
+            cur_len += 1
+            if cur_len > length:
+                break
+            _rand_str += _chars[randint(0, _num_chars - 1)]
+        return _rand_str
 
 
 if __name__ == "__main__":
@@ -543,6 +899,7 @@ if __name__ == "__main__":
     parser.add_argument('--overwrite', action="store_true", default="Err")
     parser.add_argument('--redirection', action="store_true", default=False)
     parser.add_argument('--pdf', action="store_true", default=False)
+    parser.add_argument('--aas', action="store_true", default=False)
     parser.add_argument('--shuffle', action="store_true", default=False)
     parser.add_argument('--savepoint_interval', type=int, default=10)
     parser.add_argument('--process_interval', type=float, default=60.0)
@@ -558,6 +915,7 @@ if __name__ == "__main__":
                                                  shuffle=args.shuffle,
                                                  set_redirection=args.redirection,
                                                  set_pdf=args.pdf,
+                                                 set_aas=args.aas,
                                                  savepoint_interval=args.savepoint_interval,
                                                  process_interval=args.process_interval,
                                                  postprocess_redirections=args.postprocess_redirections,
@@ -576,6 +934,7 @@ if __name__ == "__main__":
                                                      shuffle=args.shuffle,
                                                      set_redirection=args.redirection,
                                                      set_pdf=args.pdf,
+                                                     set_aas=args.aas,
                                                      savepoint_interval=args.savepoint_interval,
                                                      process_interval=args.process_interval,
                                                      postprocess_redirections=args.postprocess_redirections)

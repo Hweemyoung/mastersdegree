@@ -478,7 +478,7 @@ def search_by_q(fp_csv, column):
     print("# DOI:\t%d" % len(data_doi))
     if column == "DOI":
         # Filter by DOI.
-        data = data_doi[~data_doi["DOI"] != ""]
+        data = data_doi[data_doi["DOI"] != ""]
         print("# data:\t%d" % len(data))
         _list_idx_papers = list(data["DOI"])
         _list_queries = list(data["DOI"])
@@ -732,7 +732,7 @@ if __name__ == '__main__':
     # from search_custom import search_by_domains
     # _result = search_by_domains()
 
-    # youtube_search = search_by_q("scopus/scopus_math+comp_top5perc_1705.csv", column="Redirection")
+    # youtube_search = search_by_q("scopus/scopus_math+comp_top5perc_1706.csv", column="DOI")
 
     # upload_rel_paper_video("rel_paper_video", "results/search/search_%s.txt" % youtube_search.fname)
     # youtube_videos = videos_by_video_ids("results/search/search_%s.txt" % youtube_search.fname) # Accepts arg --random_project
@@ -740,9 +740,9 @@ if __name__ == '__main__':
     # print("search_%s.txt" % youtube_search.fname)
     # print("videos_%s.txt" % youtube_videos.fname)
 
-    # upload_rel_paper_video("rel_paper_video", "results/search/search_20200812_163518.txt")
-    # youtube_videos = videos_by_video_ids("results/search/search_20200812_163518.txt")
-    update_videos_by_list_videos("scopus_videos_2017_comp", "./results/videos/videos_20200812_164230.txt", filter_by_q=True, overwrite=True)
+    # upload_rel_paper_video("rel_paper_video", "results/search/search_20200814_200411.txt")
+    # youtube_videos = videos_by_video_ids("results/search/search_20200814_200411.txt")
+    update_videos_by_list_videos("scopus_videos_2017_comp", "./results/videos/videos_20200814_201126.txt", filter_by_q=True, overwrite=True)
 
     # channels_by_list_channel_ids(table_name_videos="scopus_videos")
     # upload_channels_by_list_channels('channels', './results/channels/channels_20200730_083658.txt', overwrite=True)

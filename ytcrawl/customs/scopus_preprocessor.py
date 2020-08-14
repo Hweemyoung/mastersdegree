@@ -101,6 +101,7 @@ class ScopusPreprocessor(Preprocessor):
             self.dict_source_pub = json.load(f)
 
     def preprocess_scopus_csv(self):
+        self.time_start = time()
         # Create columns
         for _col in self.tup_new_columns:
             try:
@@ -142,6 +143,7 @@ class ScopusPreprocessor(Preprocessor):
         return self
     
     def __write_data_by_i(self, i, overwrite):
+        _flag_sleep = False
         _flag_driver_opened = False
         # Redirection & pdf
         if (self.set_redirection or self.set_pdf)\
@@ -181,16 +183,17 @@ class ScopusPreprocessor(Preprocessor):
         
         # Altmetric ID & AAS
         if self.set_aas\
-            and (self.data["Altmetric ID"][i] in ("None", "Err", "nan") or overwrite == True):
+            and (self.data["Altmetric ID"][i] in ("None", "Err") or overwrite == True):
             _citation_id, _aas = self.__get_cid_aas(i, _flag_driver_opened)
-            self.__write_altmetric_id(i, _citation_id)
-            self.__write_aas(i, _aas)
+            _flag_sleep = self.__write_altmetric_id(i, _citation_id)
+            _flag_sleep = self.__write_aas(i, _aas)
             
             # if self.data["Source title"][i] in self.dict_domain_by_source_title_by_driver.keys():
             #     self.__sleep_process()
         
         self.num_processed += 1
-        
+
+        return _flag_sleep
     
     def __get_next_i(self):
         _current_time = time()
@@ -242,21 +245,34 @@ class ScopusPreprocessor(Preprocessor):
                     sleep(1.0)
                     continue
             else:
-                self.__write_data_by_i(_i, overwrite)
+                if self.__write_data_by_i(_i, overwrite):
+                    # flag_sleep
+                    sleep(1.0)
+                self.__calc_remaining_time()
+                
                 # Checkpoint
-                self.__check_savepoint(_i)
+                self.__check_savepoint(self.num_processed)
+    
+    def __calc_remaining_time(self):
+        if self.num_processed == 0:
+            return self
+        _sec_per_paper = (time() - self.time_start) / self.num_processed
+        _min_remaining = int((self.num_papers - self.num_processed) * _sec_per_paper // 60)
+        print("Progress: %2.1f \tAve. time per paper: %.2f secs\tRemaining time estimated: %d mins" % (100 * self.num_processed / self.num_papers, _sec_per_paper, _min_remaining))
+        return self
+        
     
     def __get_cid_aas(self, i, flag_driver_opened):
         _redirection = self.data["Redirection"][i]
         if _redirection in ("Err", "None", "nan"):
             print("\t[-]Cannot Altmetric-it as Redirection not available.")
-            return False, False
+            return "None", "None"
         
         # Check altmetric available for redirection
         for _domain in self.domains_aas_unavailable:
             if _redirection.startswith(_domain):
                 print("\t[-]Altmetric-it unavailable for domain: %s" % _domain)
-                return False, False
+                return "None", "None"
 
         if not flag_driver_opened:
             self.driver.get("http://" + self.data["Redirection"][i])
@@ -298,7 +314,7 @@ class ScopusPreprocessor(Preprocessor):
         return _div_wrapper
     
     def __get_cid_aas_from_div_wrapper(self, div_wrapper):
-        _citation_id, _aas = False, False
+        _citation_id, _aas = "nan", "nan"
 
         _div_donut = self.__find_recursive(div_wrapper, 'donut', 'class', max_times_find=3)
         if _div_donut == False:
@@ -737,6 +753,11 @@ class ScopusPreprocessor(Preprocessor):
 
                 else:
                     return "None"
+    
+    def __get_flag_sleep(self, value):
+        if value not in ("None", "Err"):
+            return True
+        return False
 
     def __write_redirection(self, i, redirected_abs):
         print("\t[+]Redirection: %s" % redirected_abs)
@@ -747,16 +768,14 @@ class ScopusPreprocessor(Preprocessor):
         self.data["Redirection_pdf"][i] = redirected_pdf
     
     def __write_altmetric_id(self, i, altmetric_id):
-        if altmetric_id == False:
-            altmetric_id = "None"
         print("\t[+]Altmetric ID: %s" % altmetric_id)
         self.data["Altmetric ID"][i] = altmetric_id
+        return self.__get_flag_sleep(altmetric_id)
     
     def __write_aas(self, i, aas):
-        if aas == False:
-            aas = "None"
         print("\t[+]AAS: %s" % aas)
         self.data["AAS"][i] = aas
+        return self.__get_flag_sleep(aas)
 
     def __postprocess_redirected_url(self, url_redirected):
         if url_redirected == "Err":
@@ -806,6 +825,7 @@ class ScopusPreprocessor(Preprocessor):
 
     def __check_savepoint(self, enum):
         if (enum+1) % self.savepoint_interval == 0:
+            print("[+]Checkpoint: Saving.")
             self.__save()
 
         return self

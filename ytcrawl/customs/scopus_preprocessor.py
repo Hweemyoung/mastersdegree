@@ -20,6 +20,7 @@ from altmetric_it import AltmetricIt
 class ScopusPreprocessor(Preprocessor):
 
     tup_new_columns = ("Redirection", "Redirection_pdf", "Altmetric ID", "AAS")
+    tup_fields_unprocessed = ("None", "Err")
     tup_domains_exception = ("doi.apa.org",)
     
     opener = build_opener(HTTPCookieProcessor())
@@ -148,7 +149,7 @@ class ScopusPreprocessor(Preprocessor):
     
     def __add_yt_direct_queries(self, overwrite):
         while True:
-            _i = self.__get_next_i()
+            _i = self.__get_next_i(overwrite)
             print("[+]i = %s\t%d out of %d papers remaining." % (_i, self.num_papers - self.num_processed, self.num_papers))
             if _i == None:
                 if len(self.dict_queue_by_domains) == 0:
@@ -165,21 +166,27 @@ class ScopusPreprocessor(Preprocessor):
                     print("[-]No available paper at the moment.")
                     sleep(1.0)
                     continue
+
+            elif _i == "pass":
+                print("\t[+]Passing.")
+
             else:
                 if self.__write_data_by_i(_i, overwrite):
                     # flag_sleep
                     sleep(1.0)
-                self.__calc_remaining_time()
-                
-                # Checkpoint
-                self.__check_savepoint(self.num_processed)
+            
+            self.num_processed += 1
+            self.__calc_remaining_time()
+            # Checkpoint
+            self.__check_savepoint(self.num_processed)
     
     def __write_data_by_i(self, i, overwrite):
         _flag_sleep = False
         _flag_driver_opened = False
         # Redirection & pdf
-        if (self.set_redirection or self.set_pdf)\
-            and (self.data["Redirection"][i] in ("None", "Err", "nan") or overwrite == True):
+        # if (self.set_redirection or self.set_pdf)\
+        #     and (self.data["Redirection"][i] in self.tup_fields_unprocessed or overwrite == True):
+        if not (self.check_i_redirection_already_processed(i, overwrite) and self.check_i_pdf_already_processed(i, overwrite)):
             _url_redirected = self.__url_without_open(i)
             if _url_redirected != False:
                 self.num_skip += 1
@@ -215,20 +222,34 @@ class ScopusPreprocessor(Preprocessor):
                 self.__write_pdf(i, _redirected_pdf)
         
         # Altmetric ID & AAS
-        if self.set_aas\
-            and (self.data["Altmetric ID"][i] in ("None", "Err") or overwrite == True):
+        # if self.set_aas\
+        #     and (self.data["Altmetric ID"][i] in ("None", "Err") or overwrite == True):
+        if not self.check_i_aas_already_processed(i, overwrite):
             _citation_id, _aas = self.__get_cid_aas(i, _flag_driver_opened)
             _flag_sleep = self.__write_altmetric_id(i, _citation_id)
             _flag_sleep = self.__write_aas(i, _aas)
             
             # if self.data["Source title"][i] in self.dict_domain_by_source_title_by_driver.keys():
             #     self.__sleep_process()
-        
-        self.num_processed += 1
 
         return _flag_sleep
     
-    def __get_next_i(self):
+    def check_i_redirection_already_processed(self, i, overwrite):
+        print("\t[+]Redirection: %s\tAlready processed: %s" % (self.data["Redirection"][i], not (self.set_redirection and (self.data["Redirection"][i] in self.tup_fields_unprocessed or overwrite == True))))
+        return not (self.set_redirection and (self.data["Redirection"][i] in self.tup_fields_unprocessed or overwrite == True))
+    
+    def check_i_pdf_already_processed(self, i, overwrite):
+        print("\t[+]PDF: %s\tAlready processed: %s" % (self.data["Redirection_pdf"][i], not (self.set_pdf and (self.data["Redirection_pdf"][i] in self.tup_fields_unprocessed or overwrite == True))))
+        return not (self.set_pdf and (self.data["Redirection_pdf"][i] in self.tup_fields_unprocessed or overwrite == True))
+    
+    def check_i_aas_already_processed(self, i, overwrite):
+        print("\t[+]Altmetric ID: %s\tAlready processed: %s" % (self.data["Altmetric ID"][i], not (self.set_aas and (self.data["Altmetric ID"][i] in self.tup_fields_unprocessed or overwrite == True))))
+        return not (self.set_aas and (self.data["Altmetric ID"][i] in self.tup_fields_unprocessed or overwrite == True))
+
+    def check_i_already_processed(self, i, overwrite):
+        return self.check_i_redirection_already_processed(i, overwrite) and self.check_i_pdf_already_processed(i, overwrite) and self.check_i_aas_already_processed(i, overwrite)
+    
+    def __get_next_i(self, overwrite):
         _current_time = time()
         _i = self.__get_next_i_from_queue(_current_time)
         if _i == None:
@@ -238,6 +259,8 @@ class ScopusPreprocessor(Preprocessor):
                 # Only queues remain.
                 return None
             else:
+                if self.check_i_already_processed(_i, overwrite):
+                    return "pass"
                 _next_source_title = self.data["Source title"][_i]
                 # print("\tNext title: %s" % _next_source_title)
                 if _next_source_title in self.dict_domain_by_source_title_by_driver:
@@ -254,7 +277,6 @@ class ScopusPreprocessor(Preprocessor):
                             "last_time": _current_time,
                             "queue": list()
                         }
-                return _i
         return _i
     
     def __calc_remaining_time(self):
@@ -399,7 +421,7 @@ class ScopusPreprocessor(Preprocessor):
                   (_i+1, self.num_papers))
             # Overwrite: False or "Err"
             if (self.overwrite == False and not ((self.set_redirection and self.data["Redirection"][_i] == "None") or (self.set_pdf and self.data["Redirection_pdf"][_i] == "None")))\
-                    or (self.overwrite == "Err" and not ((self.set_redirection and self.data["Redirection"][_i] in ("None", "Err")) or (self.set_pdf and self.data["Redirection_pdf"][_i] in ("None", "Err")))):
+                    or (self.overwrite == "Err" and not ((self.set_redirection and self.data["Redirection"][_i] in self.tup_domains_exception) or (self.set_pdf and self.data["Redirection_pdf"][_i] in self.tup_domains_exception))):
                 # if (self.overwrite == False and self.data["Redirection"][_i] != "None" and self.data["Redirection_pdf"][_i] != "None") or\
                 #     (self.overwrite == "Err" and self.data["Redirection"][_i] not in ("None", "Err") and self.data["Redirection_pdf"][_i] not in ("None", "Err")):
                 # Already done.
@@ -715,7 +737,7 @@ class ScopusPreprocessor(Preprocessor):
         else:
             # Check format from Redirection
             _redirected_abs = self.data["Redirection"][i]
-            if _redirected_abs in ("None", "Err"):
+            if _redirected_abs in self.tup_fields_unprocessed:
                 return "None"
 
             else:
@@ -763,9 +785,7 @@ class ScopusPreprocessor(Preprocessor):
                     return "None"
     
     def __get_flag_sleep(self, value):
-        if value not in ("None", "Err"):
-            return True
-        return False
+        return False if value in self.tup_fields_unprocessed else True
 
     def __write_redirection(self, i, redirected_abs):
         print("\t[+]Redirection: %s" % redirected_abs)

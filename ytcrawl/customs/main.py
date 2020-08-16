@@ -732,7 +732,7 @@ if __name__ == '__main__':
     # from search_custom import search_by_domains
     # _result = search_by_domains()
 
-    # youtube_search = search_by_q("scopus/scopus_math+comp_top5perc_1706.csv", column="DOI")
+    # youtube_search = search_by_q("scopus/scopus_life+earch_top60_1901.csv", column="Redirection")
 
     # upload_rel_paper_video("rel_paper_video", "results/search/search_%s.txt" % youtube_search.fname)
     # youtube_videos = videos_by_video_ids("results/search/search_%s.txt" % youtube_search.fname) # Accepts arg --random_project
@@ -740,9 +740,9 @@ if __name__ == '__main__':
     # print("search_%s.txt" % youtube_search.fname)
     # print("videos_%s.txt" % youtube_videos.fname)
 
-    # upload_rel_paper_video("rel_paper_video", "results/search/search_20200814_200411.txt")
-    # youtube_videos = videos_by_video_ids("results/search/search_20200814_200411.txt")
-    update_videos_by_list_videos("scopus_videos_2017_comp", "./results/videos/videos_20200814_201126.txt", filter_by_q=True, overwrite=True)
+    # upload_rel_paper_video("rel_paper_video", "results/search/search_20200816_224613.txt")
+    # youtube_videos = videos_by_video_ids("results/search/search_20200816_224613.txt")
+    update_videos_by_list_videos("scopus_videos_2019_life", "./results/videos/videos_20200816_225237.txt", filter_by_q=True, overwrite=True)
 
     # channels_by_list_channel_ids(table_name_videos="scopus_videos")
     # upload_channels_by_list_channels('channels', './results/channels/channels_20200730_083658.txt', overwrite=True)

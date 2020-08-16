@@ -55,7 +55,9 @@ class ScopusPreprocessor(Preprocessor):
         "Bioinformatics": "academic.oup.com",
         "Bulletin of the American Meteorological Society": "journals.ametsoc.org",
         "Molecular Biology and Evolution": "academic.oup.com",
-        "Systematic Biology": "academic.oup.com"
+        "Systematic Biology": "academic.oup.com",
+        "Astrophysical Journal, Supplement Series": "iopscience.iop.org",
+        "Astrophysical Journal Letters": "iopscience.iop.org"
     }
     dict_queue_by_domains = dict()  # {<domain>: {"last_time": time, "queue": [i, ...]}, ...}
 
@@ -144,6 +146,34 @@ class ScopusPreprocessor(Preprocessor):
 
         return self
     
+    def __add_yt_direct_queries(self, overwrite):
+        while True:
+            _i = self.__get_next_i()
+            print("[+]i = %s\t%d out of %d papers remaining." % (_i, self.num_papers - self.num_processed, self.num_papers))
+            if _i == None:
+                if len(self.dict_queue_by_domains) == 0:
+                    # Done
+                    # Save
+                    self.__save()
+                    # Report
+                    print("\n# papers: %d\t# fail: %d\t# pass: %d\t# skip: %d\t# new domains: %d" %
+                        (self.num_papers, self.num_fail, self.num_pass, self.num_skip, self.num_new_domains))
+                    print("Done.")
+                    # pd.Series.astype(str) + ',' + pd.Series.astype(str)
+                    return self
+                else:
+                    print("[-]No available paper at the moment.")
+                    sleep(1.0)
+                    continue
+            else:
+                if self.__write_data_by_i(_i, overwrite):
+                    # flag_sleep
+                    sleep(1.0)
+                self.__calc_remaining_time()
+                
+                # Checkpoint
+                self.__check_savepoint(self.num_processed)
+    
     def __write_data_by_i(self, i, overwrite):
         _flag_sleep = False
         _flag_driver_opened = False
@@ -226,34 +256,6 @@ class ScopusPreprocessor(Preprocessor):
                         }
                 return _i
         return _i
-
-    def __add_yt_direct_queries(self, overwrite):
-        while True:
-            _i = self.__get_next_i()
-            print("[+]i = %s\t%d out of %d papers remaining." % (_i, self.num_papers - self.num_processed, self.num_papers))
-            if _i == None:
-                if len(self.dict_queue_by_domains) == 0:
-                    # Done
-                    # Save
-                    self.__save()
-                    # Report
-                    print("\n# papers: %d\t# fail: %d\t# pass: %d\t# skip: %d\t# new domains: %d" %
-                        (self.num_papers, self.num_fail, self.num_pass, self.num_skip, self.num_new_domains))
-                    print("Done.")
-                    # pd.Series.astype(str) + ',' + pd.Series.astype(str)
-                    return self
-                else:
-                    print("[-]No available paper at the moment.")
-                    sleep(1.0)
-                    continue
-            else:
-                if self.__write_data_by_i(_i, overwrite):
-                    # flag_sleep
-                    sleep(1.0)
-                self.__calc_remaining_time()
-                
-                # Checkpoint
-                self.__check_savepoint(self.num_processed)
     
     def __calc_remaining_time(self):
         if self.num_processed == 0:
@@ -287,7 +289,7 @@ class ScopusPreprocessor(Preprocessor):
         # Get div.wrapper
         _div_wrapper = self.__get_div_wrapper_from_current_page()
         if _div_wrapper == False:
-            return False, False
+            return "Err", "Err"
 
         # Get Altmetric ID, AAS
         _citation_id, _aas = self.__get_cid_aas_from_div_wrapper(_div_wrapper)

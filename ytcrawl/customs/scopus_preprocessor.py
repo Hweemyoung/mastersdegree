@@ -7,6 +7,7 @@ from urllib.request import build_opener, HTTPCookieProcessor, Request
 from urllib.parse import urlparse
 from urllib.error import URLError
 from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
 from time import sleep, time
 from datetime import datetime
 from random import randint
@@ -31,6 +32,7 @@ class ScopusPreprocessor(Preprocessor):
     num_processed = 0
 
     fp_driver = "./chromedriver_83"
+    page_load_trial = 5
 
     domains_aas_unavailable = (
         "dl.acm.org/doi/",
@@ -83,8 +85,8 @@ class ScopusPreprocessor(Preprocessor):
         if use_driver:
             print("[+]Opening Driver.")
             self.driver = webdriver.Chrome(self.fp_driver)
+            self.driver.set_page_load_timeout(30)
             if set_aas:
-
                 self.__install_bookmarklet()
             
         self.data = pd.read_csv(fpath_scopus_csv, header=0, sep=",", dtype=str)
@@ -158,7 +160,8 @@ class ScopusPreprocessor(Preprocessor):
                     self.__write_pdf(i, _url_redirected[1])
                 if self.set_aas:
                     # Open url
-                    self.driver.get(_url_redirected[0])
+                    self.__driver_get(_url_redirected[0])
+                    # self.driver.get(_url_redirected[0])
                     _flag_driver_opened = True
         
             else:
@@ -226,7 +229,6 @@ class ScopusPreprocessor(Preprocessor):
 
     def __add_yt_direct_queries(self, overwrite):
         while True:
-            print("[+]Domains in queue:", self.dict_queue_by_domains.keys())
             _i = self.__get_next_i()
             print("[+]i = %s\t%d out of %d papers remaining." % (_i, self.num_papers - self.num_processed, self.num_papers))
             if _i == None:
@@ -275,7 +277,9 @@ class ScopusPreprocessor(Preprocessor):
                 return "None", "None"
 
         if not flag_driver_opened:
-            self.driver.get("http://" + self.data["Redirection"][i])
+            print("\t[+]Opening: %s" % self.data["Redirection"][i])
+            # self.driver.get("http://" + self.data["Redirection"][i])
+            self.__driver_get("http://" + self.data["Redirection"][i])
         
         return self.__get_cid_aas_from_current_page()
     
@@ -417,7 +421,8 @@ class ScopusPreprocessor(Preprocessor):
                     self.__write_pdf(_i, _url_redirected[1])
                 if self.set_aas:
                     # Open
-                    self.driver.get(_url_redirected[0])
+                    # self.driver.get(_url_redirected[0])
+                    self.__driver_get(_url_redirected[0])
 
             else:
                 if self.set_redirection:
@@ -618,7 +623,8 @@ class ScopusPreprocessor(Preprocessor):
         # _driver = webdriver.Chrome(self.fp_driver)
         print("\t[+]Opening url:")
         print("\t\t%s" % url)
-        self.driver.get(url)
+        # self.driver.get(url)
+        self.__driver_get(url)
         # Get raw url
         # print("\t[+]Raw redirection:")
         # print("\t\t%s" % self.driver.current_url)
@@ -635,6 +641,7 @@ class ScopusPreprocessor(Preprocessor):
         return self
 
     def __get_next_i_from_queue(self, current_time):
+        _i = None
         _max_interval = 0.0
         _target_domain = None
         _domains_to_be_removed = list()
@@ -655,10 +662,9 @@ class ScopusPreprocessor(Preprocessor):
             _i = self.dict_queue_by_domains[_target_domain]["queue"].pop(0)
             # Replace last_time
             self.dict_queue_by_domains[_target_domain]["last_time"] = current_time
-            
-            return _i
         
-        return None
+        print("\t".join(["Domains in queue:"] + list(map(lambda _key: "%s: %d" % (_key, len(self.dict_queue_by_domains[_key]["queue"])), self.dict_queue_by_domains))))
+        return _i
     
     def __sleep_process(self):
         if self.process_interval != None:
@@ -840,8 +846,8 @@ class ScopusPreprocessor(Preprocessor):
     
     def __install_bookmarklet(self, first_name=None, last_name=None, email=None):
         print("[+]Installing bookmarklet.")
-        self.driver.get(
-            'https://www.altmetric.com/products/free-tools/bookmarklet/')
+        # self.driver.get('https://www.altmetric.com/products/free-tools/bookmarklet/')
+        self.__driver_get('https://www.altmetric.com/products/free-tools/bookmarklet/')
         sleep(15)
         self.driver.switch_to_frame(
             self.driver.find_element_by_tag_name('iframe'))
@@ -892,7 +898,7 @@ class ScopusPreprocessor(Preprocessor):
 
         return self
     
-    def __get_random_str(self, length, content_type=None):
+    def __get_random_str(self, length, content_type):
         _chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
         if content_type == 'char':
             _chars = _chars[:-10]
@@ -907,6 +913,19 @@ class ScopusPreprocessor(Preprocessor):
                 break
             _rand_str += _chars[randint(0, _num_chars - 1)]
         return _rand_str
+    
+    def __driver_get(self, url):
+        _trial = 0
+        while _trial < self.page_load_trial:
+            try:
+                _trial += 1
+                self.driver.get(url)
+            except TimeoutException:
+                continue
+            else:
+                return True
+
+        raise TimeoutException("Trial failed.")
 
 
 if __name__ == "__main__":

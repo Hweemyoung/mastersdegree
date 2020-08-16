@@ -160,7 +160,7 @@ class ScopusPreprocessor(Preprocessor):
                     self.__write_pdf(i, _url_redirected[1])
                 if self.set_aas:
                     # Open url
-                    self.__driver_get(_url_redirected[0])
+                    self.__driver_get("http://" + _url_redirected[0])
                     # self.driver.get(_url_redirected[0])
                     _flag_driver_opened = True
         
@@ -168,7 +168,7 @@ class ScopusPreprocessor(Preprocessor):
                 # Build up url
                 _url = "https://www.doi.org/" + self.data["DOI"][i]
                 # Get redirection
-                if self.data["Source title"][i] in self.dict_domain_by_source_title_by_driver.keys():
+                if self.data["Source title"][i] in self.dict_domain_by_source_title_by_driver.keys() or self.set_aas:
                     if self.use_driver:
                         self.__write_redirection_by_driver(i, _url)
                         _flag_driver_opened = True
@@ -277,9 +277,9 @@ class ScopusPreprocessor(Preprocessor):
                 return "None", "None"
 
         if not flag_driver_opened:
-            print("\t[+]Opening: %s" % self.data["Redirection"][i])
-            # self.driver.get("http://" + self.data["Redirection"][i])
-            self.__driver_get("http://" + self.data["Redirection"][i])
+            print("\t[+]Opening: %s" % _redirection)
+            # self.driver.get("http://" + _redirection)
+            self.__driver_get("http://" + _redirection)
         
         return self.__get_cid_aas_from_current_page()
     

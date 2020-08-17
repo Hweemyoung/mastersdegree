@@ -21,7 +21,13 @@ class ScopusPreprocessor(Preprocessor):
 
     tup_new_columns = ("Redirection", "Redirection_pdf", "Altmetric ID", "AAS")
     tup_fields_unprocessed = ("None", "Err")
-    tup_domains_exception = ("doi.apa.org",)
+    tup_domains_exception = ("doi.apa.org",)  # Will not be added to dict_domains.json
+    
+    # Further path required to crawl AAS.
+    # Hash tag must be excluded
+    dict_domains_aas_path_required = {
+        "ieeexplore.ieee.org": {"path": "metrics", "sleep": 5.0}
+    }
     
     opener = build_opener(HTTPCookieProcessor())
     # driver = webdriver.Chrome("./chromedriver_83")
@@ -37,7 +43,7 @@ class ScopusPreprocessor(Preprocessor):
 
     domains_aas_unavailable = (
         "dl.acm.org/doi/",
-        "ieeexplore.ieee.org/document/",
+        # "ieeexplore.ieee.org/document/",
         "inderscience.com/offer.php?id=",
         "misq.org/",
     )
@@ -48,7 +54,7 @@ class ScopusPreprocessor(Preprocessor):
     
     script_altmetricit = 'javascript:((function(){var a;a=function(){var a,b,c,d,e;b=document,e=b.createElement("script"),a=b.body,d=b.location;try{if(!a)throw 0;c="d1bxh8uas1mnw7.cloudfront.net";if(typeof runInject!="function")return e.setAttribute("src",""+d.protocol+"//"+c+"/assets/content.js?cb="+Date.now()),e.setAttribute("type","text/javascript"),e.setAttribute("onload","runInject()"),a.appendChild(e)}catch(f){return console.log(f),alert("Please wait until the page has loaded.")}},a(),void 0})).call(this);'
     max_times_find = 10
-    sec_sleep = 0.5
+    sec_sleep_retry_find = 0.5
 
     dict_domain_by_source_title_by_driver = {
         "Briefings in Bioinformatics": "academic.oup.com",
@@ -182,10 +188,8 @@ class ScopusPreprocessor(Preprocessor):
     
     def __write_data_by_i(self, i, overwrite):
         _flag_sleep = False
-        _flag_driver_opened = False
+        _flag_domain_opened = False
         # Redirection & pdf
-        # if (self.set_redirection or self.set_pdf)\
-        #     and (self.data["Redirection"][i] in self.tup_fields_unprocessed or overwrite == True):
         if not (self.check_i_redirection_already_processed(i, overwrite) and self.check_i_pdf_already_processed(i, overwrite)):
             _url_redirected = self.__url_without_open(i)
             if _url_redirected != False:
@@ -195,11 +199,11 @@ class ScopusPreprocessor(Preprocessor):
                     self.__write_redirection(i, _url_redirected[0])
                 if self.set_pdf:
                     self.__write_pdf(i, _url_redirected[1])
-                if self.set_aas:
-                    # Open url
-                    self.__driver_get("http://" + _url_redirected[0])
-                    # self.driver.get(_url_redirected[0])
-                    _flag_driver_opened = True
+                # if self.set_aas:
+                #     # Open url
+                #     self.__driver_get("http://" + _url_redirected[0])
+                #     # self.driver.get(_url_redirected[0])
+                #     _flag_domain_opened = True
         
             else:
                 # Build up url
@@ -208,7 +212,7 @@ class ScopusPreprocessor(Preprocessor):
                 if self.data["Source title"][i] in self.dict_domain_by_source_title_by_driver.keys() or self.set_aas:
                     if self.use_driver:
                         self.__write_redirection_by_driver(i, _url)
-                        _flag_driver_opened = True
+                        _flag_domain_opened = True
                     else:
                         print("\t[-]Driver required but not available.")
                         self.num_pass += 1
@@ -225,7 +229,7 @@ class ScopusPreprocessor(Preprocessor):
         # if self.set_aas\
         #     and (self.data["Altmetric ID"][i] in ("None", "Err") or overwrite == True):
         if not self.check_i_aas_already_processed(i, overwrite):
-            _citation_id, _aas = self.__get_cid_aas(i, _flag_driver_opened)
+            _citation_id, _aas = self.__get_cid_aas(i, _flag_domain_opened)
             _flag_sleep = self.__write_altmetric_id(i, _citation_id)
             _flag_sleep = self.__write_aas(i, _aas)
             
@@ -235,15 +239,15 @@ class ScopusPreprocessor(Preprocessor):
         return _flag_sleep
     
     def check_i_redirection_already_processed(self, i, overwrite):
-        print("\t[+]Redirection: %s\tAlready processed: %s" % (self.data["Redirection"][i], not (self.set_redirection and (self.data["Redirection"][i] in self.tup_fields_unprocessed or overwrite == True))))
+        # print("\t[+]Redirection: %s\tAlready processed: %s" % (self.data["Redirection"][i], not (self.set_redirection and (self.data["Redirection"][i] in self.tup_fields_unprocessed or overwrite == True))))
         return not (self.set_redirection and (self.data["Redirection"][i] in self.tup_fields_unprocessed or overwrite == True))
     
     def check_i_pdf_already_processed(self, i, overwrite):
-        print("\t[+]PDF: %s\tAlready processed: %s" % (self.data["Redirection_pdf"][i], not (self.set_pdf and (self.data["Redirection_pdf"][i] in self.tup_fields_unprocessed or overwrite == True))))
+        # print("\t[+]PDF: %s\tAlready processed: %s" % (self.data["Redirection_pdf"][i], not (self.set_pdf and (self.data["Redirection_pdf"][i] in self.tup_fields_unprocessed or overwrite == True))))
         return not (self.set_pdf and (self.data["Redirection_pdf"][i] in self.tup_fields_unprocessed or overwrite == True))
     
     def check_i_aas_already_processed(self, i, overwrite):
-        print("\t[+]Altmetric ID: %s\tAlready processed: %s" % (self.data["Altmetric ID"][i], not (self.set_aas and (self.data["Altmetric ID"][i] in self.tup_fields_unprocessed or overwrite == True))))
+        # print("\t[+]Altmetric ID: %s\tAlready processed: %s" % (self.data["Altmetric ID"][i], not (self.set_aas and (self.data["Altmetric ID"][i] in self.tup_fields_unprocessed or overwrite == True))))
         return not (self.set_aas and (self.data["Altmetric ID"][i] in self.tup_fields_unprocessed or overwrite == True))
 
     def check_i_already_processed(self, i, overwrite):
@@ -285,14 +289,17 @@ class ScopusPreprocessor(Preprocessor):
         _sec_per_paper = (time() - self.time_start) / self.num_processed
         _min_remaining = int((self.num_papers - self.num_processed) * _sec_per_paper // 60)
         print("Progress: %2.1f \tAve. time per paper: %.2f secs\tRemaining time estimated: %d mins" % (100 * self.num_processed / self.num_papers, _sec_per_paper, _min_remaining))
-        return self
-        
+        return self        
     
-    def __get_cid_aas(self, i, flag_driver_opened):
+    def __get_cid_aas(self, i, flag_domain_opened):
         _redirection = self.data["Redirection"][i]
-        if _redirection in ("Err", "None", "nan"):
+        if _redirection in self.tup_fields_unprocessed:
             print("\t[-]Cannot Altmetric-it as Redirection not available.")
             return "None", "None"
+        
+        elif _redirection == "nan":
+            print("\t[-]Redirection not exist.")
+            return "nan", "nan"
         
         # Check altmetric available for redirection
         for _domain in self.domains_aas_unavailable:
@@ -300,24 +307,67 @@ class ScopusPreprocessor(Preprocessor):
                 print("\t[-]Altmetric-it unavailable for domain: %s" % _domain)
                 return "None", "None"
 
-        if not flag_driver_opened:
-            print("\t[+]Opening: %s" % _redirection)
+        # if not flag_driver_opened:
+        if not self.__get_flag_aas_url_opened(flag_domain_opened):
             # self.driver.get("http://" + _redirection)
-            self.__driver_get("http://" + _redirection)
+            # self.__driver_get("http://" + _redirection)
+            _aas_url = self.__get_aas_url_sec_sleep_from_redirection(_redirection)
+            self.__driver_get("http://" + _aas_url)
         
         return self.__get_cid_aas_from_current_page()
     
-    def __get_cid_aas_from_current_page(self):        
-        # Get div.wrapper
-        _div_wrapper = self.__get_div_wrapper_from_current_page()
-        if _div_wrapper == False:
-            return "Err", "Err"
+    def __get_flag_aas_url_opened(self, flag_domain_opened):
+        if flag_domain_opened:
+            _urlparse = urlparse(self.driver.current_url)
+            if _urlparse.netloc in self.dict_domains_aas_path_required:
+                return _urlparse.path.endswith(self.dict_domains_aas_path_required[_urlparse.netloc]["path"])
+            else:
+                return True
+        return False
+    
+    def __get_aas_url_sec_sleep_from_redirection(self, redirection):
+        for _domain in self.dict_domains_aas_path_required:
+            if redirection.startswith(_domain):
+                return '/'.join((redirection, self.dict_domains_aas_path_required[_domain]["path"]))
+        return redirection
+    
+    def __get_cid_aas_from_current_page(self):
+        _citation_id, _aas = "nan", "nan"
+        # ieeexplore
+        _urlparse = urlparse(self.driver.current_url)
+        if _urlparse.netloc == "ieeexplore.ieee.org":
+            _div_altmetric_condensed_legend = self.__find_recursive(
+                self.driver,
+                "div.altmetric-condensed-legend",
+                "css_selector",
+                multiple=False,
+                max_times_find=int(self.dict_domains_aas_path_required[_urlparse.netloc]["sleep"] // self.sec_sleep_retry_find))
+            if _div_altmetric_condensed_legend != False:
+                _a_legend = self.__find_recursive(_div_altmetric_condensed_legend, 'a', "tag")
+                if _a_legend != False:
+                    for _query in urlparse(_a_legend.get_attribute('href')).query.split('&'):
+                        if _query.startswith("citation_id="):
+                            _citation_id = _query[12:]
+                    
+                    _img_legend = self.__find_recursive(_a_legend, "img", "tag")
+                    if _img_legend != False:
+                        try:
+                            _aas = int(_img_legend.get_attribute("alt").split(' ')[-1])  # Article has an altmetric score of 71
+                        except ValueError:
+                            print("\t[-]Couldn't extract AAS.")
+                            _aas = "Err"
 
-        # Get Altmetric ID, AAS
-        _citation_id, _aas = self.__get_cid_aas_from_div_wrapper(_div_wrapper)
-        if _citation_id == False:  # Cannot altmetric-it.
-            self.msg_error = '[-]Cannot altmetric-it.'
-            print('\t%s' % self.msg_error)
+        else:
+            # Get div.wrapper
+            _div_wrapper = self.__get_div_wrapper_from_current_page()
+            if _div_wrapper == False:
+                return "Err", "Err"
+
+            # Get Altmetric ID, AAS
+            _citation_id, _aas = self.__get_cid_aas_from_div_wrapper(_div_wrapper)
+            if _citation_id == False:  # Cannot altmetric-it.
+                self.msg_error = '[-]Cannot altmetric-it.'
+                print('\t%s' % self.msg_error)
 
         return _citation_id, _aas
 
@@ -386,7 +436,7 @@ class ScopusPreprocessor(Preprocessor):
                 print('\t%s %s not found.' % (by, name))
                 if _times_find < max_times_find:
                     print('\tRetrying...')
-                    sleep(self.sec_sleep)
+                    sleep(self.sec_sleep_retry_find)
                     pass
                 else:
                     print('\tExceeded max_times_find.')
@@ -399,12 +449,14 @@ class ScopusPreprocessor(Preprocessor):
         _dict_find_methods = {
             True: {
                 'class': WebElement.find_elements_by_class_name,
-                'tag': WebElement.find_elements_by_tag_name
+                'tag': WebElement.find_elements_by_tag_name,
+                'css_selector': WebElement.find_elements_by_css_selector
             },
             False: {
                 'id': WebElement.find_element_by_id,
                 'class': WebElement.find_element_by_class_name,
-                'tag': WebElement.find_element_by_tag_name
+                'tag': WebElement.find_element_by_tag_name,
+                'css_selector': WebElement.find_element_by_css_selector
             }
         }
         return _dict_find_methods[multiple][by]
@@ -645,8 +697,6 @@ class ScopusPreprocessor(Preprocessor):
     def __write_redirection_by_driver(self, i, url):
         # print("\t[+]Opening Driver.")
         # _driver = webdriver.Chrome(self.fp_driver)
-        print("\t[+]Opening url:")
-        print("\t\t%s" % url)
         # self.driver.get(url)
         self.__driver_get(url)
         # Get raw url
@@ -937,11 +987,14 @@ class ScopusPreprocessor(Preprocessor):
         return _rand_str
     
     def __driver_get(self, url):
+        print("\t[+]Opening url:")
+        print("\t\t%s" % url)
         _trial = 0
         while _trial < self.page_load_trial:
             try:
                 _trial += 1
                 self.driver.get(url)
+                print("\t[+]Opening done.")
             except TimeoutException:
                 continue
             else:

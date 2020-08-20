@@ -29,7 +29,7 @@ class ScopusPreprocessor(Preprocessor):
         "ams.org": {"protocol": "www"}
     }
     dict_domains_aas_path_required = {
-        "ieeexplore.ieee.org": {"path": "metrics", "sleep": 5.0}
+        "ieeexplore.ieee.org": {"path": "metrics", "hash": "metrics", "sleep": 5.0}
     }
     
     opener = build_opener(HTTPCookieProcessor())
@@ -335,7 +335,10 @@ class ScopusPreprocessor(Preprocessor):
     def __get_aas_url_from_redirection(self, redirection):
         for _domain in self.dict_domains_aas_path_required:
             if redirection.startswith(_domain):
-                return '/'.join((redirection, self.dict_domains_aas_path_required[_domain]["path"]))
+                # return '/'.join((redirection, self.dict_domains_aas_path_required[_domain]["path"]))
+                return redirection + '/' + self.dict_domains_aas_path_required[_domain]["path"] + '#' + self.dict_domains_aas_path_required[_domain]["hash"]\
+                    if "hash" in self.dict_domains_aas_path_required[_domain]\
+                        else '/'.join((redirection, self.dict_domains_aas_path_required[_domain]["path"]))
         return redirection
     
     def __get_cid_aas_from_current_page(self):
@@ -925,10 +928,11 @@ class ScopusPreprocessor(Preprocessor):
     def __save(self):
         if self.modified:
             # data
+            print("\tSaving.")
             self.data.astype(str).to_csv(self.fpath_scopus_csv, index=False)
             self.modified = False
         else:
-            print("Haven't been modified. Skip saving.")
+            print("\tNo modification. Skip saving.")
 
         # # redirection domains
         # with open(self.fp_dict_redirection_domains, "w") as f:

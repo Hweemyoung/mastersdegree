@@ -46,6 +46,7 @@ class ScopusPreprocessor(Preprocessor):
 
     domains_aas_unavailable = (
         "dl.acm.org/doi/",
+        "ehp.niehs.nih.gov/",
         # "ieeexplore.ieee.org/document/",
         "inderscience.com/offer.php?id=",
         "misq.org/",
@@ -68,6 +69,7 @@ class ScopusPreprocessor(Preprocessor):
         "Bulletin of the American Meteorological Society": "journals.ametsoc.org",
         "Molecular Biology and Evolution": "academic.oup.com",
         "Systematic Biology": "academic.oup.com",
+        "Astrophysical Journal": "iopscience.iop.org",
         "Astrophysical Journal, Supplement Series": "iopscience.iop.org",
         "Astrophysical Journal Letters": "iopscience.iop.org"
     }
@@ -163,7 +165,7 @@ class ScopusPreprocessor(Preprocessor):
     def __add_yt_direct_queries(self, overwrite):
         while True:
             _i = self.__get_next_i(overwrite)
-            print("[+]i = %s\t%d out of %d papers remaining." % (_i, self.num_papers - self.num_processed, self.num_papers))
+            print("[%s][+]i = %s\t%d out of %d papers remaining." % (datetime.now().strftime("%Y-%m-%d %X"), _i, self.num_papers - self.num_processed, self.num_papers))
             if _i == None:
                 if len(self.dict_queue_by_domains) == 0:
                     # Done
@@ -1039,11 +1041,11 @@ if __name__ == "__main__":
     parser.add_argument('--pdf', action="store_true", default=False)
     parser.add_argument('--aas', action="store_true", default=False)
     parser.add_argument('--shuffle', action="store_true", default=False)
-    parser.add_argument('--savepoint_interval', type=int, default=10)
-    parser.add_argument('--process_interval', type=float, default=60.0)
-    parser.add_argument('--postprocess_redirections',
+    parser.add_argument('--savepoint-interval', type=int, default=10)
+    parser.add_argument('--process-interval', type=float, default=60.0)
+    parser.add_argument('--postprocess-redirections',
                         action="store_true", default=False)
-    parser.add_argument('--no_driver', action="store_false", default=True)
+    parser.add_argument('--no-driver', action="store_false", default=True)
 
     args = parser.parse_args()
 

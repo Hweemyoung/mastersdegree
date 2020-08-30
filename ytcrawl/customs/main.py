@@ -413,6 +413,7 @@ def search_by_q(fp_csv, column):
         '--up-to', help='Number of results queried up to. None indicates unlimited.', default=None)
     parser.add_argument(
         '--no-recursive', help='Call search API for a single time per query.', action='store_true', default=False)
+    parser.add_argument('--random-project', action="store_true", default=False)
     # parser.add_argument('--api-key', help='API key', default=api_key)
 
     # Search args
@@ -732,11 +733,11 @@ if __name__ == '__main__':
     # from search_custom import search_by_domains
     # _result = search_by_domains()
 
-    # youtube_search = search_by_q("scopus/scopus_life+earch_top60_1906.csv", column="Redirection")
+    # youtube_search = search_by_q("scopus/scopus_math+comp_top5perc_1804.csv", column="Redirection")
 
-    # upload_rel_paper_video("rel_paper_video", "results/search/search_20200822_140308.txt")
-    # youtube_videos = videos_by_video_ids("results/search/search_20200822_140308.txt")
-    update_videos_by_list_videos("scopus_videos_2019_life", "./results/videos/videos_20200822_140801.txt", filter_by_q=True, overwrite=True)
+    # upload_rel_paper_video("rel_paper_video", "results/search/search_20200830_120323.txt")
+    # youtube_videos = videos_by_video_ids("results/search/search_20200830_120323.txt")
+    # update_videos_by_list_videos("scopus_videos_2018_comp", "./results/videos/videos_20200830_115854.txt", filter_by_q=True, overwrite=True)
 
     # upload_rel_paper_video("rel_paper_video", "results/search/search_%s.txt" % youtube_search.fname)
     # youtube_videos = videos_by_video_ids("results/search/search_%s.txt" % youtube_search.fname) # Accepts arg --random_project

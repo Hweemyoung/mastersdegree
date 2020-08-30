@@ -62,16 +62,19 @@ class ScopusPreprocessor(Preprocessor):
     sec_sleep_retry_find = 0.5
 
     dict_domain_by_source_title_by_driver = {
+        "Astrophysical Journal": "iopscience.iop.org",
+        "Astrophysical Journal, Supplement Series": "iopscience.iop.org",
+        "Astrophysical Journal Letters": "iopscience.iop.org",
         "Briefings in Bioinformatics": "academic.oup.com",
+        "Communication Theory": "academic.oup.com",
+        "Journal of Communication": "academic.oup.com",
         "Database": "academic.oup.com",
         "Bioinformatics": "academic.oup.com",
         "Journal of Computer-Mediated Communication": "academic.oup.com",
         "Bulletin of the American Meteorological Society": "journals.ametsoc.org",
         "Molecular Biology and Evolution": "academic.oup.com",
-        "Systematic Biology": "academic.oup.com",
-        "Astrophysical Journal": "iopscience.iop.org",
-        "Astrophysical Journal, Supplement Series": "iopscience.iop.org",
-        "Astrophysical Journal Letters": "iopscience.iop.org"
+        "Systematic Biology": "academic.oup.com"
+        
     }
     dict_queue_by_domains = dict()  # {<domain>: {"last_time": time, "queue": [i, ...]}, ...}
 
@@ -159,6 +162,12 @@ class ScopusPreprocessor(Preprocessor):
             # 10.1109/TIP.2018.2883554Y
             elif "/TIP" in _doi and _doi.endswith("Y"):
                 self.data["DOI"][_i] = _doi[:-1]  # 10.1109/TIP.2018.2883554
+            
+            # Language Learning and Technology
+            # 10.125/44672
+            elif self.data["Source title"][_i] == "Language Learning and Technology" and _doi.startswith("10.125"):
+                _ = self.data["DOI"][_i].split("/")
+                self.data["DOI"][_i] = "/".join(list(_[0].replace(".", "")) + _[1:])  # 10125/44672            
 
         return self
     

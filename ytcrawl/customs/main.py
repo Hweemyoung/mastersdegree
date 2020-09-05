@@ -733,7 +733,7 @@ if __name__ == '__main__':
     # from search_custom import search_by_domains
     # _result = search_by_domains()
 
-    # youtube_search = search_by_q("scopus/scopus_math+comp_top5perc_1804.csv", column="Redirection")
+    youtube_search = search_by_q("scopus/scopus_math+comp_top5perc_1804.csv", column="Redirection")
 
     # upload_rel_paper_video("rel_paper_video", "results/search/search_20200830_120323.txt")
     # youtube_videos = videos_by_video_ids("results/search/search_20200830_120323.txt")

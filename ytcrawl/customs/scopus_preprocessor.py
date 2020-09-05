@@ -91,7 +91,8 @@ class ScopusPreprocessor(Preprocessor):
             set_aas=False,
             shuffle=False,
             postprocess_redirections=False,
-            use_driver=True):
+            use_driver=True,
+            no_bookmarklet=False):
         # super(ScopusPreprocessor, self).__init__()
         self.fpath_scopus_csv = fpath_scopus_csv
         self.process_interval = process_interval
@@ -103,11 +104,12 @@ class ScopusPreprocessor(Preprocessor):
         self.shuffle = shuffle
         self.postprocess_redirections = postprocess_redirections
         self.use_driver = use_driver if not set_aas else True
+        self.no_bookmarklet = no_bookmarklet
         if use_driver:
             print("[+]Opening Driver.")
             self.driver = webdriver.Chrome(self.fp_driver)
             self.driver.set_page_load_timeout(30)
-            if set_aas:
+            if set_aas and not no_bookmarklet:
                 self.__install_bookmarklet()
             
         self.data = pd.read_csv(fpath_scopus_csv, header=0, sep=",", dtype=str)
@@ -323,7 +325,7 @@ class ScopusPreprocessor(Preprocessor):
         for _domain in self.domains_aas_unavailable:
             if _redirection.startswith(_domain):
                 print("\t[-]Altmetric-it unavailable for domain: %s" % _domain)
-                return "None", "None"
+                return self.__get_cid_aas_from_pubmed(self.data["PubMed ID"][i])
 
         # if not flag_driver_opened:
         if not self.__get_flag_aas_url_opened(flag_domain_opened):
@@ -332,7 +334,11 @@ class ScopusPreprocessor(Preprocessor):
             _aas_url = self.__get_aas_url_from_redirection(_redirection)
             self.__driver_get("http://" + _aas_url)
         
-        return self.__get_cid_aas_from_current_page()
+        _citation_id, _aas = self.__get_cid_aas_from_current_page()
+        if _citation_id == "nan":
+            return self.__get_cid_aas_from_pubmed(self.data["PubMed ID"][i])
+        
+        return _citation_id, _aas
     
     def __get_flag_aas_url_opened(self, flag_domain_opened):
         if flag_domain_opened:
@@ -351,6 +357,12 @@ class ScopusPreprocessor(Preprocessor):
                     if "hash" in self.dict_domains_aas_path_required[_domain]\
                         else '/'.join((redirection, self.dict_domains_aas_path_required[_domain]["path"]))
         return redirection
+    
+    def __get_cid_aas_from_pubmed(self, pubmed_id):
+        if pubmed_id == "nan":
+            return "None", "None"
+        self.__driver_get("https://pubmed.ncbi.nlm.nih.gov/" + pubmed_id)
+        return self.__get_cid_aas_from_current_page()
     
     def __get_cid_aas_from_current_page(self):
         _citation_id, _aas = "nan", "nan"
@@ -1055,6 +1067,7 @@ if __name__ == "__main__":
     parser.add_argument('--postprocess-redirections',
                         action="store_true", default=False)
     parser.add_argument('--no-driver', action="store_false", default=True)
+    parser.add_argument('--no-bookmarklet', action="store_true", default=False)
 
     args = parser.parse_args()
 
@@ -1068,7 +1081,8 @@ if __name__ == "__main__":
                                                  savepoint_interval=args.savepoint_interval,
                                                  process_interval=args.process_interval,
                                                  postprocess_redirections=args.postprocess_redirections,
-                                                 use_driver=args.no_driver)
+                                                 use_driver=args.no_driver,
+                                                 no_bookmarklet=args.no_bookmarklet)
         scopus_preprocessor.preprocess_scopus_csv()
 
     else:

@@ -604,6 +604,10 @@ def channels_by_list_channel_ids(fp_list_channel_ids=None, table_name_videos=Non
     parser.add_argument('--categoryId', default=None)
     parser.add_argument('--maxResults', default=None)
     parser.add_argument('--fields', default="items(id, statistics(commentCount, subscriberCount, videoCount, viewCount), brandingSettings(channel(description, title, country, defaultLanguage, keywords)), snippet(publishedAt))")
+
+    # Custom args
+    parser.add_argument('--random-project', action="store_true", default=False)
+    
     args = vars(parser.parse_args())
 
     if fp_list_channel_ids != None:
@@ -733,7 +737,7 @@ if __name__ == '__main__':
     # from search_custom import search_by_domains
     # _result = search_by_domains()
 
-    youtube_search = search_by_q("scopus/scopus_math+comp_top5perc_1804.csv", column="Redirection")
+    # youtube_search = search_by_q("scopus/scopus_math+comp_top5perc_1804.csv", column="Redirection")
 
     # upload_rel_paper_video("rel_paper_video", "results/search/search_20200830_120323.txt")
     # youtube_videos = videos_by_video_ids("results/search/search_20200830_120323.txt")
@@ -745,8 +749,8 @@ if __name__ == '__main__':
     # print("search_%s.txt" % youtube_search.fname)
     # print("videos_%s.txt" % youtube_videos.fname)
 
-    # channels_by_list_channel_ids(table_name_videos="scopus_videos")
-    # upload_channels_by_list_channels('channels', './results/channels/channels_20200730_083658.txt', overwrite=True)
+    # channels_by_list_channel_ids(table_name_videos="scopus_videos_2019_life")
+    upload_channels_by_list_channels('channels', './results/channels/channels_20200908_144743.txt', overwrite=True)
     # num_of_videos()
 
     # test()

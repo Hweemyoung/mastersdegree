@@ -348,82 +348,52 @@ def str_2_value(value):
     return None if value == None else int(value)
 
 
-def heatmap_from_csv(fpath=None, arr=None, title=None):
+def heatmap_from_csv(df, title=None, col_names=["duration", "viewCount", "likeCount", "dislikeCount", "commentCount"], col_labels=['Duration', '#View', '#Like', '#Dislike', '#Comment']):
+    from scipy import stats
+
+    if col_labels == None:
+        col_labels = col_names
     # Values must be already calculated on csv.
+    corr_pearson, p_pearson = np.zeros((len(col_names),len(col_names))), np.zeros((len(col_names),len(col_names)))
+    for _i, _col_i in enumerate(col_names):
+        for _j, _col_j in enumerate(col_names):
+            corr_pearson[_i][_j], p_pearson[_i][_j] = stats.pearsonr(df[_col_i], df[_col_j])
 
     # with open(fpath, newline='') as f:
     #     table = list(csv.reader(f))
     # print(table)
 
-    if fpath != None:
-        intersection_matrix = np.genfromtxt(fpath, delimiter=',')
-    elif type(arr) != type(None):
-        intersection_matrix = arr
+    # print(intersection_matrix)
+    corr_pearson = np.round(corr_pearson, 2)
+    p_pearson = np.round(p_pearson, 2)
 
-    print(intersection_matrix)
-    intersection_matrix = np.round(intersection_matrix, 2)
 
-    fig, ax = plt.subplots()
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5, 9))
+
+    ax1.matshow(corr_pearson, cmap=plt.cm.coolwarm, vmin=-1.0, vmax=1.0)
+    ax2.matshow(p_pearson, cmap=plt.cm.coolwarm, vmin=-1.0, vmax=1.0)
+
+    # x_pos = np.arange(len(col_labels))
+    ax1.set_xticklabels([''] + col_labels, fontsize=8)
+    ax2.set_xticklabels([''] + col_labels, fontsize=8)
+    # y_pos = np.arange(len(col_labels))
+    ax1.set_yticklabels([''] + col_labels, fontsize=8)
+    ax2.set_yticklabels([''] + col_labels, fontsize=8)
+
+    ax1.set_title("Pearson Corr.")
+    ax2.set_title("P-value")
+
+    for _i in range(len(col_labels)):
+        for _j in range(len(col_labels)):
+            ax1.text(_i, _j, str(corr_pearson[_j, _i]), va='center', ha='center')
+            ax2.text(_i, _j, str(p_pearson[_j, _i]), va='center', ha='center')
 
     if title != None:
-        ax.set_title(title)
-
-    ax.matshow(intersection_matrix, cmap=plt.cm.coolwarm, vmin=-1.0, vmax=1.0)
-
-    cols = ['Duration', '#View', '#Like', '#Dislike', '#Comment']
-    x_pos = np.arange(len(cols))
-    plt.xticks(x_pos, cols)
-    y_pos = np.arange(len(cols))
-    plt.yticks(y_pos, cols)
-
-    for i in range(len(cols)):
-        for j in range(len(cols)):
-            c = intersection_matrix[j, i]
-            ax.text(i, j, str(c), va='center', ha='center')
-
+        fig.suptitle(title)
     # plt.clim(-1, 1)
     plt.show()
 
-
-if __name__ == '__main__':
-    # 200805
-
-    # heatmap_from_csv(fpath="scopus/corr/scopus_videos_2014_comp.csv", title="2014 COMP all")
-
-    # Split 2014: comp / life
-    # db_handler = DBHandler()
-    # _list_columns = ["videoId",
-    #                  "content",
-    #                  "video_visual",
-    #                  "paper_visual",
-    #                  "audio_style",
-    #                  "idx_paper",
-    #                  "q",
-    #                  "title",
-    #                  "description",
-    #                  "publishedAt",
-    #                  "tags",
-    #                  "defaultLanguage",
-    #                  "defaultAudioLanguage",
-    #                  "channelTitle",
-    #                  "channelId",
-    #                  "duration",
-    #                  "viewCount",
-    #                  "likeCount",
-    #                  "dislikeCount",
-    #                  "commentCount",
-    #                  "favoriteCount",
-    #                  "liveStreaming",
-    #                  "queriedAt", ]
-    # db_handler.sql_handler.select("scopus_videos_2014").where("idx", 143, ">")
-    # _records_comp = db_handler.execute().fetchall()
-    # # Exclude "idx"
-    # _records_comp = list(map(lambda _row: _row[1:], _records_comp))
-    # for _row in _records_comp:
-    #     db_handler.sql_handler.insert("scopus_videos_life_2014", columns=_list_columns, values=_row)
-    #     db_handler.execute()
-
-    # 200730
+def _200730():
     db_handler = DBHandler()
     _list_fields = [
     "idx",
@@ -595,6 +565,366 @@ if __name__ == '__main__':
     # plt.yscale("log")
     # plt.ylim(1, 100000)
     plt.show()
+
+def _200805():
+    import pandas as pd
+    import numpy as np
+
+    data_raw1 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_videos_2014_comp.csv", header=0)
+    data_raw2 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_videos_2019_comp.csv", header=0)
+    data_raw = pd.concat([data_raw1, data_raw2], sort=False)
+
+    # Dropna
+    print(data_raw.columns[16:21])
+    data_dropna = data_raw.dropna(subset=data_raw.columns[16:21])
+    # print(len(data_dropna), len(data_raw))
+    # data_dropna[data_raw.columns[16:21]].isnull().any()
+
+    # Select ~3 quartiles by viewCount
+    q3_viewcount = data_raw["viewCount"].quantile(q=0.25)
+    data_filtered = data_dropna[data_dropna["viewCount"] > q3_viewcount]
+    # data_filtered = data_dropna[data_dropna["viewCount"] > 1000]
+    print("Q3: %.1f\t# data_filtered: %d\t # data_raw: %d" % (q3_viewcount, len(data_filtered), len(data_raw)))
+
+    # comp explanation/assessment/application
+    # data_filtered_hq = data_filtered[data_filtered["content"].isin(["paper_explanation", "paper_assessment", "paper_application"])]
+    # print("# data HQ: %d\t# data_filtered: %d" % (len(data_filtered_hq), len(data_filtered)))
+
+    # Logarithm
+    # Drop dislike == 0 | comment == 0
+    data_nonzero = data_filtered[~(data_filtered[data_filtered.columns[19:21]].T == 0.0).any()]
+    # Log
+    data_nonzero[data_nonzero.columns[16:21]] = np.log(data_nonzero[data_nonzero.columns[16:21]])
+    # print(data_nonzero[data_nonzero.columns[16:21]])
+
+    # data_nonzero = data_filtered[~(data_filtered[data_filtered.columns[18:20]].T == 0.0).any()]
+    # data_nonzero[data_nonzero.columns[16:20]] = np.log10(data_nonzero[data_nonzero.columns[16:20]])
+    # print(data_nonzero[data_nonzero.columns[16:20]])
+    print("# data_nonzero: %d\t# data_filtered: %d" % (len(data_nonzero), len(data_filtered)))
+
+    # heatmap_from_csv(data_filtered, title="2014+2019 COMP all(N=%d)" % len(data_filtered))
+    # heatmap_from_csv(data_filtered_hq, title="2014+2019 COMP HQ(N=%d)" % len(data_filtered_hq))
+    heatmap_from_csv(data_nonzero, title="2014+2019 COMP all(log) (N=%d)" % len(data_nonzero), col_labels=["log(Duration)", "log(View)", "log(Like)", "log(Dislike)", "log(Comment)"])
+
+def parse_fetches(fetches):
+    _new_fetches = list()
+    for _fetch in fetches:
+        for _doi in _fetch[0].split(", "):
+            _new_fetches.append(
+                (_doi, _fetch[1])
+            )
+    return _new_fetches
+
+def get_dois_with_videos_within_days_from_publish(df, table_name, where=None, days_from=None, days_until=None):
+#     複数の動画が与えられる論文の場合、複数のsetに含まれることがある。
+    from db_handler import DBHandler
+    from datetime import timedelta
+    db_handler = DBHandler()
+    _set_target_dois = set()
+    db_handler.sql_handler.select(table_name, ["idx_paper", "publishedAt"])
+    if type(where) == tuple:
+        db_handler.sql_handler.where(*where)
+    fetches = db_handler.execute().fetchall()
+    fetches = parse_fetches(fetches)
+    
+    for _row in fetches:
+#         print("DOI:", _row[0])
+        _target_paper = df[df["DOI"] == _row[0]]
+#         if len(_target_paper) == 0:
+#             continue
+        if len(_target_paper) > 1:
+            _target_paper = _target_paper.iloc[0]
+#         print(_target_paper)
+        _dt_publish = datetime(_target_paper["Year"], _target_paper["Month"], 1)
+        
+        if days_from != None:
+            _dt_video_from = _dt_publish + timedelta(days=days_from)
+            if _row[1] < _dt_video_from:
+                continue
+        
+        if days_until != None:
+            _dt_video_until = _dt_publish + timedelta(days=days_until)
+            if _row[1] > _dt_video_until:
+                continue
+        
+        _set_target_dois.add(_row[0])
+    
+#     if days_until == None:
+#         _set_target_dois = set(map(lambda _row: _row[0], fetches))
+#     else:
+#         for _row in fetches:
+#             _target_paper = df[df["DOI"] == _row[0]]
+#             if len(_target_paper) > 1:
+#                 _target_paper = _target_paper.iloc[0]
+#             _dt_publish = datetime(_target_paper["Year"], _target_paper["Month"], 1)
+            
+#             _dt_video_from = _dt_publish + timedelta(days=days_from)
+#             _dt_video_until = _dt_publish + timedelta(days=days_until)
+            
+#             if _row[1] < _dt_video_deadline:
+#                 _set_target_dois.add(_row[0])
+    
+    return _set_target_dois
+
+def _200819():
+    import numpy as np
+    import pandas as pd
+    from db_handler import DBHandler
+    from matplotlib import pyplot as plt
+    from scipy import stats
+    from datetime import datetime, timedelta
+    from calendar import monthrange
+
+    df1 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_math+comp_top5perc_1901-1906.csv")
+    df2 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_math+comp_top5perc_1701-1706.csv")
+    df3 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_math+comp_top5perc_1401-1406.csv")
+    print("Raw:", len(df1), len(df2), len(df3))
+    df1 = df1.drop_duplicates(subset=["DOI"])
+    df2 = df2.drop_duplicates(subset=["DOI"])
+    df3 = df3.drop_duplicates(subset=["DOI"])
+    print("Duplicates droped:", len(df1), len(df2), len(df3))
+
+    db_handler = DBHandler()
+    db_handler.sql_handler.select("scopus_videos_2014_comp", ["idx_paper", "publishedAt"])
+    _videos_2014 = db_handler.execute().fetchall()
+    db_handler.sql_handler.select("scopus_videos_2017_comp", ["idx_paper", "publishedAt"])
+    _videos_2017 = db_handler.execute().fetchall()
+    db_handler.sql_handler.select("scopus_videos_2019_comp", ["idx_paper", "publishedAt"])
+    _videos_2019 = db_handler.execute().fetchall()
+
+    _idx_papers_2019 = get_dois_with_videos_within_days_from_publish(df1, "scopus_videos_2019_comp")
+    _idx_papers_2019_90 = get_dois_with_videos_within_days_from_publish(df1, "scopus_videos_2019_comp", None, None, 90)
+    # print(len(_idx_papers_2019), len(_idx_papers_2019_90))
+    _idx_papers_2017 = get_dois_with_videos_within_days_from_publish(df2, "scopus_videos_2017_comp")
+    _idx_papers_2017_90 = get_dois_with_videos_within_days_from_publish(df2, "scopus_videos_2017_comp", None, None, 90)
+    # print(len(_idx_papers_2017), len(_idx_papers_2017_90))
+    _idx_papers_2014 = get_dois_with_videos_within_days_from_publish(df3, "scopus_videos_2014_comp")
+    _idx_papers_2014_90 = get_dois_with_videos_within_days_from_publish(df3, "scopus_videos_2014_comp", None, None, 90)
+    # print(len(_idx_papers_2014), len(_idx_papers_2014_90))
+
+    # Citation
+    print("Citation - all")
+    _2019_wo_videos_cit = np.log10(df1[~df1.DOI.isin(_idx_papers_2019)]["Cited by"].dropna().astype(int))
+    _2019_w_videos_cit = np.log10(df1[df1.DOI.isin(_idx_papers_2019)]["Cited by"].dropna().astype(int))
+    _2017_wo_videos_cit = np.log10(df2[~df2.DOI.isin(_idx_papers_2017)]["Cited by"].dropna().astype(int))
+    _2017_w_videos_cit = np.log10(df2[df2.DOI.isin(_idx_papers_2017)]["Cited by"].dropna().astype(int))
+    _2014_wo_videos_cit = np.log10(df3[~df3.DOI.isin(_idx_papers_2014)]["Cited by"].dropna().astype(int))
+    _2014_w_videos_cit = np.log10(df3[df3.DOI.isin(_idx_papers_2014)]["Cited by"].dropna().astype(int))
+
+    plt.figure(figsize=(10, 6))
+    plt.title("Citation")
+    # plt.yscale("log")
+    # plt.ylim([0, 200])
+    plt.ylabel("log10(Citation)")
+    plt.boxplot([
+        _2019_wo_videos_cit,
+        _2019_w_videos_cit,
+        _2017_wo_videos_cit,
+        _2017_w_videos_cit,
+        _2014_wo_videos_cit,
+        _2014_w_videos_cit
+    ],
+        labels=[
+            "2019 w/o videos\n(N=%s)"%len(_2019_wo_videos_cit),
+            "2019 w/ videos\n(N=%s)"%len(_2019_w_videos_cit),
+            "2017 w/o videos\n(N=%s)"%len(_2017_wo_videos_cit),
+            "2017 w/ videos\n(N=%s)"%len(_2017_w_videos_cit),
+            "2014 w/o videos\n(N=%s)"%len(_2014_wo_videos_cit),
+            "2014 w/ videos\n(N=%s)"%len(_2014_w_videos_cit)
+        ]
+    )
+    plt.show()
+
+    _s2019, _p2019 = stats.ttest_ind(
+        _2019_wo_videos_cit,
+        _2019_w_videos_cit
+    )
+    print("2019\tMean: %.1f/%.1f\tS = %f\tp = %f" % (
+        np.mean(_2019_wo_videos_cit), np.mean(_2019_w_videos_cit), _s2019, _p2019))
+
+    _s2017, _p2017 = stats.ttest_ind(
+        _2017_wo_videos_cit,
+        _2017_w_videos_cit
+    )
+    print("2017\tMean: %.1f/%.1f\tS = %f\tp = %f" % (
+        np.mean(_2017_wo_videos_cit), np.mean(_2017_w_videos_cit), _s2017, _p2017))
+
+    _s2014, _p2014 = stats.ttest_ind(
+        _2014_wo_videos_cit,
+        _2014_w_videos_cit
+    )
+    print("2014\tMean: %.1f/%.1f\tS = %f\tp = %f" % (
+        np.mean(_2014_wo_videos_cit), np.mean(_2014_w_videos_cit), _s2014, _p2014))
+
+    # AAS
+    print("AAS - all")
+    _2019_wo_videos_aas = np.log10(df1[~df1.DOI.isin(_idx_papers_2019)][df1["AAS"] != "None"]["AAS"].dropna().astype(int))
+    _2019_w_videos_aas = np.log10(df1[df1.DOI.isin(_idx_papers_2019)][df1["AAS"] != "None"]["AAS"].dropna().astype(int))
+    _2017_wo_videos_aas = np.log10(df2[~df2.DOI.isin(_idx_papers_2017)][df2["AAS"] != "None"]["AAS"].dropna().astype(int))
+    _2017_w_videos_aas = np.log10(df2[df2.DOI.isin(_idx_papers_2017)][df2["AAS"] != "None"]["AAS"].dropna().astype(int))
+    _2014_wo_videos_aas = np.log10(df3[~df3.DOI.isin(_idx_papers_2014)][df3["AAS"] != "None"]["AAS"].dropna().astype(int))
+    _2014_w_videos_aas = np.log10(df3[df3.DOI.isin(_idx_papers_2014)][df3["AAS"] != "None"]["AAS"].dropna().astype(int))
+
+    plt.figure(figsize=(10, 6))
+    plt.title("AAS")
+    # plt.yscale("log")
+    # plt.ylim([0, 200])
+    plt.ylabel("log10(AAS)")
+    plt.boxplot([
+        _2019_wo_videos_aas,
+        _2019_w_videos_aas,
+        _2017_wo_videos_aas,
+        _2017_w_videos_aas,
+        _2014_wo_videos_aas,
+        _2014_w_videos_aas
+    ],
+        labels=[
+            "2019 w/o videos\n(N=%s)"%len(_2019_wo_videos_aas),
+            "2019 w/ videos\n(N=%s)"%len(_2019_w_videos_aas),
+            "2017 w/o videos\n(N=%s)"%len(_2017_wo_videos_aas),
+            "2017 w/ videos\n(N=%s)"%len(_2017_w_videos_aas),
+            "2014 w/o videos\n(N=%s)"%len(_2014_wo_videos_aas),
+            "2014 w/ videos\n(N=%s)"%len(_2014_w_videos_aas)
+        ]
+    )
+    
+    plt.show()
+
+    _s2019, _p2019 = stats.ttest_ind(
+        _2019_wo_videos_aas,
+        _2019_w_videos_aas
+    )
+    print("2019\tMean: %.1f/%.1f\tS = %f\tp = %f" % (
+        np.mean(_2019_wo_videos_aas), np.mean(_2019_w_videos_aas), _s2019, _p2019))
+
+    _s2017, _p2017 = stats.ttest_ind(
+        _2017_wo_videos_aas,
+        _2017_w_videos_aas
+    )
+    print("2017\tMean: %.1f/%.1f\tS = %f\tp = %f" % (
+        np.mean(_2017_wo_videos_aas), np.mean(_2017_w_videos_aas), _s2017, _p2017))
+
+    _s2014, _p2014 = stats.ttest_ind(
+        _2014_wo_videos_aas,
+        _2014_w_videos_aas
+    )
+    print("2014\tMean: %.1f/%.1f\tS = %f\tp = %f" % (
+        np.mean(_2014_wo_videos_aas), np.mean(_2014_w_videos_aas), _s2014, _p2014))
+
+    print("Citation - 90")
+    _2019_90_wo_videos_cit = np.log10(df1[~df1.DOI.isin(_idx_papers_2019_90)]["Cited by"].dropna().astype(int))
+    _2019_90_w_videos_cit = np.log10(df1[df1.DOI.isin(_idx_papers_2019_90)]["Cited by"].dropna().astype(int))
+    _2017_90_wo_videos_cit = np.log10(df2[~df2.DOI.isin(_idx_papers_2017_90)]["Cited by"].dropna().astype(int))
+    _2017_90_w_videos_cit = np.log10(df2[df2.DOI.isin(_idx_papers_2017_90)]["Cited by"].dropna().astype(int))
+    _2014_90_wo_videos_cit = np.log10(df3[~df3.DOI.isin(_idx_papers_2014_90)]["Cited by"].dropna().astype(int))
+    _2014_90_w_videos_cit = np.log10(df3[df3.DOI.isin(_idx_papers_2014_90)]["Cited by"].dropna().astype(int))
+
+    plt.figure(figsize=(10, 6))
+    plt.title("Citation-90")
+    # plt.yscale("log")
+    # plt.ylim([0, 200])
+    plt.ylabel("log10(citation)")
+    plt.boxplot([
+        _2019_90_wo_videos_cit,
+        _2019_90_w_videos_cit,
+        _2017_90_wo_videos_cit,
+        _2017_90_w_videos_cit,
+        _2014_90_wo_videos_cit,
+        _2014_90_w_videos_cit
+    ],
+        labels=[
+            "2019 w/o videos-90\n(N=%s)"%len(_2019_90_wo_videos_cit),
+            "2019 w/ videos-90\n(N=%s)"%len(_2019_90_w_videos_cit),
+            "2017 w/o videos-90\n(N=%s)"%len(_2017_90_wo_videos_cit),
+            "2017 w/ videos-90\n(N=%s)"%len(_2017_90_w_videos_cit),
+            "2014 w/o videos-90\n(N=%s)"%len(_2014_90_wo_videos_cit),
+            "2014 w/ videos-90\n(N=%s)"%len(_2014_90_w_videos_cit)
+        ]
+    )
+
+    _s2019, _p2019 = stats.ttest_ind(
+        _2019_90_wo_videos_cit,
+        _2019_90_w_videos_cit
+    )
+    print("2019\tMean: %.1f/%.1f\tS = %f\tp = %f" % (
+        np.mean(_2019_90_wo_videos_cit), np.mean(_2019_90_w_videos_cit), _s2019, _p2019))
+
+    _s2017, _p2017 = stats.ttest_ind(
+        _2017_90_wo_videos_cit,
+        _2017_90_w_videos_cit
+    )
+    print("2017\tMean: %.1f/%.1f\tS = %f\tp = %f" % (
+        np.mean(_2017_90_wo_videos_cit), np.mean(_2017_90_w_videos_cit), _s2017, _p2017))
+
+    _s2014, _p2014 = stats.ttest_ind(
+        _2014_90_wo_videos_cit,
+        _2014_90_w_videos_cit
+    )
+    print("2014\tMean: %.1f/%.1f\tS = %f\tp = %f" % (
+        np.mean(_2014_90_wo_videos_cit), np.mean(_2014_90_w_videos_cit), _s2014, _p2014))
+
+    plt.show()
+
+    print("AAS - 90")
+    _2019_90_wo_videos_aas = np.log10(df1[~df1.DOI.isin(_idx_papers_2019_90)][df1["AAS"] != "None"]["AAS"].dropna().astype(int))
+    _2019_90_w_videos_aas = np.log10(df1[df1.DOI.isin(_idx_papers_2019_90)][df1["AAS"] != "None"]["AAS"].dropna().astype(int))
+    _2017_90_wo_videos_aas = np.log10(df2[~df2.DOI.isin(_idx_papers_2017_90)][df2["AAS"] != "None"]["AAS"].dropna().astype(int))
+    _2017_90_w_videos_aas = np.log10(df2[df2.DOI.isin(_idx_papers_2017_90)][df2["AAS"] != "None"]["AAS"].dropna().astype(int))
+    _2014_90_wo_videos_aas = np.log10(df3[~df3.DOI.isin(_idx_papers_2014_90)][df3["AAS"] != "None"]["AAS"].dropna().astype(int))
+    _2014_90_w_videos_aas = np.log10(df3[df3.DOI.isin(_idx_papers_2014_90)][df3["AAS"] != "None"]["AAS"].dropna().astype(int))
+
+    plt.figure(figsize=(10, 6))
+    plt.title("AAS-90")
+    # plt.yscale("log")
+    # plt.ylim([0, 200])
+    plt.ylabel("log10(AAS)")
+    plt.boxplot([
+        _2019_90_wo_videos_aas,
+        _2019_90_w_videos_aas,
+        _2017_90_wo_videos_aas,
+        _2017_90_w_videos_aas,
+        _2014_90_wo_videos_aas,
+        _2014_90_w_videos_aas
+    ],
+        labels=[
+            "2019 w/o videos-90\n(N=%s)"%len(_2019_90_wo_videos_aas),
+            "2019 w/ videos-90\n(N=%s)"%len(_2019_90_w_videos_aas),
+            "2017 w/o videos-90\n(N=%s)"%len(_2017_90_wo_videos_aas),
+            "2017 w/ videos-90\n(N=%s)"%len(_2017_90_w_videos_aas),
+            "2014 w/o videos-90\n(N=%s)"%len(_2014_90_wo_videos_aas),
+            "2014 w/ videos-90\n(N=%s)"%len(_2014_90_w_videos_aas)
+        ]
+    )
+
+    plt.show()
+
+    _s2019, _p2019 = stats.ttest_ind(
+        _2019_90_wo_videos_aas,
+        _2019_90_w_videos_aas
+    )
+    print("2019\tMean: %.1f/%.1f\tS = %f\tp = %f" % (
+        np.mean(_2019_90_wo_videos_aas), np.mean(_2019_90_w_videos_aas), _s2019, _p2019))
+
+    _s2017, _p2017 = stats.ttest_ind(
+        _2017_90_wo_videos_aas,
+        _2017_90_w_videos_aas
+    )
+    print("2017\tMean: %.1f/%.1f\tS = %f\tp = %f" % (
+        np.mean(_2017_90_wo_videos_aas), np.mean(_2017_90_w_videos_aas), _s2017, _p2017))
+
+    _s2014, _p2014 = stats.ttest_ind(
+        _2014_90_wo_videos_aas,
+        _2014_90_w_videos_aas
+    )
+    print("2014\tMean: %.1f/%.1f\tS = %f\tp = %f" % (
+        np.mean(_2014_90_wo_videos_aas), np.mean(_2014_90_w_videos_aas), _s2014, _p2014))
+
+if __name__ == '__main__':
+    # 200819
+    _200819()
+    
+    # 200805
+    # _200805()
 
     # 200729
 

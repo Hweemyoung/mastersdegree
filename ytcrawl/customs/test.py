@@ -918,10 +918,277 @@ def _200819():
     )
     print("2014\tMean: %.1f/%.1f\tS = %f\tp = %f" % (
         np.mean(_2014_90_wo_videos_aas), np.mean(_2014_90_w_videos_aas), _s2014, _p2014))
+    
+def _200904():
+    import numpy as np
+    import pandas as pd
+    from db_handler import DBHandler
+    from matplotlib import pyplot as plt
+    from scipy import stats
+    from datetime import datetime, timedelta
+    from calendar import monthrange
+
+    df1 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_math+comp_top5perc_1901-1906.csv")
+    df2 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_math+comp_top5perc_1701-1706.csv")
+    df3 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_math+comp_top5perc_1401-1406.csv")
+
+    db_handler = DBHandler()
+    db_handler.sql_handler.select("scopus_videos_2014_comp", ["idx_paper", "publishedAt"])
+    _videos_2014 = db_handler.execute().fetchall()
+    db_handler.sql_handler.select("scopus_videos_2014_comp", ["idx_paper", "publishedAt"]).where("content", ["paper_explanation", "paper_assessment", "paper_application"], "in")
+    _videos_2014_exp = db_handler.execute().fetchall()
+    db_handler.sql_handler.select("scopus_videos_2017_comp", ["idx_paper", "publishedAt"])
+    # _videos_2017 = db_handler.execute().fetchall()
+    # db_handler.sql_handler.select("scopus_videos_2017_comp", ["idx_paper", "publishedAt"]).where("content", ["paper_explanation", "paper_assessment", "paper_application"], "in")
+    # _videos_2017_exp = db_handler.execute().fetchall()
+    # db_handler.sql_handler.select("scopus_videos_2019_comp", ["idx_paper", "publishedAt"])
+    _videos_2019 = db_handler.execute().fetchall()
+    db_handler.sql_handler.select("scopus_videos_2019_comp", ["idx_paper", "publishedAt"]).where("content", ["paper_explanation", "paper_assessment", "paper_application"], "in")
+    _videos_2019_exp = db_handler.execute().fetchall()
+
+    _idx_papers_2019 = get_dois_with_videos_within_days_from_publish(df1, "scopus_videos_2019_comp")
+    _idx_papers_2019_exp = get_dois_with_videos_within_days_from_publish(df1,
+                                                                        "scopus_videos_2019_comp",
+                                                                        ("content", ["paper_explanation", "paper_assessment", "paper_application"], "in")
+                                                                        )
+    _idx_papers_2019_news = get_dois_with_videos_within_days_from_publish(df1,
+                                                                        "scopus_videos_2019_comp",
+                                                                        ("content", "news")
+                                                                        )
+    _idx_papers_2019_sup = get_dois_with_videos_within_days_from_publish(df1,
+                                                                        "scopus_videos_2019_comp",
+                                                                        ("content", ["paper_linked_supplementary", "paper_supplementary"], "in")
+                                                                        )
+    _idx_papers_2019_ref = get_dois_with_videos_within_days_from_publish(df1,
+                                                                        "scopus_videos_2019_comp",
+                                                                        ("content", "paper_reference")
+                                                                        )
+    _idx_papers_2014 = get_dois_with_videos_within_days_from_publish(df3, "scopus_videos_2014_comp")
+    _idx_papers_2014_exp = get_dois_with_videos_within_days_from_publish(df3,
+                                                                        "scopus_videos_2014_comp",
+                                                                        ("content", ["paper_explanation", "paper_assessment", "paper_application"], "in")
+                                                                        )
+    _idx_papers_2014_news = get_dois_with_videos_within_days_from_publish(df3,
+                                                                        "scopus_videos_2014_comp",
+                                                                        ("content", "news")
+                                                                        )
+    _idx_papers_2014_sup = get_dois_with_videos_within_days_from_publish(df3,
+                                                                        "scopus_videos_2014_comp",
+                                                                        ("content", ["paper_linked_supplementary", "paper_supplementary"], "in")
+                                                                        )
+    _idx_papers_2014_ref = get_dois_with_videos_within_days_from_publish(df3,
+                                                                        "scopus_videos_2014_comp",
+                                                                        ("content", "paper_reference")
+                                                                        )
+
+    print(len(_idx_papers_2019),
+        len(_idx_papers_2019_exp),
+        len(_idx_papers_2019_news),
+        len(_idx_papers_2019_sup),
+        len(_idx_papers_2019_ref),
+        len(_idx_papers_2014),
+        len(_idx_papers_2014_exp),
+        len(_idx_papers_2014_news),
+        len(_idx_papers_2014_sup),
+        len(_idx_papers_2014_ref)
+    )
+    print(
+        "2019 ratio of papers w/ videos: %.2f\n2014 ratio of papers w/ videos: %.2f" % (100 * len(_idx_papers_2019) / len(df1), 100 * len(_idx_papers_2014) / len(df3))
+    )
+
+    # print(
+    #     len(_videos_2014),
+    #     len(_videos_2014_exp),
+    #     len(_videos_2017),
+    #     len(_videos_2017_exp),
+    #     len(_videos_2019),
+    #     len(_videos_2019_exp)
+    # )
+
+    # Citation
+    _2019_wo_videos_cit = np.log10(df1[~df1.DOI.isin(_idx_papers_2019)][df1["Cited by"] != "None"]["Cited by"].dropna().astype(int))
+    _2019_w_videos_cit_exp = np.log10(df1[df1.DOI.isin(_idx_papers_2019_exp)][df1["Cited by"] != "None"]["Cited by"].dropna().astype(int))
+    _2019_w_videos_cit_news = np.log10(df1[df1.DOI.isin(_idx_papers_2019_news)][df1["Cited by"] != "None"]["Cited by"].dropna().astype(int))
+    _2019_w_videos_cit_sup = np.log10(df1[df1.DOI.isin(_idx_papers_2019_sup)][df1["Cited by"] != "None"]["Cited by"].dropna().astype(int))
+    _2019_w_videos_cit_ref = np.log10(df1[df1.DOI.isin(_idx_papers_2019_ref)][df1["Cited by"] != "None"]["Cited by"].dropna().astype(int))
+    _2014_wo_videos_cit = np.log10(df3[~df3.DOI.isin(_idx_papers_2014)][df3["Cited by"] != "None"]["Cited by"].dropna().astype(int))
+    _2014_w_videos_cit_exp = np.log10(df3[df3.DOI.isin(_idx_papers_2014_exp)][df3["Cited by"] != "None"]["Cited by"].dropna().astype(int))
+    _2014_w_videos_cit_news = np.log10(df3[df3.DOI.isin(_idx_papers_2014_news)][df3["Cited by"] != "None"]["Cited by"].dropna().astype(int))
+    _2014_w_videos_cit_sup = np.log10(df3[df3.DOI.isin(_idx_papers_2014_sup)][df3["Cited by"] != "None"]["Cited by"].dropna().astype(int))
+    _2014_w_videos_cit_ref = np.log10(df3[df3.DOI.isin(_idx_papers_2014_ref)][df3["Cited by"] != "None"]["Cited by"].dropna().astype(int))
+
+    plt.figure(figsize=(16, 6))
+    plt.title("Citation")
+    # plt.yscale("log")
+    # plt.ylim([0, 200])
+    plt.ylabel("log10(Citation)")
+    plt.boxplot([
+        _2019_wo_videos_cit,
+        _2019_w_videos_cit_exp,
+        _2019_w_videos_cit_news,
+        _2019_w_videos_cit_sup,
+        _2019_w_videos_cit_ref,
+        _2014_wo_videos_cit,
+        _2014_w_videos_cit_exp,
+        _2014_w_videos_cit_news,
+        _2014_w_videos_cit_sup,
+        _2014_w_videos_cit_ref
+    ],
+        labels=[
+            "2019 w/o videos\n(N=%s)"%len(_2019_wo_videos_cit),
+            "2019 w/ exp\n(N=%s)"%len(_2019_w_videos_cit_exp),
+            "2019 w/ news\n(N=%s)"%len(_2019_w_videos_cit_news),
+            "2019 w/ sup\n(N=%s)"%len(_2019_w_videos_cit_sup),
+            "2019 w/ ref\n(N=%s)"%len(_2019_w_videos_cit_ref),
+            "2014 w/o videos\n(N=%s)"%len(_2014_wo_videos_cit),
+            "2014 w/ exp\n(N=%s)"%len(_2014_w_videos_cit_exp),
+            "2014 w/ news\n(N=%s)"%len(_2014_w_videos_cit_news),
+            "2014 w/ sup\n(N=%s)"%len(_2014_w_videos_cit_sup),
+            "2014 w/ ref\n(N=%s)"%len(_2014_w_videos_cit_ref),
+        ]
+    )
+
+    print("2019\tMean: %.1f"%np.mean(_2019_wo_videos_cit))
+    _s2019_exp, _p2019_exp = stats.ttest_ind(
+        _2019_wo_videos_cit,
+        _2019_w_videos_cit_exp
+    )
+    print("2019 exp\tMean: %.1f\tS = %.4f\tp = %.4f"%(np.mean(_2019_w_videos_cit_exp), _s2019_exp, _p2019_exp))
+    _s2019_news, _p2019_news = stats.ttest_ind(
+        _2019_wo_videos_cit,
+        _2019_w_videos_cit_news
+    )
+    print("2019 news\tMean: %.1f\tS = %.4f\tp = %.4f"%(np.mean(_2019_w_videos_cit_news), _s2019_news, _p2019_news))
+    _s2019_sup, _p2019_sup = stats.ttest_ind(
+        _2019_wo_videos_cit,
+        _2019_w_videos_cit_sup
+    )
+    print("2019 sup\tMean: %.1f\tS = %.4f\tp = %.4f"%(np.mean(_2019_w_videos_cit_sup), _s2019_sup, _p2019_sup))
+    _s2019_ref, _p2019_ref = stats.ttest_ind(
+        _2019_wo_videos_cit,
+        _2019_w_videos_cit_ref
+    )
+    print("2019 ref\tMean: %.1f\tS = %.4f\tp = %.4f"%(np.mean(_2019_w_videos_cit_ref), _s2019_ref, _p2019_ref))
+    _s2014_exp, _p2014_exp = stats.ttest_ind(
+        _2014_wo_videos_cit,
+        _2014_w_videos_cit_exp
+    )
+    print("2014\tMean: %.1f"%np.mean(_2014_wo_videos_cit))
+    print("2014 exp\tMean: %.1f\tS = %.4f\tp = %.4f"%(np.mean(_2014_w_videos_cit_exp), _s2014_exp, _p2014_exp))
+    _s2014_news, _p2014_news = stats.ttest_ind(
+        _2014_wo_videos_cit,
+        _2014_w_videos_cit_news
+    )
+    print("2014 news\tMean: %.1f\tS = %.4f\tp = %.4f"%(np.mean(_2014_w_videos_cit_news), _s2014_news, _p2014_news))
+    _s2014_sup, _p2014_sup = stats.ttest_ind(
+        _2014_wo_videos_cit,
+        _2014_w_videos_cit_sup
+    )
+    print("2014 sup\tMean: %.1f\tS = %.4f\tp = %.4f"%(np.mean(_2014_w_videos_cit_sup), _s2014_sup, _p2014_sup))
+    _s2014_ref, _p2014_ref = stats.ttest_ind(
+        _2014_wo_videos_cit,
+        _2014_w_videos_cit_ref
+    )
+    print("2014 ref\tMean: %.1f\tS = %.4f\tp = %.4f"%(np.mean(_2014_w_videos_cit_ref), _s2014_ref, _p2014_ref))
+
+    plt.show()
+
+    # AAS
+    _2019_wo_videos_aas = np.log10(df1[~df1.DOI.isin(_idx_papers_2019)][df1["AAS"] != "None"]["AAS"].dropna().astype(int))
+    _2019_w_videos_aas_exp = np.log10(df1[df1.DOI.isin(_idx_papers_2019_exp)][df1["AAS"] != "None"]["AAS"].dropna().astype(int))
+    _2019_w_videos_aas_news = np.log10(df1[df1.DOI.isin(_idx_papers_2019_news)][df1["AAS"] != "None"]["AAS"].dropna().astype(int))
+    _2019_w_videos_aas_sup = np.log10(df1[df1.DOI.isin(_idx_papers_2019_sup)][df1["AAS"] != "None"]["AAS"].dropna().astype(int))
+    _2019_w_videos_aas_ref = np.log10(df1[df1.DOI.isin(_idx_papers_2019_ref)][df1["AAS"] != "None"]["AAS"].dropna().astype(int))
+    _2014_wo_videos_aas = np.log10(df3[~df3.DOI.isin(_idx_papers_2014)][df3["AAS"] != "None"]["AAS"].dropna().astype(int))
+    _2014_w_videos_aas_exp = np.log10(df3[df3.DOI.isin(_idx_papers_2014_exp)][df3["AAS"] != "None"]["AAS"].dropna().astype(int))
+    _2014_w_videos_aas_news = np.log10(df3[df3.DOI.isin(_idx_papers_2014_news)][df3["AAS"] != "None"]["AAS"].dropna().astype(int))
+    _2014_w_videos_aas_sup = np.log10(df3[df3.DOI.isin(_idx_papers_2014_sup)][df3["AAS"] != "None"]["AAS"].dropna().astype(int))
+    _2014_w_videos_aas_ref = np.log10(df3[df3.DOI.isin(_idx_papers_2014_ref)][df3["AAS"] != "None"]["AAS"].dropna().astype(int))
+    # _2014_w_videos_aas_ref = np.log10(df3[df3.DOI.isin(_idx_papers_2014_ref) and df3["AAS"] != "None"]["AAS"].dropna().astype(int))
+
+    plt.figure(figsize=(16, 6))
+    plt.title("AAS")
+    # plt.yscale("log")
+    # plt.ylim([0, 200])
+    plt.ylabel("log10(AAS)")
+    plt.boxplot([
+        _2019_wo_videos_aas,
+        _2019_w_videos_aas_exp,
+        _2019_w_videos_aas_news,
+        _2019_w_videos_aas_sup,
+        _2019_w_videos_aas_ref,
+        _2014_wo_videos_aas,
+        _2014_w_videos_aas_exp,
+        _2014_w_videos_aas_news,
+        _2014_w_videos_aas_sup,
+        _2014_w_videos_aas_ref
+    ],
+        labels=[
+            "2019 w/o videos\n(N=%s)"%len(_2019_wo_videos_aas),
+            "2019 w/ exp\n(N=%s)"%len(_2019_w_videos_aas_exp),
+            "2019 w/ news\n(N=%s)"%len(_2019_w_videos_aas_news),
+            "2019 w/ sup\n(N=%s)"%len(_2019_w_videos_aas_sup),
+            "2019 w/ ref\n(N=%s)"%len(_2019_w_videos_aas_ref),
+            "2014 w/o videos\n(N=%s)"%len(_2014_wo_videos_aas),
+            "2014 w/ exp\n(N=%s)"%len(_2014_w_videos_aas_exp),
+            "2014 w/ news\n(N=%s)"%len(_2014_w_videos_aas_news),
+            "2014 w/ sup\n(N=%s)"%len(_2014_w_videos_aas_sup),
+            "2014 w/ ref\n(N=%s)"%len(_2014_w_videos_aas_ref),
+        ]
+    )
+
+    print("2019\tMean: %.1f"%np.mean(_2019_wo_videos_aas))
+    print("2019\tMean: %.1f"%np.mean(_2019_wo_videos_aas))
+    _s2019_exp, _p2019_exp = stats.ttest_ind(
+        _2019_wo_videos_aas,
+        _2019_w_videos_aas_exp
+    )
+    print("2019 exp\tMean: %.1f\tS = %.4f\tp = %.4f"%(np.mean(_2019_w_videos_aas_exp), _s2019_exp, _p2019_exp))
+    _s2019_news, _p2019_news = stats.ttest_ind(
+        _2019_wo_videos_aas,
+        _2019_w_videos_aas_news
+    )
+    print("2019 news\tMean: %.1f\tS = %.4f\tp = %.4f"%(np.mean(_2019_w_videos_aas_news), _s2019_news, _p2019_news))
+    _s2019_sup, _p2019_sup = stats.ttest_ind(
+        _2019_wo_videos_aas,
+        _2019_w_videos_aas_sup
+    )
+    print("2019 sup\tMean: %.1f\tS = %.4f\tp = %.4f"%(np.mean(_2019_w_videos_aas_sup), _s2019_sup, _p2019_sup))
+    _s2019_ref, _p2019_ref = stats.ttest_ind(
+        _2019_wo_videos_aas,
+        _2019_w_videos_aas_ref
+    )
+    print("2019 ref\tMean: %.1f\tS = %.4f\tp = %.4f"%(np.mean(_2019_w_videos_aas_ref), _s2019_ref, _p2019_ref))
+    _s2014_exp, _p2014_exp = stats.ttest_ind(
+        _2014_wo_videos_aas,
+        _2014_w_videos_aas_exp
+    )
+    print("2014\tMean: %.1f"%np.mean(_2014_wo_videos_aas))
+    print("2014 exp\tMean: %.1f\tS = %.4f\tp = %.4f"%(np.mean(_2014_w_videos_aas_exp), _s2014_exp, _p2014_exp))
+    _s2014_news, _p2014_news = stats.ttest_ind(
+        _2014_wo_videos_aas,
+        _2014_w_videos_aas_news
+    )
+    print("2014 news\tMean: %.1f\tS = %.4f\tp = %.4f"%(np.mean(_2014_w_videos_aas_news), _s2014_news, _p2014_news))
+    _s2014_sup, _p2014_sup = stats.ttest_ind(
+        _2014_wo_videos_aas,
+        _2014_w_videos_aas_sup
+    )
+    print("2014 sup\tMean: %.1f\tS = %.4f\tp = %.4f"%(np.mean(_2014_w_videos_aas_sup), _s2014_sup, _p2014_sup))
+    _s2014_ref, _p2014_ref = stats.ttest_ind(
+        _2014_wo_videos_aas,
+        _2014_w_videos_aas_ref
+    )
+    print("2014 ref\tMean: %.1f\tS = %.4f\tp = %.4f"%(np.mean(_2014_w_videos_cit_ref), _s2014_ref, _p2014_ref))
+
+    plt.show()
 
 if __name__ == '__main__':
+    # 200904
+    _200904()
+    
     # 200819
-    _200819()
+    # _200819()
     
     # 200805
     # _200805()

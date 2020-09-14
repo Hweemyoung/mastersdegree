@@ -445,26 +445,42 @@ def _200730():
     zip(list(map(lambda _row: _row[1], _list_channels)), _list_channels))
 
     # Hashmap
+    # dict_content_key = dict()
+    # dict_content_key["paper_explanation"] = "paper_explanation"
+    # dict_content_key["paper_reference"] = "paper_reference"
+    # dict_content_key["paper_linked_supplementary"] = "paper_supplementary"
+    # dict_content_key["paper_supplementary"] = "paper_supplementary"
+    # dict_content_key["paper_application"] = "paper_assessment"
+    # dict_content_key["paper_assessment"] = "paper_assessment"
+    # dict_content_key["news"] = "news"
+    # dict_x = dict()
+    # dict_x["paper_explanation"] = list()
+    # dict_x["paper_reference"] = list()
+    # dict_x["paper_supplementary"] = list()
+    # dict_x["paper_assessment"] = list()
+    # dict_x["news"] = list()
+    # dict_y = dict()
+    # dict_y["paper_explanation"] = list()
+    # dict_y["paper_reference"] = list()
+    # dict_y["paper_supplementary"] = list()
+    # dict_y["paper_assessment"] = list()
+    # dict_y["news"] = list()
+
     dict_content_key = dict()
-    dict_content_key["paper_explanation"] = "paper_explanation"
-    dict_content_key["paper_reference"] = "paper_reference"
-    dict_content_key["paper_linked_supplementary"] = "paper_supplementary"
-    dict_content_key["paper_supplementary"] = "paper_supplementary"
-    dict_content_key["paper_application"] = "paper_assessment"
-    dict_content_key["paper_assessment"] = "paper_assessment"
-    dict_content_key["news"] = "news"
+    dict_content_key["creative"] = "creative"
+    dict_content_key["presentation"] = "presentation"
+    dict_content_key["raw"] = "raw"
+    dict_content_key["fixed"] = "fixed"
     dict_x = dict()
-    dict_x["paper_explanation"] = list()
-    dict_x["paper_reference"] = list()
-    dict_x["paper_supplementary"] = list()
-    dict_x["paper_assessment"] = list()
-    dict_x["news"] = list()
+    dict_x["creative"] = list()
+    dict_x["presentation"] = list()
+    dict_x["raw"] = list()
+    dict_x["fixed"] = list()
     dict_y = dict()
-    dict_y["paper_explanation"] = list()
-    dict_y["paper_reference"] = list()
-    dict_y["paper_supplementary"] = list()
-    dict_y["paper_assessment"] = list()
-    dict_y["news"] = list()
+    dict_y["creative"] = list()
+    dict_y["presentation"] = list()
+    dict_y["raw"] = list()
+    dict_y["fixed"] = list()
 
     df1 = pd.read_csv("scopus/scopus_math+comp_top5perc_1401-1406.csv", header=0)
     df2 = pd.read_csv("scopus/scopus_life+earch_top60_1401-1406.csv", header=0)
@@ -526,6 +542,29 @@ def _200730():
 
     # Scatter
     plt.figure(figsize=(8, 5))
+
+    # exp = plt.scatter(x=dict_x["paper_explanation"],
+    #             y=dict_y["paper_explanation"], s=12, marker="o", color="blue")
+    # ref = plt.scatter(x=dict_x["paper_reference"],
+    #             y=dict_y["paper_reference"], s=12, marker="x", color="black")
+    # sup = plt.scatter(x=dict_x["paper_supplementary"],
+    #             y=dict_y["paper_supplementary"], s=12, marker="o", color="green")
+    # ass = plt.scatter(x=dict_x["paper_assessment"],
+    #             y=dict_y["paper_assessment"], s=12, marker="o", color="red")
+    # news = plt.scatter(x=dict_x["news"],
+    #             y=dict_y["news"], s=12, marker="o", color="lightblue")
+
+    # plt.legend((ref, sup, news, exp, ass),
+    #     (
+    #         "paper_reference(N=%d)" % len(dict_y["paper_reference"]),
+    #         "paper_supplementary(N=%d)" % len(dict_y["paper_supplementary"]),
+    #         "news(N=%d)" % len(dict_y["news"]),
+    #         "paper_explanation(N=%d)" % len(dict_y["paper_explanation"]),
+    #         "paper_assessment(N=%d)" % len(dict_y["paper_assessment"]),
+    #     ),
+    #     scatterpoints=1,
+    #     loc='upper right',
+    #     fontsize=8)
 
     exp = plt.scatter(x=dict_x["paper_explanation"],
                 y=dict_y["paper_explanation"], s=12, marker="o", color="blue")
@@ -1183,9 +1222,184 @@ def _200904():
 
     plt.show()
 
+def _200914():
+    # Reference를 스타일별로 플롯
+    db_handler = DBHandler()
+    _list_fields = [
+    "idx",
+    "idx_paper",
+    "content",
+    "video_visual",
+    "publishedAt",
+    "duration",
+    "channelId",
+    "viewCount",
+    "likeCount",
+    "dislikeCount",
+    "commentCount",
+    "favoriteCount",
+    "liveStreaming"
+    ]
+    _list_videos = list()
+    
+    # 2014 comp
+    db_handler.sql_handler.select(
+    "scopus_videos_2014_comp",
+    _list_fields
+    ).where("viewCount", 1000, ">").where("content", "paper_reference")
+    _list_videos += db_handler.execute().fetchall()
+    
+    # 2014 life
+    db_handler.sql_handler.select(
+    "scopus_videos_2014_life",
+    _list_fields
+    ).where("viewCount", 1000, ">").where("content", "paper_reference")
+    _list_videos += db_handler.execute().fetchall()
+
+    _list_dict_videos = list(
+    map(lambda _row: dict(zip(_list_fields, _row)), _list_videos))
+
+    # Channels : Get subscriber count
+    db_handler.sql_handler.select(
+    "channels",
+    ["idx", "channelId", "subscriberCount"]
+    )
+    _list_channels = db_handler.execute().fetchall()
+    # {channelId : tuple(...), ...}
+    _dict_channels = dict(
+    zip(list(map(lambda _row: _row[1], _list_channels)), _list_channels))
+
+    # Hashmap
+    dict_content_key = dict()
+    dict_content_key["creative"] = "creative"
+    dict_content_key["presentation"] = "presentation"
+    dict_content_key["raw"] = "raw"
+    dict_content_key["fixed"] = "fixed"
+    dict_x = dict()
+    dict_x["creative"] = list()
+    dict_x["presentation"] = list()
+    dict_x["raw"] = list()
+    dict_x["fixed"] = list()
+    dict_y = dict()
+    dict_y["creative"] = list()
+    dict_y["presentation"] = list()
+    dict_y["raw"] = list()
+    dict_y["fixed"] = list()
+
+    df1 = pd.read_csv("scopus/scopus_math+comp_top5perc_1401-1406.csv", header=0)
+    df2 = pd.read_csv("scopus/scopus_life+earch_top60_1401-1406.csv", header=0)
+    df = pd.concat([df1, df2])
+
+    for _i, _dict_row in enumerate(_list_dict_videos):
+        print("[+]Processing %d of %d videos" % (_i+1, len(_list_dict_videos)))
+        # Calc age
+        _date_video = _dict_row["publishedAt"].date()
+        _scopus_row = df[df["DOI"] == _dict_row["idx_paper"]]
+        if len(_scopus_row) > 1:
+            _scopus_row = _scopus_row.iloc[0]
+        _date_paper = date(_scopus_row["Year"], _scopus_row["Month"], 1)
+        _age = (_date_video - _date_paper).days/365
+        _dict_row["age"] = _age
+
+        # Age - Scaled View
+        # Calc view/subscriber
+        _dict_row["scaled_view"] = _dict_row["viewCount"] / _dict_channels[_dict_row["channelId"]][2] if _dict_channels[_dict_row["channelId"]][2] != 0 else _dict_row["viewCount"]
+        _dict_row["scaled_view"] = np.log10(_dict_row["viewCount"] / _dict_channels[_dict_row["channelId"]][2]) if _dict_channels[_dict_row["channelId"]][2] != 0 else np.log10(_dict_row["viewCount"])
+        dict_y[dict_content_key[_dict_row["video_visual"]]].append(_dict_row["scaled_view"])
+
+        # Age - Scaled Like
+        # Calc like/subscriber
+        # _dict_row["scaled_like"] = _dict_row["likeCount"] / _dict_channels[_dict_row["channelId"]
+        #                                                                    ][2] if _dict_channels[_dict_row["channelId"]][2] != 0 else _dict_row["likeCount"]
+        # dict_y[dict_content_key[_dict_row["video_visual"]]]].append(
+        #     _dict_row["scaled_like"])
+
+        # Age - View
+        # dict_y[dict_content_key[_dict_row["video_visual"]]]].append(_dict_row["viewCount"])
+        # dict_y[dict_content_key[_dict_row["video_visual"]]]].append(np.log10(_dict_row["viewCount"]))
+
+        # Age - Like
+        # dict_y[dict_content_key[_dict_row["video_visual"]]]].append(
+        #     _dict_row["likeCount"])
+
+        # Boxplot: like/dislike
+        # if _dict_row["likeCount"] in (None, 0) or _dict_row["dislikeCount"] == None:
+        #     continue
+        # _dict_row["r_like_dislike"] = _dict_row["likeCount"] / _dict_row["dislikeCount"] if _dict_row["dislikeCount"] != 0 else _dict_row["likeCount"]
+        # dict_y[dict_content_key[_dict_row["video_visual"]]]].append(_dict_row["r_like_dislike"])
+
+        # Add x
+        dict_x[dict_content_key[_dict_row["video_visual"]]].append(_dict_row["age"])
+
+    # Scatter
+    plt.figure(figsize=(8, 5))
+
+    # exp = plt.scatter(x=dict_x["paper_explanation"],
+    #             y=dict_y["paper_explanation"], s=12, marker="o", color="blue")
+    # ref = plt.scatter(x=dict_x["paper_reference"],
+    #             y=dict_y["paper_reference"], s=12, marker="x", color="black")
+    # sup = plt.scatter(x=dict_x["paper_supplementary"],
+    #             y=dict_y["paper_supplementary"], s=12, marker="o", color="green")
+    # ass = plt.scatter(x=dict_x["paper_assessment"],
+    #             y=dict_y["paper_assessment"], s=12, marker="o", color="red")
+    # news = plt.scatter(x=dict_x["news"],
+    #             y=dict_y["news"], s=12, marker="o", color="lightblue")
+
+    # plt.legend((ref, sup, news, exp, ass),
+    #     (
+    #         "paper_reference(N=%d)" % len(dict_y["paper_reference"]),
+    #         "paper_supplementary(N=%d)" % len(dict_y["paper_supplementary"]),
+    #         "news(N=%d)" % len(dict_y["news"]),
+    #         "paper_explanation(N=%d)" % len(dict_y["paper_explanation"]),
+    #         "paper_assessment(N=%d)" % len(dict_y["paper_assessment"]),
+    #     ),
+    #     scatterpoints=1,
+    #     loc='upper right',
+    #     fontsize=8)
+
+    cre = plt.scatter(x=dict_x["creative"],
+                y=dict_y["creative"], s=12, marker="o", color="blue")
+    pre = plt.scatter(x=dict_x["presentation"],
+                y=dict_y["presentation"], s=12, marker="x", color="black")
+    raw = plt.scatter(x=dict_x["raw"],
+                y=dict_y["raw"], s=12, marker="o", color="green")
+    fix = plt.scatter(x=dict_x["fixed"],
+                y=dict_y["fixed"], s=12, marker="o", color="red")
+
+    plt.legend((cre, pre, raw, fix),
+        (
+            "creative(N=%d)" % len(dict_y["creative"]),
+            "presentation(N=%d)" % len(dict_y["presentation"]),
+            "raw(N=%d)" % len(dict_y["raw"]),
+            "fixed(N=%d)" % len(dict_y["fixed"]),
+        ),
+        scatterpoints=1,
+        loc='upper right',
+        fontsize=8,
+        framealpha=0.3)
+
+    # xs = dict_x["paper_explanation"] + dict_x["paper_reference"] + \
+    #     dict_x["paper_supplementary"] + dict_x["paper_assessment"]
+    # ys = dict_y["paper_explanation"] + dict_y["paper_reference"] + \
+    #     dict_y["paper_supplementary"] + dict_y["paper_assessment"]
+    # cs = ["blue"] * len(dict_y["paper_explanation"]) + ["black"] * len(dict_y["paper_reference"]) + \
+    #     ["green"] * len(dict_y["paper_supplementary"]) + \
+    #     ["red"] * len(dict_y["paper_assessment"])
+    # plt.scatter(x=xs, y=ys, s=10, c=cs)
+
+    plt.title("Video metrics (2014 comp + life)")
+    plt.xlabel("Video - Publication Timedelta (years)")
+    plt.ylabel("log10(View / Subscribers)")
+    # plt.yscale("log")
+    # plt.ylim(1, 100000)
+    plt.show()
+
 if __name__ == '__main__':
+    # 200914
+    _200914()
+
     # 200904
-    _200904()
+    # _200904()
     
     # 200819
     # _200819()

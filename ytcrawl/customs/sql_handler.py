@@ -172,12 +172,12 @@ class SQLHandler:
             clause = "match(%s) against (\"%s\" in boolean mode)" % (
                 column, value)
 
-        elif mode == 'in':
+        elif mode in ('in', 'not in'):
             _list_vals_wrapped = list()
             for val in value:
                 _list_vals_wrapped.append(str(val)) if type(
                     val) != str else _list_vals_wrapped.append('\'' + val + '\'')
-            clause = "%s IN (%s)" % (column, ', '.join(_list_vals_wrapped))
+            clause = "%s %s (%s)" % (column, mode.upper(), ', '.join(_list_vals_wrapped))
 
         else:
             raise ValueError()

@@ -1,28 +1,28 @@
-from preprocessor import Preprocessor
-from db_channels_uploader import DBChannelsUploader
-from db_videos_uploader import DBVideosUploader
-from db_papers_uploader import DBPapersUploader
-from db_handler import DBHandler
-from sql_handler import SQLHandler
+# from preprocessor import Preprocessor
+# from db_channels_uploader import DBChannelsUploader
+# from db_videos_uploader import DBVideosUploader
+# from db_papers_uploader import DBPapersUploader
+# from db_handler import DBHandler
+# from sql_handler import SQLHandler
 
-from datetime import datetime, date
-from random import shuffle
+# from datetime import datetime, date
+# from random import shuffle
 
-import urllib.request
-from bs4 import BeautifulSoup
-import re
+# import urllib.request
+# from bs4 import BeautifulSoup
+# import re
 
-import csv
-import numpy as np
-import matplotlib.pyplot as plt
+# import csv
+# import numpy as np
+# import matplotlib.pyplot as plt
 
-from altmetric_it import AltmetricIt
+# from altmetric_it import AltmetricIt
 
-import json
-import os
-import statistics
+# import json
+# import os
+# import statistics
 
-import pandas as pd
+# import pandas as pd
 
 
 def scopus_csv():
@@ -657,12 +657,16 @@ def parse_fetches(fetches):
 def get_dois_with_videos_within_days_from_publish(df, table_name, where=None, days_from=None, days_until=None):
 #     複数の動画が与えられる論文の場合、複数のsetに含まれることがある。
     from db_handler import DBHandler
-    from datetime import timedelta
+    from datetime import datetime, timedelta
     db_handler = DBHandler()
     _set_target_dois = set()
     db_handler.sql_handler.select(table_name, ["idx_paper", "publishedAt"])
     if type(where) == tuple:
         db_handler.sql_handler.where(*where)
+    elif type(where) == list:
+        for _where in where:
+            if type(_where) == tuple:
+                db_handler.sql_handler.where(*_where)
     fetches = db_handler.execute().fetchall()
     fetches = parse_fetches(fetches)
     
@@ -673,6 +677,8 @@ def get_dois_with_videos_within_days_from_publish(df, table_name, where=None, da
 #             continue
         if len(_target_paper) > 1:
             _target_paper = _target_paper.iloc[0]
+        elif len(_target_paper) == 0:  # Could be filtered before the method
+            continue
 #         print(_target_paper)
         _dt_publish = datetime(_target_paper["Year"], _target_paper["Month"], 1)
         
@@ -967,56 +973,65 @@ def _200904():
     from datetime import datetime, timedelta
     from calendar import monthrange
 
-    df1 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_math+comp_top5perc_1901-1906.csv")
-    df2 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_math+comp_top5perc_1701-1706.csv")
-    df3 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_math+comp_top5perc_1401-1406.csv")
+    df1 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_life+earch_top60_1901-1906.csv")
+    # df2 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_math+comp_top5perc_1701-1706.csv")
+    df3 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_life+earch_top60_1401-1406.csv")
 
     db_handler = DBHandler()
-    db_handler.sql_handler.select("scopus_videos_2014_comp", ["idx_paper", "publishedAt"])
-    _videos_2014 = db_handler.execute().fetchall()
-    db_handler.sql_handler.select("scopus_videos_2014_comp", ["idx_paper", "publishedAt"]).where("content", ["paper_explanation", "paper_assessment", "paper_application"], "in")
-    _videos_2014_exp = db_handler.execute().fetchall()
-    db_handler.sql_handler.select("scopus_videos_2017_comp", ["idx_paper", "publishedAt"])
+    # db_handler.sql_handler.select("scopus_videos_2014_life", ["idx_paper", "publishedAt"])
+    # _videos_2014 = db_handler.execute().fetchall()
+    # db_handler.sql_handler.select("scopus_videos_2014_life", ["idx_paper", "publishedAt"]).where("content", ["paper_explanation", "paper_assessment", "paper_application"], "in")
+    # _videos_2014_exp = db_handler.execute().fetchall()
+    # db_handler.sql_handler.select("scopus_videos_2017_life", ["idx_paper", "publishedAt"])
     # _videos_2017 = db_handler.execute().fetchall()
-    # db_handler.sql_handler.select("scopus_videos_2017_comp", ["idx_paper", "publishedAt"]).where("content", ["paper_explanation", "paper_assessment", "paper_application"], "in")
+    # db_handler.sql_handler.select("scopus_videos_2017_life", ["idx_paper", "publishedAt"]).where("content", ["paper_explanation", "paper_assessment", "paper_application"], "in")
     # _videos_2017_exp = db_handler.execute().fetchall()
-    # db_handler.sql_handler.select("scopus_videos_2019_comp", ["idx_paper", "publishedAt"])
-    _videos_2019 = db_handler.execute().fetchall()
-    db_handler.sql_handler.select("scopus_videos_2019_comp", ["idx_paper", "publishedAt"]).where("content", ["paper_explanation", "paper_assessment", "paper_application"], "in")
-    _videos_2019_exp = db_handler.execute().fetchall()
+    # db_handler.sql_handler.select("scopus_videos_2019_life", ["idx_paper", "publishedAt"])
+    # _videos_2019 = db_handler.execute().fetchall()
+    # db_handler.sql_handler.select("scopus_videos_2019_life", ["idx_paper", "publishedAt"]).where("content", ["paper_explanation", "paper_assessment", "paper_application"], "in")
+    # _videos_2019_exp = db_handler.execute().fetchall()
 
-    _idx_papers_2019 = get_dois_with_videos_within_days_from_publish(df1, "scopus_videos_2019_comp")
+    _list_2019_life = [2, 3, 6, 10, 12, 17, 18, 38, 43, 50, 55, 56, 59, 67, 72, 73, 78, 86, 88, 90, 93, 94, 101, 108, 109, 110, 113, 116, 120, 122, 124, 128, 129, 130, 139, 140, 142, 145, 150, 153, 158, 159, 161, 163, 165, 166, 171, 175, 178, 181, 184, 190, 195, 199, 208, 209, 214, 217, 222, 223, 230, 232, 233, 238, 246, 247, 254, 256, 258, 264, 267, 270, 271, 275, 277, 281, 284, 286, 291, 292, 297, 298, 299, 300, 303, 305, 310, 311, 314, 316, 317, 318, 324, 326, 327, 330, 333, 334, 340, 343]
+    _idx_papers_2019 = get_dois_with_videos_within_days_from_publish(df1, "scopus_videos_2019_life", ("idx", _list_2019_life, "in"))
     _idx_papers_2019_exp = get_dois_with_videos_within_days_from_publish(df1,
-                                                                        "scopus_videos_2019_comp",
+                                                                        "scopus_videos_2019_life",
+                                                                        [("idx", _list_2019_life, "in"),
                                                                         ("content", ["paper_explanation", "paper_assessment", "paper_application"], "in")
+                                                                        ]
                                                                         )
     _idx_papers_2019_news = get_dois_with_videos_within_days_from_publish(df1,
-                                                                        "scopus_videos_2019_comp",
+                                                                        "scopus_videos_2019_life",
+                                                                        [("idx", _list_2019_life, "in"),
                                                                         ("content", "news")
+                                                                        ]
                                                                         )
     _idx_papers_2019_sup = get_dois_with_videos_within_days_from_publish(df1,
-                                                                        "scopus_videos_2019_comp",
+                                                                        "scopus_videos_2019_life",
+                                                                        [("idx", _list_2019_life, "in"),
                                                                         ("content", ["paper_linked_supplementary", "paper_supplementary"], "in")
+                                                                        ]
                                                                         )
     _idx_papers_2019_ref = get_dois_with_videos_within_days_from_publish(df1,
-                                                                        "scopus_videos_2019_comp",
+                                                                        "scopus_videos_2019_life",
+                                                                        [("idx", _list_2019_life, "in"),
                                                                         ("content", "paper_reference")
+                                                                        ]
                                                                         )
-    _idx_papers_2014 = get_dois_with_videos_within_days_from_publish(df3, "scopus_videos_2014_comp")
+    _idx_papers_2014 = get_dois_with_videos_within_days_from_publish(df3, "scopus_videos_2014_life")
     _idx_papers_2014_exp = get_dois_with_videos_within_days_from_publish(df3,
-                                                                        "scopus_videos_2014_comp",
+                                                                        "scopus_videos_2014_life",
                                                                         ("content", ["paper_explanation", "paper_assessment", "paper_application"], "in")
                                                                         )
     _idx_papers_2014_news = get_dois_with_videos_within_days_from_publish(df3,
-                                                                        "scopus_videos_2014_comp",
+                                                                        "scopus_videos_2014_life",
                                                                         ("content", "news")
                                                                         )
     _idx_papers_2014_sup = get_dois_with_videos_within_days_from_publish(df3,
-                                                                        "scopus_videos_2014_comp",
+                                                                        "scopus_videos_2014_life",
                                                                         ("content", ["paper_linked_supplementary", "paper_supplementary"], "in")
                                                                         )
     _idx_papers_2014_ref = get_dois_with_videos_within_days_from_publish(df3,
-                                                                        "scopus_videos_2014_comp",
+                                                                        "scopus_videos_2014_life",
                                                                         ("content", "paper_reference")
                                                                         )
 
@@ -1393,13 +1408,68 @@ def _200914():
     # plt.yscale("log")
     # plt.ylim(1, 100000)
     plt.show()
+    
+
+def _200918():
+    import numpy as np
+    import pandas as pd
+    from db_handler import DBHandler
+    from matplotlib import pyplot as plt
+    from scipy import stats
+    from datetime import datetime, timedelta
+    from calendar import monthrange
+    from scopus_handler import ScopusHandler
+
+    df1 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_math+comp_top5perc_1901-1906.csv")
+    df1_sources = pd.read_csv("scopus/source-results-math_cs-citescore-2018.csv", header=0)
+    # df2 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_math+comp_top5perc_1701-1706.csv")
+    df3 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_math+comp_top5perc_1401-1406.csv")
+    df3_sources = pd.read_csv("scopus/source_math+comp,2013.csv", header=0)
+
+    scopus_2014_comp = ScopusHandler(df3, df3_sources, "scopus_videos_2014_comp")
+    scopus_2019_comp = ScopusHandler(df1, df1_sources, "scopus_videos_2019_comp")
+
+    # scopus_2014_comp.plot_journals_scores()
+    # scopus_2019_comp.plot_journals_scores()
+    # for _i in range(1, 7):
+        # scopus_2014_comp.plot_journals_scores(days_until=360 * _i)
+    # scopus_2019_comp.plot_journals_scores(days_until=360)
+
+def _201004():
+    # 비디오 논문, 저널 수의 시계열 추이
+    import numpy as np
+    import pandas as pd
+    from db_handler import DBHandler
+    from matplotlib import pyplot as plt
+    from scipy import stats
+    from datetime import datetime, timedelta
+    from calendar import monthrange
+    from scopus_handler import ScopusHandler
+
+    df2 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_life+earch_top60_1401-1406.csv")
+    df2_sources = pd.read_csv("", header=0)
+    df3 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_math+comp_top5perc_1401-1406.csv")
+    df3_sources = pd.read_csv("scopus/source_math+comp,2013.csv", header=0)
+    
+    scopus_2014_comp = ScopusHandler(df3, df3_sources, "scopus_videos_2014_comp")
+    scopus_2014_life = ScopusHandler(df2, df2_sources, "scopus_videos_2014_life")
+
+    # scopus_2014_comp.plot_journals_scores()
+    # scopus_2019_comp.plot_journals_scores()
+    for _i in range(1, 7):
+        scopus_2014_comp.set_target_videos(days_until=360 * _i)
+    # scopus_2019_comp.plot_journals_scores(days_until=360)
+
 
 if __name__ == '__main__':
+    # 200918
+    # _200918()
+    
     # 200914
-    _200914()
+    # _200914()
 
     # 200904
-    # _200904()
+    _200904()
     
     # 200819
     # _200819()

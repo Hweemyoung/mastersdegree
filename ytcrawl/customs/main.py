@@ -749,7 +749,7 @@ if __name__ == '__main__':
     # print("search_%s.txt" % youtube_search.fname)
     # print("videos_%s.txt" % youtube_videos.fname)
 
-    # channels_by_list_channel_ids(table_name_videos="scopus_videos_2019_life")
+    channels_by_list_channel_ids(table_name_videos="scopus_videos_2019_life")
     upload_channels_by_list_channels('channels', './results/channels/channels_20200908_144743.txt', overwrite=True)
     # num_of_videos()
 

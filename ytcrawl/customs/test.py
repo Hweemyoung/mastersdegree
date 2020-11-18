@@ -1460,8 +1460,323 @@ def _201004():
         scopus_2014_comp.set_target_videos(days_until=360 * _i)
     # scopus_2019_comp.plot_journals_scores(days_until=360)
 
+def plot_timedelta_metrics(targets, metric="viewCount", q=0.25, where_videos=None, scale_by_sub=True, label_by="content"):
+    # Reference를 스타일별로 플롯
+    import numpy as np, pandas as pd
+    import matplotlib.pyplot as plt
+    from db_handler import DBHandler
+    from datetime import date
+
+    db_handler = DBHandler()
+    _list_fields = [
+    "idx",
+    "idx_paper",
+    "content",
+    "video_visual",
+    "publishedAt",
+    "duration",
+    "channelId",
+    "viewCount",
+    "likeCount",
+    "dislikeCount",
+    "commentCount",
+    "favoriteCount",
+    "liveStreaming"
+    ]
+    _list_videos = list()
+
+    def fetch_videos(target, q_target):
+        db_handler.sql_handler.select(
+        "scopus_videos_%s" % target,
+        _list_fields
+        ).where("viewCount", q_target, ">")
+        if where_videos != None:
+            db_handler.sql_handler.where(*where_videos)
+        return db_handler.execute().fetchall()
+
+    def calc_q_target(target, metric, q):
+        _q_target = pd.read_csv("scopus/scopus_videos_%s.csv" % target, header=0)[metric].quantile(q)
+        print("Quantile %.2f\n%s: %.1f\t" % (q, target, _q_target))
+        return _q_target
+
+    if type(targets) in (tuple, list):
+        for _target in targets:
+            _q_target = calc_q_target(_target, metric, q)
+            _list_videos += fetch_videos(_target, _q_target)
+    else:
+        _q_target = calc_q_target(targets, metric, q)
+        _list_videos += fetch_videos(targets, _q_target)
+
+    _list_dict_videos = list(
+    map(lambda _row: dict(zip(_list_fields, _row)), _list_videos))
+
+    # Channels : Get subscriber count
+    _list_columns_channels = ["idx", "channelId", "subscriberCount", "user_type"]
+    db_handler.sql_handler.select("channels", _list_columns_channels)
+    if scale_by_sub:
+        db_handler.sql_handler.where("subscriberCount", None, "<>")  # Filter off NULL subscriberCount
+    _list_channels = db_handler.execute().fetchall()
+    # {channelId : tuple(...), ...}
+    _dict_channels = dict(
+    zip(list(map(lambda _row: _row[1], _list_channels)), _list_channels))
+
+    if label_by == "video_visual":
+        _list_labels = [
+            "creative",
+            "presentation",
+            "raw",
+            "fixed"
+        ]
+
+    elif label_by == "user_type":
+        _list_labels = [
+            "individual_researchers",
+            "individual_citizens",
+            "individual_journalists",
+            "individual_professionals",
+            "researchers_community",
+            "research_organization",
+            "funding_organization",
+            "public_authorities",
+            "civil_society_organization",
+            "publishers/journals",
+            "media",
+            "business",
+            "others",
+        ]
+
+    elif label_by == "content":
+        _list_labels = [
+            "paper_explanation",
+            "paper_linked_supplementary",
+            "paper_supplementary",
+            "paper_application",
+            "paper_assessment",
+            "paper_reference",
+            "news",
+        ]
+
+    # Hashmap
+    dict_content_key = dict()
+    dict_x = dict()
+    dict_y = dict()
+    for _label in _list_labels:
+        dict_content_key[_label] = _label
+        dict_x[_label] = list()
+        dict_y[_label] = list()
+
+    df1 = pd.read_csv("scopus/scopus_math+comp_top5perc_1401-1406.csv", header=0)
+    df2 = pd.read_csv("scopus/scopus_life+earch_top60_1401-1406.csv", header=0)
+    df3 = pd.read_csv("scopus/scopus_math+comp_top5perc_1901-1906.csv", header=0)
+    df4 = pd.read_csv("scopus/scopus_life+earch_top60_1901-1906.csv", header=0)
+    df = pd.concat([df1, df2, df3, df4])
+
+    _num_dots = 0
+    for _i, _dict_row in enumerate(_list_dict_videos):
+        print("[+]Processing %d of %d videos" % (_i+1, len(_list_dict_videos)))
+        # Calc age
+        _date_video = _dict_row["publishedAt"].date()
+        _scopus_row = df[df["DOI"] == _dict_row["idx_paper"]]
+        if len(_scopus_row) > 1:
+            _scopus_row = _scopus_row.iloc[0]
+        _date_paper = date(_scopus_row["Year"], _scopus_row["Month"], 1)
+        _age = (_date_video - _date_paper).days/365
+        _dict_row["age"] = _age
+
+        # Add label
+        if label_by == "video_visual":
+            _dict_row["label"] = _dict_row["video_visual"]
+        elif label_by == "content":
+            _dict_row["label"] = _dict_row["content"]
+        elif label_by == "user_type":
+            try:
+                _dict_row["label"] = _dict_channels[_dict_row["channelId"]][3]
+            except KeyError:
+                continue
+
+        if scale_by_sub:
+            try:
+                _dict_row["y_value"] = np.log10(_dict_row[metric] / _dict_channels[_dict_row["channelId"]][2]) if _dict_channels[_dict_row["channelId"]][2] != 0 else np.log10(_dict_row[metric])
+                dict_y[_dict_row["label"]].append(_dict_row["y_value"])
+            except KeyError:
+                continue
+        else:
+            dict_y[_dict_row["label"]].append(np.log10(_dict_row[metric]))
+
+        # Add x
+        dict_x[_dict_row["label"]].append(_dict_row["age"])
+
+        _num_dots += 1
+
+    # Scatter
+    plt.figure(figsize=(8, 5))
+
+    _tup_plts = tuple(map(lambda _label: plt.scatter(x=dict_x[_label], y=dict_y[_label], s=12, marker="o"), _list_labels))
+    _tup_legends = tuple(map(lambda _label: "%s(N=%d)" % (_label, len(dict_y[_label])), _list_labels))
+
+    plt.legend(_tup_plts,
+    _tup_legends,
+    scatterpoints=1,
+    loc='upper right',
+    fontsize=8,
+    framealpha=0.3)
+
+    plt.title("Video metrics (%s, q=%.2f, N=%d)" % (targets, q, _num_dots))
+    plt.xlabel("Video - Publication Timedelta (years)")
+    plt.ylabel("log10(%s / Subscribers)" % metric) if scale_by_sub else plt.ylabel("log10(%s)" % metric)
+    # plt.yscale("log")
+    # plt.ylim(1, 100000)
+    plt.show()
+
+def calc_q_target(target, metric, q):
+    import pandas as pd
+    # 타겟 연도/분야 논문 언급 비디오에 대해 메트릭의 q를 반환
+    _q_target = pd.read_csv("scopus/scopus_videos_%s.csv" % target, header=0)[metric].quantile(q)
+    print("Quantile %.2f\n%s: %.1f\t" % (q, target, _q_target))
+    return _q_target
+
+def boxplot_by_label(targets="2014_life", label_by="user_type", metric="viewCount", q=None, log_scale=True):
+    import numpy as np
+    import pandas as pd
+    from db_handler import DBHandler
+    from matplotlib import pyplot as plt
+    from scipy import stats
+    from datetime import datetime, timedelta
+    from calendar import monthrange
+    db_handler = DBHandler()
+    _dict_df = dict()
+    # _list_idx_videos_2019_life = [2, 3, 6, 10, 12, 17, 18, 38, 43, 50, 55, 56, 59, 67, 72, 73, 78, 86, 88, 90, 93, 94, 101, 108, 109, 110, 113, 116, 120, 122, 124, 128, 129, 130, 139, 140, 142, 145, 150, 153, 158, 159, 161, 163, 165, 166, 171, 175, 178, 181, 184, 190, 195, 199, 208, 209, 214, 217, 222, 223, 230, 232, 233, 238, 246, 247, 254, 256, 258, 264, 267, 270, 271, 275, 277, 281, 284, 286, 291, 292, 297, 298, 299, 300, 303, 305, 310, 311, 314, 316, 317, 318, 324, 326, 327, 330, 333, 334, 340, 343]
+    _dict_videos = dict()
+    
+    if type(targets) == list:
+        for _target in targets:
+            _dict_df[_target] = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_%s.csv" % _target)
+            db_handler.sql_handler.select("scopus_videos_%s" % _target, ["idx_paper", "publishedAt"])
+            if type(q) != type(None):
+                db_handler.sql_handler.where(metric, calc_q_target(_target, metric, q), ">")
+            _dict_videos[_target] = db_handler.execute().fetchall()
+            
+    else:
+        _dict_df[targets] = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_%s.csv" % targets)
+        db_handler.sql_handler.select("scopus_videos_%s" % targets, ["idx_paper", "publishedAt"])
+        _dict_videos[targets] = db_handler.execute().fetchall()
+
+    for _target in _dict_df:
+        print("# ", _target, len(_dict_videos[_target]))
+    
+    # Set list_labels
+    if label_by == "video_visual":
+        _list_labels = [
+            "creative",
+            "presentation",
+            "raw",
+            "fixed"
+        ]
+
+    elif label_by == "user_type":
+        _list_labels = [
+            "individual_researchers",
+            "individual_citizens",
+            # "individual_journalists",
+            "individual_professionals",
+            "researchers_community",
+            "research_organization",
+#             "funding_organization",
+#             "public_authorities",
+            "civil_society_organization",
+            "publishers/journals",
+            "media",
+            "business",
+            "others",
+        ]
+
+    elif label_by == "content":
+        _list_labels = [
+            "paper_explanation",
+            "paper_linked_supplementary",
+            "paper_supplementary",
+            "paper_application",
+            "paper_assessment",
+            "paper_reference",
+            "news",
+        ]
+    
+    # Get idx_papers from DB
+#     _dict_list_idx_papers_by_target = dict()
+#     for _target in _dict_df:
+#         _dict_list_idx_papers_by_target[_target] = dict()
+#         if label_by == "user_type":
+#             for _label in _list_labels:
+#                 db_handler.sql_handler.select("channels", "channelId").where("user_type", _label)  # Get target channelIds
+#                 _list_target_channelids = list(map(lambda _row: _row[0], db_handler.execute().fetchall()))
+#                 print("[+]_list_target_channelids:", _list_target_channelids)
+#                 if len(_list_target_channelids):
+#                     db_handler.sql_handler.select("scopus_videos_%s" % _target, "idx_paper").where("channelId", _list_target_channelids, "in")  # Get target idx_papers
+#                     _dict_list_idx_papers_by_target[_target][_label] = list(map(lambda _row: _row[0], db_handler.execute().fetchall()))
+#                 else:
+#                     _dict_list_idx_papers_by_target[_target][_label] = list()
+#                 print("[+]# Target DOIs:", _target, _label, len(_dict_list_idx_papers_by_target[_target][_label]))
+        
+#         else:
+#             pass
+
+    # Get metrics
+    _dict_list_metrics_by_target = dict()
+    for _target in _dict_df:
+        _dict_list_metrics_by_target[_target] = dict()
+        if label_by == "user_type":
+            for _label in _list_labels:
+                db_handler.sql_handler.select("channels", "channelId").where("user_type", _label)  # Get target channelIds
+                _list_target_channelids = list(map(lambda _row: _row[0], db_handler.execute().fetchall()))
+                if len(_list_target_channelids):
+                    db_handler.sql_handler.select("scopus_videos_%s" % _target, metric).where("channelId", _list_target_channelids, "in")  # Get metrics
+                    _dict_list_metrics_by_target[_target][_label] = list(map(lambda _row: _row[0], db_handler.execute().fetchall()))
+                    if log_scale:
+                        _dict_list_metrics_by_target[_target][_label] = np.log10(_dict_list_metrics_by_target[_target][_label])
+                else:
+                    _dict_list_metrics_by_target[_target][_label] = list()
+                print("[+]# Target videos:", _target, _label, len(_dict_list_metrics_by_target[_target][_label]))
+        
+        else:
+            pass
+        
+    # Boxplot
+    _list_data = list()
+    _list_plot_labels = list()
+    for _label in _list_labels:
+        _list_temp = list()
+        for _target in _dict_list_metrics_by_target:
+            _list_temp.append(_dict_list_metrics_by_target[_target][_label])
+        _list_data.append(_list_temp)
+        _list_plot_labels.append(_label)
+    
+    fig, axes = plt.subplots(ncols=len(_list_labels), figsize=(16, 6), sharey=True)
+#     fig, axes = plt.subplots(ncols=len(_list_labels), sharey=True)
+    fig.subplots_adjust(wspace=0)
+    
+    for _i, ax in enumerate(axes):
+        ax.boxplot(_list_data[_i])
+        _xticklabels = list(map(lambda _target: "%s\n(N=%d)" % (_target, len(_dict_list_metrics_by_target[_target][_list_plot_labels[_i]])), targets))
+        ax.set_xlabel("\n".join(_list_plot_labels[_i].split("_")), fontsize=8)
+        ax.set_xticklabels(_xticklabels, fontsize=6)
+        ax.margins(0.05) # Optional
+    
+    fig.suptitle(metric)
+    fig.add_subplot(111, frameon=False)
+    plt.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
+    plt.ylabel("log10(%s)" % metric) if log_scale else plt.ylabel(metric)
+#     plt.xlabel(label_by)
+#     plt.yscale("log")
+    plt.show()
+
+def _201117():
+    boxplot_by_label(targets=["2014_life", "2014_comp"], metric="viewCount", q=0.1, log_scale=True)
+
 
 if __name__ == '__main__':
+    # 201117
+    _201117()
+    
     # 200918
     # _200918()
     

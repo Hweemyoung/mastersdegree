@@ -30,11 +30,11 @@ class ScopusHandler:
     clustered_titles = None
     clustered_subjects = None
     dict_key_clusters = {
-        "abs": clustered_abs,
-        "embeddings": clustered_embeddings,
-        "pca": clustered_pca,
-        "titles": clustered_titles,
-        "subjects": clustered_subjects
+        "abs": None,
+        "embeddings": None,
+        "pca": None,
+        "titles": None,
+        "subjects": None
     }
 
     def __init__(self, df_scopus, df_sources, table_name):
@@ -42,6 +42,13 @@ class ScopusHandler:
         print("[+]Duplicates have been dropped from df_scopus.\tBefore: %d\tAfter: %d" % (len(df_scopus), len(self.df_scopus)))
         self.df_sources = df_sources
         self.table_name = table_name
+        self.dict_key_clusters = {
+            "abs": self.clustered_abs,
+            "embeddings": self.clustered_embeddings,
+            "pca": self.clustered_pca,
+            "titles": self.clustered_titles,
+            "subjects": self.clustered_subjects
+        }
     
     def __parse_fetches(self, fetches):
         _new_fetches = list()
@@ -218,7 +225,7 @@ class ScopusHandler:
             self.clustered_subjects[cluster_id].append(_list_subjects[sentence_id])            
 
         # Describe clusters
-        self.desc_clusters("title")
+        # self.desc_clusters("titles")
         
         if pca_components == 2:
             plt.scatter(_corpus_pca[:, 0], _corpus_pca[:, 1], c=self.clustering_model.labels_)

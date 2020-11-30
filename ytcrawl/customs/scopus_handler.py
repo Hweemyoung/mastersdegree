@@ -150,7 +150,7 @@ class ScopusHandler:
         return self
 
     def plot_box_by_video(self, where=None, days_from=None, days_until=None, scopus_column="Cited by"):
-        self.db_handler.sql_handler.select("scopus_videos_2014_comp", ["idx_paper", "publishedAt"])
+        self.db_handler.sql_handler.select(self.table_name, ["idx_paper", "publishedAt"])
         _videos = self.db_handler.execute().fetchall()
         _idx_papers = self.set_target_videos(self.df_scopus, where=where, days_from=days_from, days_until=days_until)
 
@@ -171,6 +171,55 @@ class ScopusHandler:
                 "w/ videos\n(N=%s)"%len(_w_videos_cit)
             ]
         )
+    
+    def plot_box_by_journals(self, where=None, days_from=None, days_until=None, scopus_column="Cited by", ncols=10):
+        self.set_target_videos(self.df_scopus, where=where, days_from=days_from, days_until=days_until)
+        _idx_papers = list(map(lambda _row: _row[2], self.list_target_videos))  # Get DOIs
+
+        # Set subsubjects
+        self._set_subsubjects = set(self.df_sources["Scopus Sub-Subject Area"])
+        self._dict_subsubjects_values = dict()
+        self._list_subsubjects_values = list()
+        for _subsubject in self._set_subsubjects:
+            self._target_sources = set(self.df_sources[self.df_sources["Scopus Sub-Subject Area"] == _subsubject]["Source title"])
+            self._target_papers = self.df_scopus[self.df_scopus["Source title"].isin(self._target_sources)]
+            if not len(self._target_papers[self._target_papers["DOI"].isin(_idx_papers)]):
+                continue
+            self._list_subsubjects_values.append(
+                (
+                    _subsubject,
+                    np.log10(self._target_papers[~self._target_papers["DOI"].isin(_idx_papers)][scopus_column].dropna().astype(int)),
+                    np.log10(self._target_papers[self._target_papers["DOI"].isin(_idx_papers)][scopus_column].dropna().astype(int))
+                )
+            )
+    
+        # Sort
+        # self._list_subsubjects_values = sorted(self._list_subsubjects_values, key=lambda _list: np.mean(_list[1]), reverse=True)  # Sort by mean values of w/o group
+        self._list_subsubjects_values = sorted(self._list_subsubjects_values, key=lambda _list: len(_list[2]), reverse=True)  # Sort by number of w/ group
+
+        # Plot top values only
+        if type(ncols) != type(None):
+            self._list_subsubjects_values = self._list_subsubjects_values[:ncols]
+
+        fig, axes = plt.subplots(ncols=len(self._list_subsubjects_values), figsize=(16, 6), sharey=True)
+        fig.subplots_adjust(wspace=0)
+
+        for _i, _values in enumerate(self._list_subsubjects_values):
+            axes[_i].boxplot(_values[1:3], showmeans=True)
+            _xticklabels = ["w/o\n(N=%d)" % len(_values[1]), "w/\n(N=%d)" % len(_values[2])]
+            axes[_i].set_xticklabels(_xticklabels, fontsize=12)
+            axes[_i].set_xlabel(_values[0].replace(" ", "\n"), fontsize=12)
+            axes[_i].margins(0.05) # Optional
+
+        fig.suptitle(scopus_column)
+        fig.add_subplot(111, frameon=False)
+        plt.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
+        plt.ylabel("log10(%s)" % scopus_column)
+    #     plt.xlabel(label_by)
+    #     plt.yscale("log")
+        plt.show()
+            
+        
     
     def cluster_scopus(self, target_column="Abstract", num_clusters=None, train_kmeans=True, pca_components=2, pretrained_model="distilbert-base-nli-stsb-mean-tokens", videos_only=True):
         if type(pca_components) != int or pca_components > 3 or pca_components < 2:

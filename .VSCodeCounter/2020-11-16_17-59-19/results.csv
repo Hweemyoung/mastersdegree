@@ -1,0 +1,14 @@
+"filename", "language", "Python", "comment", "blank", "total"
+"/home/hweem/git/mastersdegree/ytcrawl/customs/count/db_channels_uploader.py", "Python", 48, 50, 23, 121
+"/home/hweem/git/mastersdegree/ytcrawl/customs/count/db_handler.py", "Python", 69, 10, 15, 94
+"/home/hweem/git/mastersdegree/ytcrawl/customs/count/db_papers_uploader.py", "Python", 419, 102, 82, 603
+"/home/hweem/git/mastersdegree/ytcrawl/customs/count/db_videos_uploader.py", "Python", 158, 52, 41, 251
+"/home/hweem/git/mastersdegree/ytcrawl/customs/count/organizer.py", "Python", 28, 1, 5, 34
+"/home/hweem/git/mastersdegree/ytcrawl/customs/count/preprocessor.py", "Python", 132, 35, 29, 196
+"/home/hweem/git/mastersdegree/ytcrawl/customs/count/scopus_handler.py", "Python", 282, 80, 81, 443
+"/home/hweem/git/mastersdegree/ytcrawl/customs/count/scopus_preprocessor.py", "Python", 686, 251, 168, 1105
+"/home/hweem/git/mastersdegree/ytcrawl/customs/count/sql_handler.py", "Python", 177, 16, 39, 232
+"/home/hweem/git/mastersdegree/ytcrawl/customs/count/twitter_organizer.py", "Python", 152, 15, 37, 204
+"/home/hweem/git/mastersdegree/ytcrawl/customs/count/videos_organizer.py", "Python", 182, 28, 39, 249
+"/home/hweem/git/mastersdegree/ytcrawl/customs/count/youtube.py", "Python", 162, 75, 14, 251
+"Total", "-", 2495, 715, 573, 3783

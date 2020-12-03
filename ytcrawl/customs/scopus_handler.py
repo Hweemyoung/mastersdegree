@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 from db_handler import DBHandler
+# import matplotlib
+# matplotlib.use( 'tkagg' )
 from matplotlib import pyplot as plt
 from scipy import stats
 from datetime import datetime, timedelta
@@ -239,8 +241,8 @@ class ScopusHandler:
             axes[_i].boxplot(_values[1:3], showmeans=True)
             _xticklabels = ["w/o\n(N=%d)" % len(_values[1]),
                             "w/\n(N=%d)" % len(_values[2])]
-            axes[_i].set_xticklabels(_xticklabels, fontsize=12)
-            axes[_i].set_xlabel(_values[0].replace(" ", "\n"), fontsize=12)
+            axes[_i].set_xticklabels(_xticklabels, fontsize=10)
+            axes[_i].set_xlabel(_values[0].replace(" ", "\n"), fontsize=10)
             axes[_i].margins(0.05)  # Optional
 
         fig.suptitle(scopus_column)

@@ -1772,10 +1772,29 @@ def boxplot_by_label(targets="2014_life", label_by="user_type", metric="viewCoun
 def _201117():
     boxplot_by_label(targets=["2014_life", "2014_comp"], metric="viewCount", q=0.1, log_scale=True)
 
+def _201202():
+    import numpy as np
+    import pandas as pd
+    from db_handler import DBHandler
+    from matplotlib import pyplot as plt
+    from scipy import stats
+    from datetime import datetime, timedelta
+    from calendar import monthrange
+    from scopus_handler import ScopusHandler
+    
+    df3 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2014_comp.csv")
+    df3_sources = pd.read_csv("scopus/source-results-math_cs-citescore-2013.csv", header=0)
+    scopus_2014_comp = ScopusHandler(df3, df3_sources, "scopus_videos_2014_comp")
+
+    scopus_2014_comp.plot_box_by_journals()
+
 
 if __name__ == '__main__':
+    # 201202
+    _201202()
+    
     # 201117
-    _201117()
+    # _201117()
     
     # 200918
     # _200918()
@@ -1784,7 +1803,7 @@ if __name__ == '__main__':
     # _200914()
 
     # 200904
-    _200904()
+    # _200904()
     
     # 200819
     # _200819()

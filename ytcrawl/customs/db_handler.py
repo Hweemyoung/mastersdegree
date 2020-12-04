@@ -4,9 +4,9 @@ from preprocessor import Preprocessor
 
 
 class DBHandler:
-    sql_handler = SQLHandler()
+    
 
-    def __init__(self, host='localhost', user='root', passwd='111111', database='ytcrawl0'):
+    def __init__(self, host='localhost', user='root', passwd='111111', database='ytcrawl0', verbose=True):
         self.conn = mysql.connector.connect(
             host=host,
             user=user,
@@ -15,6 +15,7 @@ class DBHandler:
         )
         self.mycursor = self.conn.cursor()
         self.preprocessor = Preprocessor()
+        self.sql_handler = SQLHandler(verbose=verbose)
 
     def close(self):
         self.conn.close()

@@ -13,7 +13,6 @@ from sklearn.decomposition import PCA
 
 
 class ScopusHandler:
-    db_handler = DBHandler()
     videos = None
     idx_papers = None
     subjects_total = None
@@ -40,7 +39,7 @@ class ScopusHandler:
         "subjects": None
     }
 
-    def __init__(self, df_scopus, df_sources, table_name):
+    def __init__(self, df_scopus, df_sources, table_name, verbose=True):
         self.df_scopus = df_scopus.drop_duplicates(subset=["DOI"])
         print("[+]Duplicates have been dropped from df_scopus.\tBefore: %d\tAfter: %d" %
               (len(df_scopus), len(self.df_scopus)))
@@ -53,6 +52,7 @@ class ScopusHandler:
             "titles": self.clustered_titles,
             "subjects": self.clustered_subjects
         }
+        self.db_handler = DBHandler(verbose=verbose)
 
     def __parse_fetches(self, fetches):
         _new_fetches = list()
@@ -88,7 +88,7 @@ class ScopusHandler:
             # If Multiple rows with same DOI
             if len(_target_paper) > 1:
                 _target_paper = _target_paper.iloc[0]
-            elif len(_target_paper) == 0:  # Could be filtered before the method
+            elif len(_target_paper) == 0:
                 continue
 
             # Filter by DT
@@ -547,12 +547,17 @@ class ScopusHandler:
 
         return self
 
-    def model_metrics(self, paper_metric="Cited by", video_metric="viewCount", method="sum", log_scale=True):
+    def model_metrics(self, paper_metric="Cited by", video_metric="viewCount", method="sum", where=None, log_scale=True):
         from paper_score import PaperScore
+        self._dict_paper_scores_by_doi = None
+        self._xs = None
+        self._ys = None
         # Get videos
         _list_columns = ["idx", "videoId", "content",
                          "idx_paper", "channelId", "viewCount"]
         self.db_handler.sql_handler.select(self.table_name, _list_columns)
+        if type(where) != type(None):
+            self.db_handler.sql_handler.where(*where)
         _list_videos = self.db_handler.execute().fetchall()
 
         # Transform rows into dicts
@@ -587,6 +592,8 @@ class ScopusHandler:
         # Scatter plot
         plt.scatter(self._xs, self._ys)
         plt.title("Modeling(N=%d)" % len(self._xs))
+        plt.xlim(0, 7)
+        plt.ylim(0, 3.5)
         plt.xlabel("YTscore\n(%s, %s)" % (video_metric, method))
         plt.ylabel("log10(%s)" % paper_metric) if log_scale else plt.ylabel(paper_metric)
         plt.show()

@@ -12,12 +12,17 @@ class SQLHandler:
     # __check_type()
     dict_types = {str: 'str', int: 'int', list: 'list', tuple: 'tuple'}
 
-    def __init__(self):
-        pass
+    def __init__(self, verbose):
+        self.verbose = verbose
+
+    def __output(self, message):
+        if self.verbose:
+            print(*message)
+        return self
 
     def set_command_set(self):
         self.command_set = True
-        print('\tCommand set:', self.command)
+        self.__output(('\tCommand set:', self.command))
         return self
 
     def select(self, table, columns='*'):
@@ -72,7 +77,7 @@ class SQLHandler:
             else:
                 raise TypeError(
                     'Type of value cannot be processed:', val, type(val))
-        print('Preprocessed values:', values)
+        self.__output(('Preprocessed values:', values))
         return values
 
     def reset(self):
@@ -89,7 +94,7 @@ class SQLHandler:
     def init_list_where_clauses(self, index=None):
         if index != None:
             pop = self.list_where_clauses.pop(index)
-            print('\tlist_where_clauses[%d] popped:' % index, pop)
+            self.__output(('\tlist_where_clauses[%d] popped:' % index, pop))
         else:
             self.list_where_clauses = []
         return self
@@ -97,7 +102,7 @@ class SQLHandler:
     def init_list_order_clauses(self, index=None):
         if index != None:
             pop = self.list_order_clauses.pop(index)
-            print('\tlist_order_clauses[%d] popped:' % index, pop)
+            self.__output(('\tlist_order_clauses[%d] popped:' % index, pop))
         else:
             self.list_order_clauses = []
         return self
@@ -123,7 +128,7 @@ class SQLHandler:
         self.last_sql += ';'
 
         self.last_values = self.values
-        print('\tsql:', self.last_sql)
+        self.__output(('\tsql:', self.last_sql))
         if reset:
             self.reset()
         return (self.last_sql, self.last_values)
@@ -184,22 +189,22 @@ class SQLHandler:
 
         if clause not in self.list_where_clauses:
             self.list_where_clauses.append(clause)
-        print('\tCurrent list_where_clauses:', self.list_where_clauses)
+        self.__output(('\tCurrent list_where_clauses:', self.list_where_clauses))
         return self
 
     def order_by(self, columns=["idx"], orders=["asc"], dict_columns_orders=None):
         if dict_columns_orders != None:
             columns = tuple(dict_columns_orders.keys())
-            # print('dict_columns_orders.values(): ', dict_columns_orders.values())
+            # self.__output(('dict_columns_orders.values(): ', dict_columns_orders.values()))
             orders = tuple(
                 map(lambda order: self.dict_order[order], dict_columns_orders.values()))
-            # print('orders: ', orders)
+            # self.__output(('orders: ', orders))
 
         for col, order in zip(columns, orders):
             clause = '%s %s' % (col, order)
             if clause not in self.list_order_clauses:
                 self.list_order_clauses.append(clause)
-        print('\tCurrent list_order_clauses:', self.list_order_clauses)
+        self.__output(('\tCurrent list_order_clauses:', self.list_order_clauses))
         return self
 
     def __check_type(self, value, type_targets='str'):
@@ -220,7 +225,7 @@ class SQLHandler:
             where = '(' + conj.join(list_clauses) + ')'
         else:
             where = '1'
-        # print('\tWhere:', where)
+        # self.__output(('\tWhere:', where))
         return where
 
     def get_order_by_from_list(self, list_clauses):

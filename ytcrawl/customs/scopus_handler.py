@@ -38,6 +38,8 @@ class ScopusHandler:
         "titles": None,
         "subjects": None
     }
+    
+    _tup_idx_2019_life = (2, 3, 6, 10, 12, 17, 18, 38, 43, 50, 55, 56, 59, 67, 72, 73, 78, 86, 88, 90, 93, 94, 101, 108, 109, 110, 113, 116, 120, 122, 124, 128, 129, 130, 139, 140, 142, 145, 150, 153, 158, 159, 161, 163, 165, 166, 171, 175, 178, 181, 184, 190, 195, 199, 208, 209, 214, 217, 222, 223, 230, 232, 233, 238, 246, 247, 254, 256, 258, 264, 267, 270, 271, 275, 277, 281, 284, 286, 291, 292, 297, 298, 299, 300, 303, 305, 310, 311, 314, 316, 317, 318, 324, 326, 327, 330, 333, 334, 340, 343)
 
     def __init__(self, df_scopus, df_sources, table_name, verbose=True):
         self.df_scopus = df_scopus.drop_duplicates(subset=["DOI"])
@@ -565,7 +567,9 @@ class ScopusHandler:
             map(lambda _row: dict(zip(_list_columns, _row)), _list_videos))
         # Instantiate PaperScores
         _set_dois = set(map(lambda _row: _row[3], _list_videos))
+        print("[+]Target DOIs: %d" % len(_set_dois))
         _temp_df_scopus = self.df_scopus[self.df_scopus[paper_metric].notna()]
+        _temp_df_scopus = _temp_df_scopus[_temp_df_scopus[paper_metric] != "None"]
         self._dict_paper_scores_by_doi = dict(zip(_set_dois, tuple(map(lambda _doi: PaperScore(
             _doi, _temp_df_scopus, paper_metric=paper_metric, video_metric=video_metric, log_scale=log_scale), _set_dois))))  # {_doi: PaperScore(_doi), ...}
         # Append videos to corresponding instances
@@ -593,7 +597,7 @@ class ScopusHandler:
         plt.scatter(self._xs, self._ys)
         plt.title("Modeling(N=%d)" % len(self._xs))
         plt.xlim(0, 7)
-        plt.ylim(0, 3.5)
+        plt.ylim(0, 4.0)
         plt.xlabel("YTscore\n(%s, %s)" % (video_metric, method))
         plt.ylabel("log10(%s)" % paper_metric) if log_scale else plt.ylabel(paper_metric)
         plt.show()

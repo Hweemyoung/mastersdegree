@@ -1788,10 +1788,44 @@ def _201202():
 
     scopus_2014_comp.plot_box_by_journals()
 
+def _201208():
+    import numpy as np
+    import pandas as pd
+    from db_handler import DBHandler
+    from matplotlib import pyplot as plt
+    from scipy import stats
+    from datetime import datetime, timedelta
+    from calendar import monthrange
+    from scopus_handler import ScopusHandler
+    df3 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2014_comp.csv")
+    df3_sources = pd.read_csv("scopus/source_2013_comp.csv", header=0)
+    scopus_2014_comp = ScopusHandler(df3, df3_sources, "scopus_videos_2014_comp", title="2014_comp", verbose=False)
+    # fig1
+    scopus_2014_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="sum", label_by=None, regression=True, log_scale=True)
+    # fig2
+    scopus_2014_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="sum", label_by="content-simple", regression=False, log_scale=True)
+    # fig3
+    scopus_2014_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="sum", label_by="content-simple", regression=True, log_scale=True)
+    # fig4
+    scopus_2014_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="calibrated-sum", label_by="content-simple", regression=False, log_scale=True)
+    # fig5
+    scopus_2014_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="calibrated-sum", label_by="content-simple", regression=True, log_scale=True)
+    
+    df1 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2019_comp.csv")
+    df1_sources = pd.read_csv("scopus/source_2018_comp.csv", header=0)
+    scopus_2019_comp = ScopusHandler(df1, df1_sources, "scopus_videos_2019_comp", title="2019_comp", verbose=False)
+    # fig6
+    scopus_2019_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="sum", label_by="content-simple", regression=True, log_scale=True)
+    # fig7
+    scopus_2019_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="calibrated-sum", label_by="content-simple", regression=True, log_scale=True)
+
 
 if __name__ == '__main__':
+    # 201208
+    _201208()
+    
     # 201202
-    _201202()
+    # _201202()
     
     # 201117
     # _201117()

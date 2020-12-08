@@ -41,7 +41,7 @@ class ScopusHandler:
     
     _tup_idx_2019_life = (2, 3, 6, 10, 12, 17, 18, 38, 43, 50, 55, 56, 59, 67, 72, 73, 78, 86, 88, 90, 93, 94, 101, 108, 109, 110, 113, 116, 120, 122, 124, 128, 129, 130, 139, 140, 142, 145, 150, 153, 158, 159, 161, 163, 165, 166, 171, 175, 178, 181, 184, 190, 195, 199, 208, 209, 214, 217, 222, 223, 230, 232, 233, 238, 246, 247, 254, 256, 258, 264, 267, 270, 271, 275, 277, 281, 284, 286, 291, 292, 297, 298, 299, 300, 303, 305, 310, 311, 314, 316, 317, 318, 324, 326, 327, 330, 333, 334, 340, 343)
 
-    def __init__(self, df_scopus, df_sources, table_name, verbose=True):
+    def __init__(self, df_scopus, df_sources, table_name, title=None, verbose=True):
         self.df_scopus = df_scopus.drop_duplicates(subset=["DOI"])
         print("[+]Duplicates have been dropped from df_scopus.\tBefore: %d\tAfter: %d" %
               (len(df_scopus), len(self.df_scopus)))
@@ -54,6 +54,7 @@ class ScopusHandler:
             "titles": self.clustered_titles,
             "subjects": self.clustered_subjects
         }
+        self.title = title
         self.db_handler = DBHandler(verbose=verbose)
 
     def __parse_fetches(self, fetches):
@@ -549,7 +550,8 @@ class ScopusHandler:
 
         return self
 
-    def model_metrics(self, paper_metric="Cited by", video_metric="viewCount", method="sum", where=None, log_scale=True):
+    def model_metrics(self, paper_metric="Cited by", video_metric="viewCount", method="sum", label_by=None, regression=False, where=None, log_scale=True):
+        # label_by: "content-simple", "content-detail", "video_visual", "user_type"
         from paper_score import PaperScore
         self._dict_paper_scores_by_doi = None
         self._xs = None
@@ -571,31 +573,123 @@ class ScopusHandler:
         _temp_df_scopus = self.df_scopus[self.df_scopus[paper_metric].notna()]
         _temp_df_scopus = _temp_df_scopus[_temp_df_scopus[paper_metric] != "None"]
         self._dict_paper_scores_by_doi = dict(zip(_set_dois, tuple(map(lambda _doi: PaperScore(
-            _doi, _temp_df_scopus, paper_metric=paper_metric, video_metric=video_metric, log_scale=log_scale), _set_dois))))  # {_doi: PaperScore(_doi), ...}
+            _doi, _temp_df_scopus, paper_metric=paper_metric, video_metric=video_metric, label_by=label_by, log_scale=log_scale), _set_dois))))  # {_doi: PaperScore(_doi), ...}
         # Append videos to corresponding instances
         for _dict_video in _list_dict_videos:
             self._dict_paper_scores_by_doi[_dict_video["idx_paper"]].append_video(
-                _dict_video)
-        # Calc paper scores
-        _list_points = list(map(lambda _instance: _instance.calc_ytscore(method=method).get_ytscore_meter(
-        ), tuple(self._dict_paper_scores_by_doi.values())))  # [(ytscore, paper_meter), ...]
-        # Get xs, ys
-        self._xs = [_point[0] for _point in _list_points if None not in _point]
-        self._ys = [_point[1] for _point in _list_points if None not in _point]
-        # self._xs = list(map(lambda _point: _point[0], _list_points))
-        # self._ys = list(map(lambda _point: _point[1], _list_points))
+                _dict_video)        
         
-        # self._xs = list()
-        # self._ys = list()
-        # for _instance in self._dict_paper_scores_by_doi.values():
-        #     _point = _instance.get_ytscore_meter()
-        #     if type(_point) == type(None):
-        #         continue
-        #     self._xs.append(_point[0])
-        #     self._ys.append(_point[1])
-        # Scatter plot
-        plt.scatter(self._xs, self._ys)
-        plt.title("Modeling(N=%d)" % len(self._xs))
+        # Plot by labels
+        plt.figure(figsize=(10, 6))
+        if type(label_by) != type(None):
+            dict_x = dict()
+            dict_y = dict()
+            _set_labels_valid = set(map(lambda _paper_score: _paper_score.calc_ytscore(method=method).label, self._dict_paper_scores_by_doi.values()))
+            for _label in _set_labels_valid:
+                dict_x[_label] = list()
+                dict_y[_label] = list()
+            
+            for _instance in self._dict_paper_scores_by_doi.values():
+                if None in _instance.get_ytscore_meter():
+                    continue
+                dict_x[_instance.label].append(_instance.ytscore)
+                dict_y[_instance.label].append(_instance.paper_meter)
+            # Sort x, y
+            for _label in _set_labels_valid:
+                dict_x[_label], dict_y[_label] = self.__sort_xs_ys(dict_x[_label], dict_y[_label])
+            
+            _list_legends = list()
+            _list_plts = list()
+            _list_colors =  ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+            
+            # Plot
+            for _i, _label in enumerate(_set_labels_valid):    
+                _list_plts.append(plt.scatter(x=dict_x[_label], y=dict_y[_label], s=12, marker="o", c=_list_colors[_i % len(_list_colors)]))
+                _list_legends.append("%s(N=%d, c=%.2f)" % (_label, len(dict_y[_label]), PaperScore.dict_content_calib_coef[_label])) if "calibrated" in method else \
+                    _list_legends.append("%s(N=%d)" % (_label, len(dict_y[_label])))
+            # Legend
+            plt.legend(tuple(_list_plts),
+                tuple(_list_legends),
+                scatterpoints=1,
+                loc='upper right',
+                fontsize=8,
+                framealpha=0.3
+            )
+            # Regression
+            if regression:
+                _xs = list()
+                _ys = list()
+                for _i, _label in enumerate(_set_labels_valid):
+                    _xs += dict_x[_label]
+                    _ys += dict_y[_label]
+                    
+                    if len(dict_x[_label]) > 2:
+                        _color = _list_colors[_i % len(_list_colors)]
+                        # print("\tlen x: %d\tlen y: %d" % (len(dict_x[_label]), len(dict_y[_label])))
+                        # print("\tx:", dict_x[_label])
+                        # print("\ty:", dict_y[_label])
+                        _coef = np.polyfit(dict_x[_label], dict_y[_label], 1)
+                        _poly1d_fn = np.poly1d(_coef)
+                        _corr = np.corrcoef(dict_x[_label], dict_y[_label])[0, 1]
+                        plt.plot([dict_x[_label][0], dict_x[_label][-1]], [_poly1d_fn(dict_x[_label])[0], _poly1d_fn(dict_x[_label])[-1]], '--', color=_color)
+                        _text = "%s(R=%.2f, b0=%.2f, b1=%.2f, N=%d)" % (_label, _corr, _coef[0], _coef[1], len(dict_x[_label]))
+                        plt.text(dict_x[_label][-1] - len(_text) / 30.0, _poly1d_fn(dict_x[_label])[-1] + .1, _text, c=_color)
+                        # print("%s: %s" % (_label, _color))
+                
+                # Sort xs, ys
+                _xs, _ys = self.__sort_xs_ys(_xs, _ys)
+                # Regression for total points
+                _label = "Total"
+                _color = "#000000"
+                _coef = np.polyfit(_xs, _ys, 1)
+                _poly1d_fn = np.poly1d(_coef)
+                _corr = np.corrcoef(_xs, _ys)[0, 1]
+                plt.plot([_xs[0], _xs[-1]], [_poly1d_fn(_xs)[0], _poly1d_fn(_xs)[-1]], '--', color=_color)
+                _text = "%s(R=%.2f, b0=%.2f, b1=%.2f, N=%d)" % (_label, _corr, _coef[0], _coef[1], len(_xs))
+                plt.text(_xs[-1] - len(_text) / 40.0, _poly1d_fn(_xs)[-1] + .05, _text, c=_color)
+
+            _num_total = 0
+            for _label in dict_x:
+                _num_total += len(dict_x[_label])
+            plt.title("%s(N=%d)" % (self.title, _num_total))
+            
+        else:  # No label # No?!
+            # Calc paper scores
+            _list_points = list(map(lambda _instance: _instance.calc_ytscore(method=method).get_ytscore_meter(
+            ), tuple(self._dict_paper_scores_by_doi.values())))  # [(ytscore, paper_meter), ...]
+            # Get xs, ys
+            self._xs = [_point[0] for _point in _list_points if None not in _point]
+            self._ys = [_point[1] for _point in _list_points if None not in _point]
+            # Sort
+            self._xs, self._ys = self.__sort_xs_ys(self._xs, self._ys)
+
+            # self._xs = list(map(lambda _point: _point[0], _list_points))
+            # self._ys = list(map(lambda _point: _point[1], _list_points))
+            
+            # self._xs = list()
+            # self._ys = list()
+            # for _instance in self._dict_paper_scores_by_doi.values():
+            #     _point = _instance.get_ytscore_meter()
+            #     if type(_point) == type(None):
+            #         continue
+            #     self._xs.append(_point[0])
+            #     self._ys.append(_point[1])
+            # Scatter plot
+            plt.scatter(self._xs, self._ys)
+            # Regression for total points
+            if regression:
+                _label = "Total"
+                _color = "#000000"
+                _coef = np.polyfit(self._xs, self._ys, 1)
+                _poly1d_fn = np.poly1d(_coef)
+                plt.plot([self._xs[0], self._xs[-1]], [_poly1d_fn(self._xs)[0], _poly1d_fn(self._xs)[-1]], '--', color=_color)
+                _corr = np.corrcoef(self._xs, self._ys)[0, 1]
+                _text = "%s(R=%.2f, b0=%.2f, b1=%.2f, N=%d)" % (_label, _corr, _coef[0], _coef[1], len(self._xs))
+                plt.text(self._xs[-1] - len(_text) / 40.0 - 1, _poly1d_fn(self._xs)[-1] + .05, _text, c=_color)
+            
+            # Show
+            plt.title("%s(N=%d)" % (self.title, len(self._xs)))
+        
         plt.xlim(0, 7)
         plt.ylim(0, 4.0)
         plt.xlabel("YTscore\n(%s, %s)" % (video_metric, method))
@@ -603,3 +697,29 @@ class ScopusHandler:
         plt.show()
         
         return self
+    
+    def __sort_xs_ys(self, xs, ys, desc=False):
+        # Sort xs, ys
+        _xs_new = list()
+        _ys_new = list()
+        for _x, _y in sorted(zip(xs, ys), reverse=desc):
+            _xs_new.append(_x)
+            _ys_new.append(_y)
+        return _xs_new, _ys_new
+
+    def __cl(self, xs, ys):
+        # _color = _list_colors[_i % len(_list_colors)]
+        # print("\tlen x: %d\tlen y: %d" % (len(dict_x[_label]), len(dict_y[_label])))
+        # print("\tx:", dict_x[_label])
+        # print("\ty:", dict_y[_label])
+        _coef = np.polyfit(xs, ys, 1)
+        _poly1d_fn = np.poly1d(_coef)
+        # _dx = xs[0] - xs[-1]
+        # _dy = _poly1d_fn(xs)[0] - _poly1d_fn(xs)[-1]
+        # _b0 = (_poly1d_fn(xs)[0] * _dx - _dy * xs[0]) / _dx
+        # _b1 = _dy / _dx
+        _corr = np.corrcoef(xs, ys)[0, 1]
+        return _corr, _b0, _b1
+        _text = "%s(R=%.2f, N=%d)" % (_label, _corr, len(xs))
+        plt.plot([xs[0], xs[-1]], [_poly1d_fn(xs)[0], _poly1d_fn(xs)[-1]], '--', color=_color)
+        plt.text(xs[-1] - len(_text) / 30.0, _poly1d_fn(xs)[-1] + .1, _text, c=_color)        

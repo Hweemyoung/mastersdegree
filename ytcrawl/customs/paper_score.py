@@ -61,6 +61,8 @@ class PaperScore:
             self.__calc_ytscore_sum()
         elif method == "calibrated-sum":
             self.__calc_ytscore_calib_sum()
+        elif method == "calibrated-weighed-sum":
+            self.__calc_ytscore_calib_w_sum()
         
         return self
     
@@ -77,6 +79,10 @@ class PaperScore:
         # Multiply coefficient.
         self.ytscore = self.ytscore * self.dict_content_calib_coef[self.label]
         return self.ytscore
+    
+    def __calc_ytscore_calib_w_sum(self):
+        self.__calc_ytscore_sum()
+        pass
     
     def __set_label(self):
         if self.label_by == "content-simple":

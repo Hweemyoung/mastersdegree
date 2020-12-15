@@ -1819,10 +1819,28 @@ def _201208():
     # fig7
     scopus_2019_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="calibrated-sum", label_by="content-simple", regression=True, log_scale=True)
 
+def _201215():
+    import numpy as np
+    import pandas as pd
+    from db_handler import DBHandler
+    from matplotlib import pyplot as plt
+    from scipy import stats
+    from datetime import datetime, timedelta
+    from calendar import monthrange
+    from scopus_handler import ScopusHandler
+    df3 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2014_comp.csv")
+    df3_sources = pd.read_csv("scopus/source_2013_comp.csv", header=0)
+    scopus_2014_comp = ScopusHandler(df3, df3_sources, "scopus_videos_2014_comp", title="2014_comp", verbose=False)
+    
+    scopus_2014_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="calibrated-weighed-sum", label_by="content-simple", regression=True, log_scale=True)
+
 
 if __name__ == '__main__':
+    # 201215
+    _201215()
+    
     # 201208
-    _201208()
+    # _201208()
     
     # 201202
     # _201202()

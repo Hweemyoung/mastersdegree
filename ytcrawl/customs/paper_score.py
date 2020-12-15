@@ -5,6 +5,7 @@ class PaperScore:
     ytscore = None
     paper_meter = None
     label = None
+    weight = None
 
     dict_content_detail_to_simple = {
         "paper_explanation": "paper_explanation",
@@ -81,8 +82,15 @@ class PaperScore:
         return self.ytscore
     
     def __calc_ytscore_calib_w_sum(self):
-        self.__calc_ytscore_sum()
-        pass
+        return self.__calc_ytscore_sum()
+
+    def transform_x_y(self, method, target_b0, b0, target_b1, b1):
+        if method == "calibrated-weighed-sum":
+            self.ytscore = (b0 * self.ytscore - (target_b1 - b1)) / target_b0
+            # self.paper_meter = self.paper_meter + target_b1 - b1
+        else:
+            raise ValueError("Transform method not defined.")
+        return self
     
     def __set_label(self):
         if self.label_by == "content-simple":

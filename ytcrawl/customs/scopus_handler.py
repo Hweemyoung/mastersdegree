@@ -588,12 +588,62 @@ class ScopusHandler:
             for _label in _set_labels_valid:
                 dict_x[_label] = list()
                 dict_y[_label] = list()
-            
+            # Append points to the corresponding list
             for _instance in self._dict_paper_scores_by_doi.values():
                 if None in _instance.get_ytscore_meter():
                     continue
                 dict_x[_instance.label].append(_instance.ytscore)
                 dict_y[_instance.label].append(_instance.paper_meter)
+            
+            self._dict_paper_scores_valid_by_doi = dict()
+            for _instance in self._dict_paper_scores_by_doi.values():
+                if None in _instance.get_ytscore_meter():
+                    continue
+                if len(dict_x[_instance.label]) > 1:
+                    self._dict_paper_scores_valid_by_doi[_instance.doi] = _instance
+            
+            # if calib-w-sum
+            if method == "calibrated-weighed-sum":
+                _dict_data_by_label = dict()
+                _dict_content_calib_coef = dict()
+                for _i, _label in enumerate(_set_labels_valid):
+                    if len(dict_x[_label]) > 1:
+                        # Calc b0, b1, r, N
+                        _coef = np.polyfit(dict_x[_label], dict_y[_label], 1)
+                        _poly1d_fn = np.poly1d(_coef)
+                        _corr = np.corrcoef(dict_x[_label], dict_y[_label])[0, 1]
+                        _dict_data_by_label[_label] = (_corr, len(dict_x[_label]), _coef[0], _coef[1])  # r, N, b0(slope), b1(y-offset)
+                
+                        # Calc calib-coef
+                        _dict_content_calib_coef[_label] = _dict_data_by_label[_label][0] * np.log10(_dict_data_by_label[_label][1])
+                    else:  # For labels which have a single point each
+                        pass  # Those are ignored in self._dict_paper_scores_valid_by_doi
+                    
+                # Calc target b0, b1
+                _b0_target = np.sum(np.array(list(map(lambda _label: _dict_content_calib_coef[_label] * _dict_data_by_label[_label][2], _dict_data_by_label.keys())))) /\
+                    np.sum(np.array(list(map(lambda _label: _dict_data_by_label[_label][2], _dict_data_by_label.keys()))))
+                _b1_target = np.sum(np.array(list(map(lambda _label: _dict_content_calib_coef[_label] * _dict_data_by_label[_label][3], _dict_data_by_label.keys())))) /\
+                    np.sum(np.array(list(map(lambda _label: _dict_data_by_label[_label][2], _dict_data_by_label.keys()))))
+                    
+                # Recalc ytscore, paper metric per PaperScore
+                _list_paper_scores_recalc = list(map(lambda _paper_score: _paper_score.transform_x_y(
+                        method=method,
+                        target_b0=_b0_target,
+                        b0=_dict_data_by_label[_paper_score.label][2],
+                        target_b1=_b1_target,
+                        b1=_dict_data_by_label[_paper_score.label][3]
+                    ),
+                    self._dict_paper_scores_valid_by_doi.values()
+                ))
+
+                # Renew xs, ys
+                for _label in _set_labels_valid:
+                    dict_x[_label] = list()
+                    dict_y[_label] = list()
+                for _paper_score in _list_paper_scores_recalc:
+                    dict_x[_paper_score.label].append(_paper_score.ytscore)
+                    dict_y[_paper_score.label].append(_paper_score.paper_meter)
+            
             # Sort x, y
             for _label in _set_labels_valid:
                 dict_x[_label], dict_y[_label] = self.__sort_xs_ys(dict_x[_label], dict_y[_label])
@@ -605,8 +655,10 @@ class ScopusHandler:
             # Plot
             for _i, _label in enumerate(_set_labels_valid):    
                 _list_plts.append(plt.scatter(x=dict_x[_label], y=dict_y[_label], s=12, marker="o", c=_list_colors[_i % len(_list_colors)]))
-                _list_legends.append("%s(N=%d, c=%.2f)" % (_label, len(dict_y[_label]), PaperScore.dict_content_calib_coef[_label])) if "calibrated" in method else \
-                    _list_legends.append("%s(N=%d)" % (_label, len(dict_y[_label])))
+                _list_legends.append("%s(N=%d, c=%.2f, a=%.2f, b=%.2f)" \
+                    % (_label, len(dict_y[_label]), _dict_content_calib_coef[_label], _dict_data_by_label[_label][2] / _b0_target, (_dict_data_by_label[_label][3] - _b1_target) / _b0_target)) \
+                        if "calibrated" in method and _label in _dict_data_by_label else \
+                            _list_legends.append("%s(N=%d)" % (_label, len(dict_y[_label])))
             # Legend
             plt.legend(tuple(_list_plts),
                 tuple(_list_legends),
@@ -690,7 +742,7 @@ class ScopusHandler:
             # Show
             plt.title("%s(N=%d)" % (self.title, len(self._xs)))
         
-        plt.xlim(0, 7)
+        # plt.xlim(0, 7)
         plt.ylim(0, 4.0)
         plt.xlabel("YTscore\n(%s, %s)" % (video_metric, method))
         plt.ylabel("log10(%s)" % paper_metric) if log_scale else plt.ylabel(paper_metric)

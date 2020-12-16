@@ -93,7 +93,7 @@ class PaperScore:
         return self
     
     def __set_label(self):
-        print(self.list_dict_videos)
+        # print(self.list_dict_videos)
         if self.label_by == "content-simple":
             self.set_labels = set(map(lambda _dict_video: self.dict_content_detail_to_simple[_dict_video["content"]], self.list_dict_videos))
 

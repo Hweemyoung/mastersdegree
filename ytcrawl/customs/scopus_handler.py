@@ -550,7 +550,7 @@ class ScopusHandler:
 
         return self
 
-    def model_metrics(self, paper_metric="Cited by", video_metric="viewCount", method="sum", label_by=None, regression=False, where=None, log_scale=True):
+    def model_metrics(self, paper_metric="Cited by", video_metric="viewCount", method="sum", label_by=None, regression=False, where=None, log_scale=True, xlim=None, ylim=(0, 4)):
         # label_by: "content-simple", "content-detail", "video_visual", "user_type"
         from paper_score import PaperScore
         self._dict_paper_scores_by_doi = None
@@ -742,8 +742,10 @@ class ScopusHandler:
             # Show
             plt.title("%s(N=%d)" % (self.title, len(self._xs)))
         
-        # plt.xlim(0, 7)
-        plt.ylim(0, 4.0)
+        if type(xlim) != type(None):
+            plt.xlim(*xlim)
+        if type(ylim) != type(None):
+            plt.ylim(*ylim)
         plt.xlabel("YTscore\n(%s, %s)" % (video_metric, method))
         plt.ylabel("log10(%s)" % paper_metric) if log_scale else plt.ylabel(paper_metric)
         plt.show()

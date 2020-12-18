@@ -1834,6 +1834,55 @@ def _201215():
     
     scopus_2014_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="calibrated-weighed-sum", label_by="content-simple", regression=True, log_scale=True)
 
+def _201218(m):
+    # 1:m matching
+    _list_comparisons = [
+        "Source title",
+        "Document Type",
+        "is_funded",
+        "is_open",
+        "num_authors",
+        "num_affiliations",
+    ]
+
+    _list_counterparts = list()
+
+    df3 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2014_comp.csv")
+    df3_sources = pd.read_csv("scopus/source_2013_comp.csv", header=0)
+    scopus_2014_comp = ScopusHandler(df3, df3_sources, "scopus_videos_2014_comp", verbose=False)
+    _set_dois = set(map(lambda _tup_video: _tup_video[2], scopus_2014_comp.set_target_videos().list_target_videos))
+
+    df3 = preprocess_df(df3)
+    # Exclude target DOIs
+    df_target_dois = df3[df3["DOI"].isin(_set_dois)]
+    df_counterparts = df3[~df3["DOI"].isin(_set_dois)]
+
+    def sample(df, list_comparisons, m):
+        _filtering = get_filtering(df3, _list_comparisons)
+        # Randomly sample m matchers
+        _scopus_counterparts = df3.loc[df3[_filtering].sample(m).index]
+        return _scopus_counterparts
+
+    def get_filtering(df, list_comparisons):
+        _filtering = pd.concat(
+            list(map(lambda _column_name: df[_column_name] == _target_scopus[_column_name], list_comparisons)),
+            axis=1
+        ).all(axis=1)
+        return _filtering
+
+    for _i, (_idx, _target_scopus) in enumerate(df_target_dois.iterrows()):
+        print("[+]Processing %d of %d..." % (_i + 1, len(df_target_dois)))
+        try:
+            _scopus_counterparts = sample(df, list_comparisons, m)
+        except ValueError:  # sample larger than population
+            print("\t[-]Sample larger than population\n\tDOI: %s\tPopulation: %d" % (_doi, len(df3[_filtering])))
+            # _scopus_counterparts = df3[_filtering]
+        else:
+            # Append to list
+            _list_counterparts.append((_target_scopus, _scopus_counterparts))
+            # Drop samples from original df
+            df3 = df3.drop(_scopus_counterparts.index)
+
 
 if __name__ == '__main__':
     # 201215

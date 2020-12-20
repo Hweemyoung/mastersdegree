@@ -10,6 +10,7 @@ from calendar import monthrange
 from sentence_transformers import SentenceTransformer
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 
 
 class ScopusHandler:
@@ -18,6 +19,7 @@ class ScopusHandler:
     subjects_total = None
     subjects_w_videos = None
     subjects_total_w_videos = None
+    list_target_videos = None
 
     # Clustering
     embedder = None
@@ -257,10 +259,10 @@ class ScopusHandler:
     #     plt.yscale("log")
         plt.show()
 
-    def cluster_scopus(self, target_column="Abstract", num_clusters=None, train_kmeans=True, pca_components=2, pretrained_model="distilbert-base-nli-stsb-mean-tokens", videos_only=True):
-        if type(pca_components) != int or pca_components > 3 or pca_components < 2:
+    def cluster_scopus(self, target_column="Abstract", num_clusters=None, train_kmeans=True, reductor="TSNE", reduction_components=2, pretrained_model="distilbert-base-nli-stsb-mean-tokens", videos_where=None, videos_only=True):
+        if type(reduction_components) != int or reduction_components > 3 or reduction_components < 2:
             raise ValueError(
-                "[-]Argument 'pca_components' must be either 2 or 3.")
+                "[-]Argument 'reduction_components' must be either 2 or 3.")
 
         if self.embedder == None or self.pretrained_model != pretrained_model:
             print("[+]Assigning new embedder instance.")
@@ -270,18 +272,21 @@ class ScopusHandler:
         if target_column == "Abstract":
             _df_scopus_filtered = self.df_scopus[self.df_scopus["Abstract"]
                                                  != "[No abstract available]"]
+        elif target_column == "Author Keywords":
+            _df_scopus_filtered = self.df_scopus.dropna(subset="Author Keywords")
         else:
             _df_scopus_filtered = self.df_scopus.copy()
 
-        self.set_target_videos(_df_scopus_filtered)
+        self.set_target_videos(_df_scopus_filtered, where=videos_where)
 
         # Papers w/ videos
-        _target_scopus = _df_scopus_filtered[_df_scopus_filtered["DOI"].isin(
-            self.idx_papers)] if videos_only else _df_scopus_filtered
+        _target_scopus = _df_scopus_filtered[_df_scopus_filtered["DOI"].isin(self.idx_papers)].reset_index(drop=True) \
+            if videos_only else _df_scopus_filtered.reset_index(drop=True)
         _list_corpus = list(_target_scopus[target_column])
         _list_corpus = list(map(lambda abs: abs.split("©")[0], _list_corpus))
         _list_titles = list(_target_scopus["Title"])
         _list_subjects = list(_target_scopus["Scopus Sub-Subject Area"])
+        _list_dois = list(_target_scopus["DOI"])
 
         print("# Total elements in plot: %d" % len(_list_corpus))
 
@@ -295,39 +300,51 @@ class ScopusHandler:
         if train_kmeans:
             self.clustering_model.fit(self.corpus_embeddings)
 
-        # PCA
-        self.pca = PCA(n_components=pca_components)
-        _corpus_pca = self.pca.fit_transform(self.corpus_embeddings)
+        # Reductor
+        if reductor == "PCA":
+            self.reductor = PCA(n_components=reduction_components)
+        elif reductor == "TSNE":
+            self.reductor = TSNE(n_components=reduction_components)
+        elif reductor == "UMAP":
+            from umap import UMAP
+            from scipy.sparse.csgraph import connected_components
+            self.reductor = UMAP()
+
+        _reduced_embeddings = self.reductor.fit_transform(self.corpus_embeddings)
 
         self.clustered_abs = [[] for i in range(self.num_clusters)]
         self.clustered_embeddings = [[] for i in range(self.num_clusters)]
         self.clustered_pca = [[] for i in range(self.num_clusters)]
         self.clustered_titles = [[] for i in range(self.num_clusters)]
         self.clustered_subjects = [[] for i in range(self.num_clusters)]
+        self.clustered_dois = [[] for i in range(self.num_clusters)]
+        self.clustered_indices = [[] for i in range(self.num_clusters)]
 
         # Array of cluster index
         for sentence_id, cluster_id in enumerate(self.clustering_model.labels_):
             self.clustered_abs[cluster_id].append(_list_corpus[sentence_id])
             self.clustered_embeddings[cluster_id].append(
                 self.corpus_embeddings[sentence_id])
-            self.clustered_pca[cluster_id].append(_corpus_pca[sentence_id])
+            self.clustered_pca[cluster_id].append(_reduced_embeddings[sentence_id])
             self.clustered_titles[cluster_id].append(_list_titles[sentence_id])
             self.clustered_subjects[cluster_id].append(
                 _list_subjects[sentence_id])
+            self.clustered_dois[cluster_id].append(_list_dois[sentence_id])
+            self.clustered_indices[cluster_id].append(sentence_id)
 
         # Describe clusters
         # self.desc_clusters("titles")
 
-        if pca_components == 2:
-            plt.scatter(_corpus_pca[:, 0], _corpus_pca[:, 1],
+        if reduction_components == 2:
+            plt.scatter(_reduced_embeddings[:, 0], _reduced_embeddings[:, 1],
                         c=self.clustering_model.labels_)
             plt.show()
 
-        elif pca_components == 3:
+        elif reduction_components == 3:
             fig = plt.figure(figsize=(14, 14))
             ax = fig.add_subplot(111, projection="3d")
-            ax.scatter(_corpus_pca[:, 0], _corpus_pca[:, 1],
-                       _corpus_pca[:, 2], c=self.clustering_model.labels_)
+            ax.scatter(_reduced_embeddings[:, 0], _reduced_embeddings[:, 1],
+                       _reduced_embeddings[:, 2], c=self.clustering_model.labels_)
             plt.show()
 
         return self

@@ -1834,59 +1834,234 @@ def _201215():
     
     scopus_2014_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="calibrated-weighed-sum", label_by="content-simple", regression=True, log_scale=True)
 
-def _201218(m):
-    # 1:m matching
-    _list_comparisons = [
-        "Source title",
-        "Document Type",
-        "is_funded",
-        "is_open",
-        "num_authors",
-        "num_affiliations",
-    ]
+def _201217(subject="comp", m=3, num_comparisons=6, max_num_trial=6, metric="Cited by", log_scale=True, list_metrics=["num_affiliations", "Cited by"], list_log_scale=[False, True]):
+    if num_comparisons < max_num_trial:
+        raise ValueError
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    import functools
+    from scipy import stats
+    from scopus_handler import ScopusHandler
 
-    _list_counterparts = list()
+    def preprocess_authors(df):
+        _column_name = "Author(s) ID"
+        df = df.astype({_column_name: str})
+        # nan, "[No author id available]"
+        df = df[df[_column_name].notna()]
+        df = df[df[_column_name] != "[No author id available]"]
+        # Split by ;
+        df["num_authors"] = df[_column_name].apply(lambda _text: len(_text.split(";")))
+        return df
 
-    df3 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2014_comp.csv")
-    df3_sources = pd.read_csv("scopus/source_2013_comp.csv", header=0)
-    scopus_2014_comp = ScopusHandler(df3, df3_sources, "scopus_videos_2014_comp", verbose=False)
-    _set_dois = set(map(lambda _tup_video: _tup_video[2], scopus_2014_comp.set_target_videos().list_target_videos))
+    def preprocess_affiliations(df):
+        _column_name = "Affiliations"
+        df = df.astype({_column_name: str})
+        # nan
+        df = df[df[_column_name].notna()]
+        # Split by ;
+        df["num_affiliations"] = df[_column_name].apply(lambda _text: len(_text.split(";")))
+        return df
 
-    df3 = preprocess_df(df3)
-    # Exclude target DOIs
-    df_target_dois = df3[df3["DOI"].isin(_set_dois)]
-    df_counterparts = df3[~df3["DOI"].isin(_set_dois)]
+    def preprocess_funding(df):
+        import math
+        _column_name = "Funding Details"
+        df["is_funded"] = df[_column_name].fillna(False)
+        df["is_funded"] = df["is_funded"].apply(lambda _text: True if _text != False else _text)
+    #     df["is_funded"] = df[_column_name].apply(lambda _text: False if math.isnan(_text) else True)
+        return df
 
-    def sample(df, list_comparisons, m):
-        _filtering = get_filtering(df3, _list_comparisons)
-        # Randomly sample m matchers
-        _scopus_counterparts = df3.loc[df3[_filtering].sample(m).index]
-        return _scopus_counterparts
+    def preprocess_access_type(df):
+        _column_name = "Access Type"
+        df["is_open"] = df[_column_name].fillna(False)
+        df["is_open"] = df["is_open"].apply(lambda _text: True if _text != False else _text)
+    #     df["is_funded"] = df[_column_name].apply(lambda _text: False if math.isnan(_text) else True)
+        return df
 
-    def get_filtering(df, list_comparisons):
+    def preprocess_df(df):
+        # 저자 수, 기관 수: 같은 수
+        # 국제 집필 여부, 펀드 유무, 공개 논문 여부: 같은 여부
+        # 동일 저널, 동일 문서 타입, 동일 토픽: 같은 분류
+        df = df.drop_duplicates(subset=["DOI"])
+        df = preprocess_authors(df)
+        df = preprocess_affiliations(df)
+        df = preprocess_funding(df)
+        df = preprocess_access_type(df)
+        return df
+
+    def get_filtering(target_scopus, df_counterparts, list_comparisons):
         _filtering = pd.concat(
-            list(map(lambda _column_name: df[_column_name] == _target_scopus[_column_name], list_comparisons)),
+            list(map(lambda _column_name: df_counterparts[_column_name] == target_scopus[_column_name], list_comparisons)),
             axis=1
         ).all(axis=1)
         return _filtering
 
-    for _i, (_idx, _target_scopus) in enumerate(df_target_dois.iterrows()):
-        print("[+]Processing %d of %d..." % (_i + 1, len(df_target_dois)))
-        try:
-            _scopus_counterparts = sample(df, list_comparisons, m)
-        except ValueError:  # sample larger than population
-            print("\t[-]Sample larger than population\n\tDOI: %s\tPopulation: %d" % (_doi, len(df3[_filtering])))
-            # _scopus_counterparts = df3[_filtering]
-        else:
-            # Append to list
-            _list_counterparts.append((_target_scopus, _scopus_counterparts))
-            # Drop samples from original df
-            df3 = df3.drop(_scopus_counterparts.index)
+    def get_pairs(df, df_sources, scopus_handler, m=3, num_comparisons=6, max_num_trial=6, metric="Cited by", log_scale=True):
+        # 1:m matching
+        
+        _list_pairs = list()
+        _list_comparisons = [
+            "is_open",
+            "num_authors",
+            "num_affiliations",
+            "is_funded",
+            "Document Type",
+            "Source title",  # First priority
+        ][-num_comparisons:]
+        dict_scopus_by_trial = dict()
+        dict_scopus_by_trial["out"] = list()
+        for _i in range(6):
+            dict_scopus_by_trial[_i] = list()
 
+        _set_dois = set(map(lambda _tup_video: _tup_video[2], scopus_handler.set_target_videos().list_target_videos))
+        print("!HERE!")
+        print(len(_set_dois))
+        # return
+        # _set_dois = set(map(lambda _tup_video: _tup_video[2], scopus_handler.set_target_videos(where=("content", ("paper_explanation", "paper_assessment", "paper_application"), "in")).list_target_videos))
+
+        df = preprocess_df(df)
+        if log_scale:
+            df = df.dropna(subset=[metric])
+            df = df[df[metric] != "None"]
+        # Exclude target DOIs
+        df_target_dois = df[df["DOI"].isin(_set_dois)]
+        df_counterparts = df[~df["DOI"].isin(_set_dois)]
+
+        for _i, (_idx, _target_scopus) in enumerate(df_target_dois.iterrows()):
+            print("[+]Processing %d of %d..." % (_i + 1, len(df_target_dois)))
+        #     print(_target_scopus)
+        #     _filtering = pd.concat([
+        #         df3["num_authors"] == _target_scopus["num_authors"],
+        #         df3["num_affiliations"] == _target_scopus["num_affiliations"],
+        #         df3["is_funded"] == _target_scopus["is_funded"],
+        #         df3["is_open"] == _target_scopus["is_open"],
+        #         df3["Source title"] == _target_scopus["Source title"],
+        #         df3["Document Type"] == _target_scopus["Document Type"],
+        #     ], axis=1).all(axis=1)
+            _num_trial = 0
+            while True:
+                print(f"\t[+]{_num_trial + 1} th trial.")
+                _filtering = get_filtering(_target_scopus, df_counterparts, _list_comparisons[_num_trial:])
+                # Randomly sample m matchers
+                try:
+                    _scopus_counterparts = df_counterparts.loc[df_counterparts[_filtering].sample(m).index]
+                except ValueError:  # sample larger than population
+                    print("\t[-]Sample larger than population\n\tDOI: %s\tPopulation: %d\n\tRetrying..." % (_target_scopus["DOI"], len(df_counterparts[_filtering])))
+                    # _scopus_counterparts = df[_filtering]
+                    _num_trial += 1
+                    if _num_trial == max_num_trial:
+                        print("\t[-]Reached max_num_trial. Continue to next target_scopus.")
+                        dict_scopus_by_trial["out"].append(_target_scopus)
+                        break
+                else:
+                    # Append to list
+                    _list_pairs.append((_target_scopus, _scopus_counterparts))
+                    dict_scopus_by_trial[_num_trial].append(_target_scopus)
+                    # Drop samples from original df
+                    df_counterparts = df_counterparts.drop(_scopus_counterparts.index)
+                    break
+        return (_list_pairs, dict_scopus_by_trial)
+    
+    def get_metric_pairs(df, df_sources, scopus_handler, m=3, num_comparisons=6, max_num_trial=6, metric="Cited by", log_scale=True):
+        (_list_pairs, _dict_scopus_by_trial) = get_pairs(df, df_sources, scopus_handler, m=m, num_comparisons=num_comparisons, max_num_trial=max_num_trial, metric=metric, log_scale=log_scale)
+        _meters_targets = list(map(lambda _pair: int(np.nan_to_num(_pair[0][metric])), _list_pairs))
+        _meters_counterparts = functools.reduce(lambda a, b: a + b, list(map(lambda _twin: list(np.nan_to_num(_twin[1][metric].astype(int).values)), _list_pairs)))
+        # print(_meters_counterparts)
+        if log_scale:
+            _meters_targets = np.log10(_meters_targets)
+            _meters_counterparts = np.log10(_meters_counterparts)
+        return (_meters_counterparts, _meters_targets, _dict_scopus_by_trial)
+    
+    def get_corr(df, df_sources, scopus_handler, m=3, num_comparisons=6, max_num_trial=6, list_metrics=["num_affiliations", "Cited by"], list_log_scale=[False, True]):
+        _list_meters_targets = list()
+        _list_meters_counterparts = list()
+        (_list_pairs, _dict_scopus_by_trial) = get_pairs(df, df_sources, scopus_handler, m=m, num_comparisons=num_comparisons, max_num_trial=max_num_trial, metric=list_metrics[1], log_scale=list_log_scale[1])
+        # print(_list_pairs)
+        for _i in range(2):
+            _metrics_targets = list(map(lambda _pair: int(np.nan_to_num(_pair[0][list_metrics[_i]])), _list_pairs))
+            _metrics_counterparts = functools.reduce(lambda a, b: a + b, list(map(lambda _pair: list(np.nan_to_num(_pair[1][list_metrics[_i]].astype(int).values)), _list_pairs)))
+            
+            if list_log_scale[_i]:
+                _metrics_targets = np.log10(_metrics_targets)
+                _metrics_counterparts = np.log10(_metrics_counterparts)
+
+            _list_meters_targets.append(_metrics_targets)
+            _list_meters_counterparts.append(_metrics_counterparts)
+        
+        def plot_scatter(list_meters, list_metrics, list_log_scale):
+            # print("[+]Plot counterparts")
+            plt.ylabel(list_metrics[0]) if list_log_scale[0] else plt.ylabel(f"log10{list_metrics[0]}")
+            plt.ylabel(list_metrics[1]) if list_log_scale[1] else plt.ylabel(f"log10{list_metrics[1]}")
+            plt.scatter(list_meters[0], list_meters[1])
+            plt.show()
+        
+        plot_scatter(_list_meters_counterparts, list_metrics, list_log_scale)
+        plot_scatter(_list_meters_targets, list_metrics, list_log_scale)        
+
+        
+    # df1 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2019_comp.csv")
+    # df1_sources = pd.read_csv("scopus/source_2018_comp.csv", header=0)
+    # scopus_2019_comp = ScopusHandler(df1, df1_sources, "scopus_videos_2019_comp", verbose=False)
+    # df3 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2014_comp.csv")
+    # df3_sources = pd.read_csv("scopus/source_2013_comp.csv", header=0)
+    # scopus_2014_comp = ScopusHandler(df3, df3_sources, "scopus_videos_2014_comp", verbose=False)
+    # _2019_wo_videos_cit, _2019_w_videos_cit, _2019_dict_scopus_by_trial = get_pairs(df1, df1_sources, scopus_2019_comp, m=m, num_comparisons=num_comparisons, max_num_trial=max_num_trial, metric=metric, log_scale=log_scale)
+    # _2014_wo_videos_cit, _2014_w_videos_cit, _2014_dict_scopus_by_trial = get_pairs(df3, df3_sources, scopus_2014_comp, m=m, num_comparisons=num_comparisons, max_num_trial=max_num_trial, metric=metric, log_scale=log_scale)
+    
+    df4 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2014_%s.csv" % subject)
+    df4_sources = pd.read_csv("scopus/source_2013_%s.csv" % subject, header=0)
+    scopus_2014_life = ScopusHandler(df4, df4_sources, "scopus_videos_2014_%s" % subject, verbose=False)
+    # get_corr(df4, df4_sources, scopus_2014_life, m=m, num_comparisons=num_comparisons, max_num_trial=max_num_trial, list_metrics=list_metrics, list_log_scale=list_log_scale)
+    _2014_wo_videos_cit, _2014_w_videos_cit, _2014_dict_scopus_by_trial = get_metric_pairs(df4, df4_sources, scopus_2014_life, m=m, num_comparisons=num_comparisons, max_num_trial=max_num_trial, metric=metric, log_scale=log_scale)
+
+    df2 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2019_%s.csv" % subject)
+    df2_sources = pd.read_csv("scopus/source_2018_%s.csv" % subject, header=0)
+    scopus_2019_life = ScopusHandler(df2, df2_sources, "scopus_videos_2019_%s" % subject, verbose=False)
+    _2019_wo_videos_cit, _2019_w_videos_cit, _2019_dict_scopus_by_trial = get_metric_pairs(df2, df2_sources, scopus_2019_life, m=m, num_comparisons=num_comparisons, max_num_trial=max_num_trial, metric=metric, log_scale=log_scale)
+
+    for _i in _2019_dict_scopus_by_trial:
+        print("%s trial(s): %d" % (_i, len(_2019_dict_scopus_by_trial[_i])))
+    for _i in _2014_dict_scopus_by_trial:
+        print("%s trial(s): %d" % (_i, len(_2014_dict_scopus_by_trial[_i])))
+    print("2019")
+    print(np.mean(_2019_wo_videos_cit), np.mean(_2019_w_videos_cit))
+    print(stats.ttest_ind(_2019_wo_videos_cit, _2019_w_videos_cit))
+    print("2014")
+    print(np.mean(_2014_wo_videos_cit), np.mean(_2014_w_videos_cit))
+    print(stats.ttest_ind(_2014_wo_videos_cit, _2014_w_videos_cit))
+    
+    plt.figure(figsize=(10, 6))
+    # plt.ylim(-0.2, 3.5)
+    plt.title(f"{metric} - {subject}")
+    # plt.yscale("log")
+    # plt.ylim([0, 200])
+    plt.ylabel(f"log10({metric})")
+    plt.boxplot([
+            _2019_wo_videos_cit,
+            _2019_w_videos_cit,
+            _2014_wo_videos_cit,
+            _2014_w_videos_cit
+        ],
+        labels=[
+            "2019 w/o videos\n(N=%s)"%len(_2019_wo_videos_cit),
+            "2019 w/ videos\n(N=%s)"%len(_2019_w_videos_cit),
+            "2014 w/o videos\n(N=%s)"%len(_2014_wo_videos_cit),
+            "2014 w/ videos\n(N=%s)"%len(_2014_w_videos_cit)
+        ],
+        showmeans=True
+    )
+    plt.show()
 
 if __name__ == '__main__':
+    # 201217
+    # _201217(subject="comp", m=2, num_comparisons=1, max_num_trial=1, metric="Cited by", log_scale=True)
+    # _201217(subject="comp", m=2, num_comparisons=3, max_num_trial=1, metric="Cited by", log_scale=True)
+    # _201217(subject="life", m=2, num_comparisons=5, max_num_trial=1, metric="Cited by", log_scale=True)
+    _201217(subject="life", m=2, num_comparisons=3, max_num_trial=1, metric="num_authors", log_scale=True)
+    # _201217(subject="comp", m=2, num_comparisons=3, max_num_trial=1, list_metrics=["num_authors", "Cited by"], list_log_scale=[False, True])
+    
     # 201215
-    _201215()
+    # _201215()
     
     # 201208
     # _201208()

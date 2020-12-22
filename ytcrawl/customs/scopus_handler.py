@@ -77,6 +77,10 @@ class ScopusHandler:
             for _where in where:
                 if type(_where) == tuple:
                     self.db_handler.sql_handler.where(*_where)
+        
+        # For 2019_life
+        if self.table_name == "scopus_videos_2019_life":
+            self.db_handler.sql_handler.where("idx", self._tup_idx_2019_life, "in")
 
         self.list_videos_total = self.db_handler.execute().fetchall()
         # self.list_videos_total = self.__parse_fetches(self.list_videos_total)
@@ -85,7 +89,8 @@ class ScopusHandler:
 
         if type(df_scopus) == type(None):
             df_scopus = self.df_scopus
-
+        print("!HERE!")
+        print("Total videos: %d" % len(self.list_videos_total))
         for _row in self.list_videos_total:
             # Select by DOI
             _target_paper = df_scopus[df_scopus["DOI"] == _row[2]]

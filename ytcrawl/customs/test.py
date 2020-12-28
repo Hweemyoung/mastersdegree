@@ -1851,7 +1851,26 @@ def _201217(subject="comp", m=3, num_comparisons=6, max_num_trial=6, metric="Cit
         df = df[df[_column_name].notna()]
         df = df[df[_column_name] != "[No author id available]"]
         # Split by ;
-        df["num_authors"] = df[_column_name].apply(lambda _text: len(_text.split(";")))
+        df = __set_num_authors(df)
+        df = __set_first_author(df)
+        df = __set_last_author(df)
+        df = __set_list_authors(df)
+        return df
+
+    def __set_num_authors(df):
+        df["num_authors"] = df["Author(s) ID"].apply(lambda _text: len(_text.split(";")))
+        return df
+
+    def __set_first_author(df):
+        df["first_author"] = df["Author(s) ID"].apply(lambda _text: _text.split(";")[0])
+        return df
+
+    def __set_last_author(df):
+        df["last_author"] = df["Author(s) ID"].apply(lambda _text: _text.split(";")[-1])
+        return df
+
+    def __set_list_authors(df):
+        df["list_authors"] = df["Author(s) ID"].apply(lambda _text: _text.split(";"))
         return df
 
     def preprocess_affiliations(df):
@@ -1889,9 +1908,20 @@ def _201217(subject="comp", m=3, num_comparisons=6, max_num_trial=6, metric="Cit
         df = preprocess_access_type(df)
         return df
 
-    def get_filtering(target_scopus, df_counterparts, list_comparisons):
+    def get_filtering(target_scopus, df_counterparts, list_comparisons_equal, list_comparisons_isin_pairs=None):
+        _filtering_equal = list(map(lambda _column_name: df_counterparts[_column_name] == target_scopus[_column_name], list_comparisons_equal))
+        # _filtering_isin = list(map(lambda _pair_column_names: target_scopus[_pair_column_names[0]].isin(df_counterparts[_pair_column_names[1]])))
+        # _filtering_isin = list(map(lambda _pair_column_names: df_counterparts[_pair_column_names[0]].str.contains(target_scopus[_pair_column_names[1]]), list_comparisons_isin_pairs))
+        _filtering_isin = list(map(lambda _pair_column_names: df_counterparts[_pair_column_names[0]].apply(lambda _list: target_scopus[_pair_column_names[1]] in _list), list_comparisons_isin_pairs))
+        
+        # _filtering = pd.concat(
+        #     list(map(lambda _column_name: df_counterparts[_column_name] == target_scopus[_column_name] if _column_name not in comparisons_isin \
+        #         else target_scopus[_column_name].isin(df_counterparts[_column_name]),
+        #         list_comparisons)),
+        #     axis=1
+        # ).all(axis=1)
         _filtering = pd.concat(
-            list(map(lambda _column_name: df_counterparts[_column_name] == target_scopus[_column_name], list_comparisons)),
+            _filtering_equal + _filtering_isin,
             axis=1
         ).all(axis=1)
         return _filtering
@@ -1902,20 +1932,35 @@ def _201217(subject="comp", m=3, num_comparisons=6, max_num_trial=6, metric="Cit
         _list_pairs = list()
         _list_comparisons = [
             "is_open",
-            "num_authors",
-            "num_affiliations",
+            # "num_authors",
+            # "num_affiliations",
+            "first_author",
+            "last_author",
             "is_funded",
             "Document Type",
             "Source title",  # First priority
         ][-num_comparisons:]
+        _list_comparisons_equal = [
+            "is_open",
+            # "num_authors",
+            # "num_affiliations",
+            # "first_author",
+            "last_author",
+            "is_funded",
+            "Document Type",
+            "Source title",  # First priority
+        ][-num_comparisons:]
+        _list_comparisons_isin_pairs = [
+            ("list_authors", "first_author")
+        ]
         dict_scopus_by_trial = dict()
         dict_scopus_by_trial["out"] = list()
         for _i in range(6):
             dict_scopus_by_trial[_i] = list()
 
         _set_dois = set(map(lambda _tup_video: _tup_video[2], scopus_handler.set_target_videos().list_target_videos))
-        print("!HERE!")
-        print(len(_set_dois))
+        # print("!HERE!")
+        # print(len(_set_dois))
         # return
         # _set_dois = set(map(lambda _tup_video: _tup_video[2], scopus_handler.set_target_videos(where=("content", ("paper_explanation", "paper_assessment", "paper_application"), "in")).list_target_videos))
 
@@ -1942,6 +1987,7 @@ def _201217(subject="comp", m=3, num_comparisons=6, max_num_trial=6, metric="Cit
             while True:
                 print(f"\t[+]{_num_trial + 1} th trial.")
                 _filtering = get_filtering(_target_scopus, df_counterparts, _list_comparisons[_num_trial:])
+                _filtering = get_filtering(_target_scopus, df_counterparts, )
                 # Randomly sample m matchers
                 try:
                     _scopus_counterparts = df_counterparts.loc[df_counterparts[_filtering].sample(m).index]
@@ -2056,8 +2102,8 @@ if __name__ == '__main__':
     # 201217
     # _201217(subject="comp", m=2, num_comparisons=1, max_num_trial=1, metric="Cited by", log_scale=True)
     # _201217(subject="comp", m=2, num_comparisons=3, max_num_trial=1, metric="Cited by", log_scale=True)
-    # _201217(subject="life", m=2, num_comparisons=5, max_num_trial=1, metric="Cited by", log_scale=True)
-    _201217(subject="life", m=2, num_comparisons=3, max_num_trial=1, metric="num_authors", log_scale=True)
+    _201217(subject="life", m=2, num_comparisons=4, max_num_trial=1, metric="Cited by", log_scale=True)
+    # _201217(subject="life", m=2, num_comparisons=3, max_num_trial=1, metric="num_authors", log_scale=True)
     # _201217(subject="comp", m=2, num_comparisons=3, max_num_trial=1, list_metrics=["num_authors", "Cited by"], list_log_scale=[False, True])
     
     # 201215

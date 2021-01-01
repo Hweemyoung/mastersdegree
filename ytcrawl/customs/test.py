@@ -1908,11 +1908,27 @@ def _201217(subject="comp", m=3, num_comparisons=6, max_num_trial=6, metric="Cit
         df = preprocess_access_type(df)
         return df
 
-    def get_filtering(target_scopus, df_counterparts, list_comparisons_equal, list_comparisons_isin_pairs=None):
-        _filtering_equal = list(map(lambda _column_name: df_counterparts[_column_name] == target_scopus[_column_name], list_comparisons_equal))
+    def get_filtering(target_scopus, df_counterparts, list_comparisons_equal=None, list_comparisons_isin_pairs=None):
+        if type(list_comparisons_equal) != type(None):
+            _filtering_equal = list(map(lambda _column_name: df_counterparts[_column_name].apply(lambda _text: _text == target_scopus[_column_name]), list_comparisons_equal))
+        else:
+            _filtering_equal = None
         # _filtering_isin = list(map(lambda _pair_column_names: target_scopus[_pair_column_names[0]].isin(df_counterparts[_pair_column_names[1]])))
         # _filtering_isin = list(map(lambda _pair_column_names: df_counterparts[_pair_column_names[0]].str.contains(target_scopus[_pair_column_names[1]]), list_comparisons_isin_pairs))
-        _filtering_isin = list(map(lambda _pair_column_names: df_counterparts[_pair_column_names[0]].apply(lambda _list: target_scopus[_pair_column_names[1]] in _list), list_comparisons_isin_pairs))
+        if type(list_comparisons_isin_pairs) != type(None):
+            _filtering_isin = list(map(lambda _pair_column_names: df_counterparts[_pair_column_names[0]].apply(lambda _list: target_scopus[_pair_column_names[1]] in _list),  # Get boolean
+                list_comparisons_isin_pairs)
+            )
+        else:
+            _filtering_isin = None
+        
+        
+        # temp = pd.concat(
+        #     _filtering_isin,
+        #     axis=1
+        # ).all(axis=1)
+        # print(temp.value_counts())
+        # exit()
         
         # _filtering = pd.concat(
         #     list(map(lambda _column_name: df_counterparts[_column_name] == target_scopus[_column_name] if _column_name not in comparisons_isin \
@@ -1920,28 +1936,43 @@ def _201217(subject="comp", m=3, num_comparisons=6, max_num_trial=6, metric="Cit
         #         list_comparisons)),
         #     axis=1
         # ).all(axis=1)
-        _filtering = pd.concat(
-            _filtering_equal + _filtering_isin,
-            axis=1
-        ).all(axis=1)
-        return _filtering
+        if _filtering_equal != None and _filtering_isin != None:
+            _filtering = pd.concat(
+                _filtering_equal + _filtering_isin,
+                axis=1
+            ).all(axis=1)
+            return _filtering
+        elif _filtering_equal != None:
+            _filtering = pd.concat(
+                _filtering_equal,
+                axis=1
+            ).all(axis=1)
+            return _filtering
+        elif _filtering_isin != None:
+            _filtering = pd.concat(
+                _filtering_isin,
+                axis=1
+            ).all(axis=1)
+            return _filtering
+        else:
+            raise ValueError("Both list_comparisons_equal and list_comparisons_isin_pairs are None.")
 
     def get_pairs(df, df_sources, scopus_handler, m=3, num_comparisons=6, max_num_trial=6, metric="Cited by", log_scale=True):
         # 1:m matching
         
         _list_pairs = list()
-        _list_comparisons = [
-            "is_open",
-            # "num_authors",
-            # "num_affiliations",
-            "first_author",
-            "last_author",
-            "is_funded",
-            "Document Type",
-            "Source title",  # First priority
-        ][-num_comparisons:]
+        # _list_comparisons = [
+        #     "is_open",
+        #     # "num_authors",
+        #     # "num_affiliations",
+        #     "first_author",
+        #     "last_author",
+        #     "is_funded",
+        #     "Document Type",
+        #     "Source title",  # First priority
+        # ][-num_comparisons:]
         _list_comparisons_equal = [
-            "is_open",
+            # "is_open",
             # "num_authors",
             # "num_affiliations",
             # "first_author",
@@ -1951,11 +1982,11 @@ def _201217(subject="comp", m=3, num_comparisons=6, max_num_trial=6, metric="Cit
             "Source title",  # First priority
         ][-num_comparisons:]
         _list_comparisons_isin_pairs = [
-            ("list_authors", "first_author")
+            ("list_authors", "first_author")  # (Counterparts, Target)
         ]
         dict_scopus_by_trial = dict()
         dict_scopus_by_trial["out"] = list()
-        for _i in range(6):
+        for _i in range(max_num_trial):
             dict_scopus_by_trial[_i] = list()
 
         _set_dois = set(map(lambda _tup_video: _tup_video[2], scopus_handler.set_target_videos().list_target_videos))
@@ -1986,8 +2017,8 @@ def _201217(subject="comp", m=3, num_comparisons=6, max_num_trial=6, metric="Cit
             _num_trial = 0
             while True:
                 print(f"\t[+]{_num_trial + 1} th trial.")
-                _filtering = get_filtering(_target_scopus, df_counterparts, _list_comparisons[_num_trial:])
-                _filtering = get_filtering(_target_scopus, df_counterparts, )
+                # _filtering = get_filtering(_target_scopus, df_counterparts, _list_comparisons_equal[_num_trial:], _list_comparisons_isin_pairs)
+                _filtering = get_filtering(_target_scopus, df_counterparts, _list_comparisons_equal[_num_trial:])
                 # Randomly sample m matchers
                 try:
                     _scopus_counterparts = df_counterparts.loc[df_counterparts[_filtering].sample(m).index]

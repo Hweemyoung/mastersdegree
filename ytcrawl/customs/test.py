@@ -2161,7 +2161,7 @@ if __name__ == '__main__':
     # 201217
     # _201217(subject="comp", m=2, num_comparisons=1, max_num_trial=1, metric="Cited by", log_scale=True)
     # _201217(subject="comp", m=2, num_comparisons=3, max_num_trial=1, metric="Cited by", log_scale=True)
-    _201217(subject="life", m=2, num_comparisons=4, max_num_trial=1, metric="AAS", log_scale=True)
+    _201217(subject="comp", m=2, num_comparisons=4, max_num_trial=1, metric="AAS", log_scale=True)
     # _201217(subject="life", m=2, num_comparisons=3, max_num_trial=1, metric="num_authors", log_scale=True)
     # _201217(subject="comp", m=2, num_comparisons=3, max_num_trial=1, list_metrics=["num_authors", "Cited by"], list_log_scale=[False, True])
     

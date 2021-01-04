@@ -1834,14 +1834,14 @@ def _201215():
     
     scopus_2014_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="calibrated-weighed-sum", label_by="content-simple", regression=True, log_scale=True)
 
-def _201217(subject="comp", m=3, num_comparisons=6, max_num_trial=6, metric="Cited by", log_scale=True, list_metrics=["num_affiliations", "Cited by"], list_log_scale=[False, True]):
+def _201217(subject="comp", m=3, num_comparisons=6, max_num_trial=6, metric="Cited by", log_scale=True, list_metrics=["num_affiliations", "Cited by"], list_log_scale=[False, True], alpha=0.05):
     if num_comparisons < max_num_trial:
         raise ValueError
     import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
     import functools
-    from scipy import stats
+    from scipy.stats import normaltest, iqr, ttest_ind
     from scopus_handler import ScopusHandler
 
     def preprocess_authors(df):
@@ -2073,7 +2073,23 @@ def _201217(subject="comp", m=3, num_comparisons=6, max_num_trial=6, metric="Cit
             plt.show()
         
         plot_scatter(_list_meters_counterparts, list_metrics, list_log_scale)
-        plot_scatter(_list_meters_targets, list_metrics, list_log_scale)        
+        plot_scatter(_list_meters_targets, list_metrics, list_log_scale)
+    
+    def __remove_outliers(list_meters, outlier_threshold=1.5):
+        S1 = pd.Series(list_meters)
+        _iqr1 = iqr(S1)
+        S1 = S1[S1.between(S1.quantile(0.25) - outlier_threshold * _iqr1, S1.quantile(0.75) + outlier_threshold * _iqr1)]
+        return list(S1)
+
+    def __normaltest(list_meters, alpha):
+        stat, p  = normaltest(list_meters)
+        # stat, p  = shapiro(S)
+        # stat, p = kstest(S1, S2)
+        print(f"p = {p}")
+        if p > alpha :
+            print("Normal.")
+        else :
+            print("NOT normal.")
 
         
     # df1 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2019_comp.csv")
@@ -2087,25 +2103,37 @@ def _201217(subject="comp", m=3, num_comparisons=6, max_num_trial=6, metric="Cit
     
     df4 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2014_%s.csv" % subject)
     df4_sources = pd.read_csv("scopus/source_2013_%s.csv" % subject, header=0)
-    scopus_2014_life = ScopusHandler(df4, df4_sources, "scopus_videos_2014_%s" % subject, verbose=False)
+    scopus_2014_life = ScopusHandler(df4, df4_sources, "scopus_videos_2014_%s" % subject, verbose=True)
+    scopus_2014_life.db_handler.sql_handler.list_where_clauses = []
     # get_corr(df4, df4_sources, scopus_2014_life, m=m, num_comparisons=num_comparisons, max_num_trial=max_num_trial, list_metrics=list_metrics, list_log_scale=list_log_scale)
     _2014_wo_videos_cit, _2014_w_videos_cit, _2014_dict_scopus_by_trial = get_metric_pairs(df4, df4_sources, scopus_2014_life, m=m, num_comparisons=num_comparisons, max_num_trial=max_num_trial, metric=metric, log_scale=log_scale)
 
     df2 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2019_%s.csv" % subject)
     df2_sources = pd.read_csv("scopus/source_2018_%s.csv" % subject, header=0)
-    scopus_2019_life = ScopusHandler(df2, df2_sources, "scopus_videos_2019_%s" % subject, verbose=False)
+    scopus_2019_life = ScopusHandler(df2, df2_sources, "scopus_videos_2019_%s" % subject, verbose=True)
+    scopus_2019_life.db_handler.sql_handler.list_where_clauses = []
     _2019_wo_videos_cit, _2019_w_videos_cit, _2019_dict_scopus_by_trial = get_metric_pairs(df2, df2_sources, scopus_2019_life, m=m, num_comparisons=num_comparisons, max_num_trial=max_num_trial, metric=metric, log_scale=log_scale)
+
+    # Remove outliers
+    # _2019_wo_videos_cit = __remove_outliers(_2019_wo_videos_cit)
+    # _2019_w_videos_cit = __remove_outliers(_2019_w_videos_cit)
+    # _2014_wo_videos_cit = __remove_outliers(_2014_wo_videos_cit)
+    # _2014_w_videos_cit = __remove_outliers(_2014_w_videos_cit)
 
     for _i in _2019_dict_scopus_by_trial:
         print("%s trial(s): %d" % (_i, len(_2019_dict_scopus_by_trial[_i])))
     for _i in _2014_dict_scopus_by_trial:
         print("%s trial(s): %d" % (_i, len(_2014_dict_scopus_by_trial[_i])))
     print("2019")
+    __normaltest(__remove_outliers(_2019_wo_videos_cit), alpha)
+    __normaltest(__remove_outliers(_2019_w_videos_cit), alpha)
     print(np.mean(_2019_wo_videos_cit), np.mean(_2019_w_videos_cit))
-    print(stats.ttest_ind(_2019_wo_videos_cit, _2019_w_videos_cit))
+    print(ttest_ind(_2019_wo_videos_cit, _2019_w_videos_cit))
     print("2014")
+    __normaltest(__remove_outliers(_2014_wo_videos_cit), alpha)
+    __normaltest(__remove_outliers(_2014_w_videos_cit), alpha)
     print(np.mean(_2014_wo_videos_cit), np.mean(_2014_w_videos_cit))
-    print(stats.ttest_ind(_2014_wo_videos_cit, _2014_w_videos_cit))
+    print(ttest_ind(_2014_wo_videos_cit, _2014_w_videos_cit))
     
     plt.figure(figsize=(10, 6))
     # plt.ylim(-0.2, 3.5)
@@ -2133,7 +2161,7 @@ if __name__ == '__main__':
     # 201217
     # _201217(subject="comp", m=2, num_comparisons=1, max_num_trial=1, metric="Cited by", log_scale=True)
     # _201217(subject="comp", m=2, num_comparisons=3, max_num_trial=1, metric="Cited by", log_scale=True)
-    _201217(subject="life", m=2, num_comparisons=4, max_num_trial=1, metric="Cited by", log_scale=True)
+    _201217(subject="life", m=2, num_comparisons=4, max_num_trial=1, metric="AAS", log_scale=True)
     # _201217(subject="life", m=2, num_comparisons=3, max_num_trial=1, metric="num_authors", log_scale=True)
     # _201217(subject="comp", m=2, num_comparisons=3, max_num_trial=1, list_metrics=["num_authors", "Cited by"], list_log_scale=[False, True])
     

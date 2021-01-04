@@ -1,3 +1,4 @@
+import random
 import numpy as np
 import pandas as pd
 from db_handler import DBHandler
@@ -41,7 +42,6 @@ class ScopusHandler:
         "subjects": None
     }
     
-    _tup_idx_2019_life = (2, 3, 6, 10, 12, 17, 18, 38, 43, 50, 55, 56, 59, 67, 72, 73, 78, 86, 88, 90, 93, 94, 101, 108, 109, 110, 113, 116, 120, 122, 124, 128, 129, 130, 139, 140, 142, 145, 150, 153, 158, 159, 161, 163, 165, 166, 171, 175, 178, 181, 184, 190, 195, 199, 208, 209, 214, 217, 222, 223, 230, 232, 233, 238, 246, 247, 254, 256, 258, 264, 267, 270, 271, 275, 277, 281, 284, 286, 291, 292, 297, 298, 299, 300, 303, 305, 310, 311, 314, 316, 317, 318, 324, 326, 327, 330, 333, 334, 340, 343)
 
     def __init__(self, df_scopus, df_sources, table_name, title=None, verbose=True):
         self.df_scopus = df_scopus.drop_duplicates(subset=["DOI"])
@@ -58,6 +58,16 @@ class ScopusHandler:
         }
         self.title = title
         self.db_handler = DBHandler(verbose=verbose)
+        
+        self._tup_idx_2014_comp = (1, 2, 3, 4, 6, 7, 9, 11, 12, 14, 15, 16, 17, 18, 19, 20, 21, 24, 25, 27, 28, 29, 30, 31, 33, 34, 36, 38, 39, 41, 43, 46, 48, 50, 51, 52, 53, 55, 56, 57, 58, 62, 64, 65, 69, 70, 71, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 84, 85, 87, 88, 89, 91, 92, 95, 96, 97, 98, 99, 101, 102, 103, 105, 106, 107, 109, 111, 114, 115, 118, 119, 120, 121, 122, 124, 125, 127, 128, 129, 131, 132, 135, 137, 138, 142, 143, 144, 145, 147, 148)
+        self._tup_idx_2019_comp = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80)
+        self._tup_idx_2014_life = (1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 61, 62, 63, 65, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 109, 110, 111, 112)
+        self._tup_idx_2019_life = (2, 3, 6, 10, 12, 17, 18, 38, 43, 50, 55, 56, 59, 67, 72, 73, 78, 86, 88, 90, 93, 94, 101, 108, 109, 110, 113, 116, 120, 122, 124, 128, 129, 130, 139, 140, 142, 145, 150, 153, 158, 159, 161, 163, 165, 166, 171, 175, 178, 181, 184, 190, 195, 199, 208, 209, 214, 217, 222, 223, 230, 232, 233, 238, 246, 247, 254, 256, 258, 264, 267, 270, 271, 275, 277, 281, 284, 286, 291, 292, 297, 298, 299, 300, 303, 305, 310, 311, 314, 316, 317, 318, 324, 326, 327, 330, 333, 334, 340, 343)
+        # self._tup_idx_2014_comp = sorted(random.sample(range(1, 149), 100))
+        # self._tup_idx_2019_comp = sorted(random.sample(range(1, 81), 80))
+        # self._tup_idx_2014_life = sorted(random.sample(range(1, 113), 100))
+        # self._tup_idx_2019_life = (2, 3, 6, 10, 12, 17, 18, 38, 43, 50, 55, 56, 59, 67, 72, 73, 78, 86, 88, 90, 93, 94, 101, 108, 109, 110, 113, 116, 120, 122, 124, 128, 129, 130, 139, 140, 142, 145, 150, 153, 158, 159, 161, 163, 165, 166, 171, 175, 178, 181, 184, 190, 195, 199, 208, 209, 214, 217, 222, 223, 230, 232, 233, 238, 246, 247, 254, 256, 258, 264, 267, 270, 271, 275, 277, 281, 284, 286, 291, 292, 297, 298, 299, 300, 303, 305, 310, 311, 314, 316, 317, 318, 324, 326, 327, 330, 333, 334, 340, 343)
+        
 
     def __parse_fetches(self, fetches):
         _new_fetches = list()
@@ -81,6 +91,12 @@ class ScopusHandler:
         # For 2019_life
         if self.table_name == "scopus_videos_2019_life":
             self.db_handler.sql_handler.where("idx", self._tup_idx_2019_life, "in")
+        elif self.table_name == "scopus_videos_2014_life":
+            self.db_handler.sql_handler.where("idx", self._tup_idx_2014_life, "in")
+        elif self.table_name == "scopus_videos_2019_comp":
+            self.db_handler.sql_handler.where("idx", self._tup_idx_2019_comp, "in")
+        elif self.table_name == "scopus_videos_2014_comp":
+            self.db_handler.sql_handler.where("idx", self._tup_idx_2014_comp, "in")
 
         self.list_videos_total = self.db_handler.execute().fetchall()
         # self.list_videos_total = self.__parse_fetches(self.list_videos_total)
@@ -89,7 +105,6 @@ class ScopusHandler:
 
         if type(df_scopus) == type(None):
             df_scopus = self.df_scopus
-        print("!HERE!")
         print("Total videos: %d" % len(self.list_videos_total))
         for _row in self.list_videos_total:
             # Select by DOI

@@ -2269,6 +2269,102 @@ def _210105(subject, metric="Cited by"):
     )
     plt.show()
 
+def _210106(subject, metric="Cited by"):  # By channels
+    import numpy as np
+    import pandas as pd
+    from db_handler import DBHandler
+    from matplotlib import pyplot as plt
+    from datetime import datetime, timedelta
+    from calendar import monthrange
+    import functools
+    from scipy.stats import normaltest, iqr, ttest_ind, shapiro
+    from scopus_handler import ScopusHandler
+    
+    def get_list_meters(scopus_handler, metric="Cited by", where=None):
+        _list_dois = list(map(lambda _row: _row[2], scopus_handler.set_target_videos(where=where).list_target_videos))
+        return np.log10(scopus_handler.df_scopus[scopus_handler.df_scopus.DOI.isin(_list_dois)][scopus_handler.df_scopus[metric] != "None"][metric].dropna().astype(int).values)
+    
+    def __remove_outliers(list_meters, outlier_threshold=1.5):
+        S1 = pd.Series(list_meters)
+        _iqr1 = iqr(S1)
+        S1 = S1[S1.between(S1.quantile(0.25) - outlier_threshold * _iqr1, S1.quantile(0.75) + outlier_threshold * _iqr1)]
+        return list(S1)
+
+    def __normaltest(list_meters, alpha=0.05):
+        try:
+            stat, p  = normaltest(list_meters)
+            # stat, p  = shapiro(list_meters)
+        except ValueError:
+            print("Normaltest not executable.")
+            return (None, None)
+        # stat, p  = shapiro(S)
+        # stat, p = kstest(S1, S2)
+        print("p = %.3f" % p)
+        if p > alpha :
+            print("Normal.")
+        else :
+            print("NOT normal.")
+        return (stat, p)
+
+    df4 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2014_%s.csv" % subject)
+    df4_sources = pd.read_csv("scopus/source_2013_%s.csv" % subject, header=0)
+    scopus_2014 = ScopusHandler(df4, df4_sources, "scopus_videos_2014_%s" % subject, verbose=False)
+    scopus_2014.db_handler.sql_handler.list_where_clauses = []
+    df3 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2019_%s.csv" % subject)
+    df3_sources = pd.read_csv("scopus/source_2018_%s.csv" % subject, header=0)
+    scopus_2019 = ScopusHandler(df3, df3_sources, "scopus_videos_2019_%s" % subject, verbose=False)
+    scopus_2019.db_handler.sql_handler.list_where_clauses = []
+
+    _2014_w_videos_cit_exp = get_list_meters(scopus_2014, metric=metric, where=("content", ["paper_explanation", "paper_application", "paper_assessment"], "in"))
+    _2014_w_videos_cit_news = get_list_meters(scopus_2014, metric=metric, where=("content", ["news"], "in"))
+    _2014_w_videos_cit_sup = get_list_meters(scopus_2014, metric=metric, where=("content", ["paper_linked_supplementary", "paper_supplementary"], "in"))
+    _2014_w_videos_cit_ref = get_list_meters(scopus_2014, metric=metric, where=("content", ["paper_reference"], "in"))
+    _2019_w_videos_cit_exp = get_list_meters(scopus_2019, metric=metric, where=("content", ["paper_explanation", "paper_application", "paper_assessment"], "in"))
+    _2019_w_videos_cit_news = get_list_meters(scopus_2019, metric=metric, where=("content", ["news"], "in"))
+    _2019_w_videos_cit_sup = get_list_meters(scopus_2019, metric=metric, where=("content", ["paper_linked_supplementary", "paper_supplementary"], "in"))
+    _2019_w_videos_cit_ref = get_list_meters(scopus_2019, metric=metric, where=("content", ["paper_reference"], "in"))
+    list_list_meters = [
+        _2019_w_videos_cit_exp,
+        _2019_w_videos_cit_news,
+        _2019_w_videos_cit_sup,
+        _2019_w_videos_cit_ref,
+        _2014_w_videos_cit_exp,
+        _2014_w_videos_cit_news,
+        _2014_w_videos_cit_sup,
+        _2014_w_videos_cit_ref
+    ]
+    print("Means:")
+    print("\t".join(list(map(lambda _list_meters: "%.2f" % np.mean(_list_meters), list_list_meters))))
+    list(map(lambda _list_meters: __normaltest(__remove_outliers(_list_meters)), list_list_meters))
+    plt.figure(figsize=(12, 6))
+    plt.title("AAS - Life & Earth")
+    # plt.yscale("log")
+    # plt.ylim([0, 200])
+    plt.ylabel(f"log10(AAS)")
+    plt.boxplot([
+            _2019_w_videos_cit_exp,
+            _2019_w_videos_cit_news,
+            _2019_w_videos_cit_sup,
+            _2019_w_videos_cit_ref,
+            _2014_w_videos_cit_exp,
+            _2014_w_videos_cit_news,
+            _2014_w_videos_cit_sup,
+            _2014_w_videos_cit_ref
+        ],
+        labels=[
+            "2019 w/ exp\n(N=%s)"%len(_2019_w_videos_cit_exp),
+            "2019 w/ news\n(N=%s)"%len(_2019_w_videos_cit_news),
+            "2019 w/ sup\n(N=%s)"%len(_2019_w_videos_cit_sup),
+            "2019 w/ ref\n(N=%s)"%len(_2019_w_videos_cit_ref),
+            "2014 w/ exp\n(N=%s)"%len(_2014_w_videos_cit_exp),
+            "2014 w/ news\n(N=%s)"%len(_2014_w_videos_cit_news),
+            "2014 w/ sup\n(N=%s)"%len(_2014_w_videos_cit_sup),
+            "2014 w/ ref\n(N=%s)"%len(_2014_w_videos_cit_ref),
+        ],
+        showmeans=True
+    )
+    plt.show()
+
 
 if __name__ == '__main__':
     # 210105

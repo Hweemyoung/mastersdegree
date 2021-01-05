@@ -2040,14 +2040,25 @@ def _201217(subject="comp", m=3, num_comparisons=6, max_num_trial=6, metric="Cit
         return (_list_pairs, dict_scopus_by_trial)
     
     def get_metric_pairs(df, df_sources, scopus_handler, m=3, num_comparisons=6, max_num_trial=6, metric="Cited by", log_scale=True):
-        (_list_pairs, _dict_scopus_by_trial) = get_pairs(df, df_sources, scopus_handler, m=m, num_comparisons=num_comparisons, max_num_trial=max_num_trial, metric=metric, log_scale=log_scale)
-        _meters_targets = list(map(lambda _pair: int(np.nan_to_num(_pair[0][metric])), _list_pairs))
-        _meters_counterparts = functools.reduce(lambda a, b: a + b, list(map(lambda _twin: list(np.nan_to_num(_twin[1][metric].astype(int).values)), _list_pairs)))
+        if scopus_handler.dois_targets != None:
+            print("[+]DOIs already set.")
+            _dict_scopus_by_trial = None
+            _meters_targets = list(np.nan_to_num(df[df.DOI.isin(scopus_handler.dois_targets)][metric].astype(int)))
+            _meters_counterparts = list(np.nan_to_num(df[df.DOI.isin(scopus_handler.dois_counterparts)][metric].astype(int)))
+            _dois_targets = scopus_handler.dois_targets
+            _dois_counterparts = scopus_handler.dois_counterparts
+        else:
+            print("[-]Searching DOIs")
+            (_list_pairs, _dict_scopus_by_trial) = get_pairs(df, df_sources, scopus_handler, m=m, num_comparisons=num_comparisons, max_num_trial=max_num_trial, metric=metric, log_scale=log_scale)
+            _meters_targets = list(map(lambda _pair: int(np.nan_to_num(_pair[0][metric])), _list_pairs))
+            _meters_counterparts = functools.reduce(lambda a, b: a + b, list(map(lambda _twin: list(np.nan_to_num(_twin[1][metric].astype(int).values)), _list_pairs)))
+            _dois_targets = list(map(lambda _pair: np.nan_to_num(_pair[0]["DOI"]), _list_pairs))
+            _dois_counterparts = functools.reduce(lambda a, b: a + b, list(map(lambda _twin: list(_twin[1]["DOI"].astype(str).values), _list_pairs)))
         # print(_meters_counterparts)
         if log_scale:
             _meters_targets = np.log10(_meters_targets)
             _meters_counterparts = np.log10(_meters_counterparts)
-        return (_meters_counterparts, _meters_targets, _dict_scopus_by_trial)
+        return (_meters_counterparts, _meters_targets, _dict_scopus_by_trial, _dois_targets, _dois_counterparts)
     
     def get_corr(df, df_sources, scopus_handler, m=3, num_comparisons=6, max_num_trial=6, list_metrics=["num_affiliations", "Cited by"], list_log_scale=[False, True]):
         _list_meters_targets = list()
@@ -2103,27 +2114,32 @@ def _201217(subject="comp", m=3, num_comparisons=6, max_num_trial=6, metric="Cit
     
     df4 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2014_%s.csv" % subject)
     df4_sources = pd.read_csv("scopus/source_2013_%s.csv" % subject, header=0)
-    scopus_2014_life = ScopusHandler(df4, df4_sources, "scopus_videos_2014_%s" % subject, verbose=True)
-    scopus_2014_life.db_handler.sql_handler.list_where_clauses = []
-    # get_corr(df4, df4_sources, scopus_2014_life, m=m, num_comparisons=num_comparisons, max_num_trial=max_num_trial, list_metrics=list_metrics, list_log_scale=list_log_scale)
-    _2014_wo_videos_cit, _2014_w_videos_cit, _2014_dict_scopus_by_trial = get_metric_pairs(df4, df4_sources, scopus_2014_life, m=m, num_comparisons=num_comparisons, max_num_trial=max_num_trial, metric=metric, log_scale=log_scale)
+    scopus_2014 = ScopusHandler(df4, df4_sources, "scopus_videos_2014_%s" % subject, verbose=True, preset_dois=True)
+    scopus_2014.db_handler.sql_handler.list_where_clauses = []
+    # get_corr(df4, df4_sources, scopus_2014, m=m, num_comparisons=num_comparisons, max_num_trial=max_num_trial, list_metrics=list_metrics, list_log_scale=list_log_scale)
+    _2014_wo_videos_cit, _2014_w_videos_cit, _2014_dict_scopus_by_trial, _2014_dois_targets, _2014_dois_counterparts = get_metric_pairs(df4, df4_sources, scopus_2014, m=m, num_comparisons=num_comparisons, max_num_trial=max_num_trial, metric=metric, log_scale=log_scale)
 
     df2 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2019_%s.csv" % subject)
     df2_sources = pd.read_csv("scopus/source_2018_%s.csv" % subject, header=0)
-    scopus_2019_life = ScopusHandler(df2, df2_sources, "scopus_videos_2019_%s" % subject, verbose=True)
-    scopus_2019_life.db_handler.sql_handler.list_where_clauses = []
-    _2019_wo_videos_cit, _2019_w_videos_cit, _2019_dict_scopus_by_trial = get_metric_pairs(df2, df2_sources, scopus_2019_life, m=m, num_comparisons=num_comparisons, max_num_trial=max_num_trial, metric=metric, log_scale=log_scale)
+    scopus_2019 = ScopusHandler(df2, df2_sources, "scopus_videos_2019_%s" % subject, verbose=True, preset_dois=True)
+    scopus_2019.db_handler.sql_handler.list_where_clauses = []
+    _2019_wo_videos_cit, _2019_w_videos_cit, _2019_dict_scopus_by_trial, _2019_dois_targets, _2019_dois_counterparts = get_metric_pairs(df2, df2_sources, scopus_2019, m=m, num_comparisons=num_comparisons, max_num_trial=max_num_trial, metric=metric, log_scale=log_scale)
 
     # Remove outliers
     # _2019_wo_videos_cit = __remove_outliers(_2019_wo_videos_cit)
     # _2019_w_videos_cit = __remove_outliers(_2019_w_videos_cit)
     # _2014_wo_videos_cit = __remove_outliers(_2014_wo_videos_cit)
     # _2014_w_videos_cit = __remove_outliers(_2014_w_videos_cit)
-
-    for _i in _2019_dict_scopus_by_trial:
-        print("%s trial(s): %d" % (_i, len(_2019_dict_scopus_by_trial[_i])))
-    for _i in _2014_dict_scopus_by_trial:
-        print("%s trial(s): %d" % (_i, len(_2014_dict_scopus_by_trial[_i])))
+    print("2019 target DOIs:", _2019_dois_targets)
+    print("2019 counterparts DOIs:", _2019_dois_counterparts)
+    print("2014 target DOIs:", _2014_dois_targets)
+    print("2014 counterparts DOIs:", _2014_dois_counterparts)
+    if _2019_dict_scopus_by_trial != None:
+        for _i in _2019_dict_scopus_by_trial:
+            print("%s trial(s): %d" % (_i, len(_2019_dict_scopus_by_trial[_i])))
+    if _2014_dict_scopus_by_trial != None:
+        for _i in _2014_dict_scopus_by_trial:
+            print("%s trial(s): %d" % (_i, len(_2014_dict_scopus_by_trial[_i])))
     print("2019")
     __normaltest(__remove_outliers(_2019_wo_videos_cit), alpha)
     __normaltest(__remove_outliers(_2019_w_videos_cit), alpha)
@@ -2157,11 +2173,111 @@ def _201217(subject="comp", m=3, num_comparisons=6, max_num_trial=6, metric="Cit
     )
     plt.show()
 
+def _210105(subject, metric="Cited by"):
+    import numpy as np
+    import pandas as pd
+    from db_handler import DBHandler
+    from matplotlib import pyplot as plt
+    from datetime import datetime, timedelta
+    from calendar import monthrange
+    import functools
+    from scipy.stats import normaltest, iqr, ttest_ind, shapiro
+    from scopus_handler import ScopusHandler
+    
+    def get_list_meters(scopus_handler, metric="Cited by", where=None):
+        _list_dois = list(map(lambda _row: _row[2], scopus_handler.set_target_videos(where=where).list_target_videos))
+        return np.log10(scopus_handler.df_scopus[scopus_handler.df_scopus.DOI.isin(_list_dois)][scopus_handler.df_scopus[metric] != "None"][metric].dropna().astype(int).values)
+    
+    def __remove_outliers(list_meters, outlier_threshold=1.5):
+        S1 = pd.Series(list_meters)
+        _iqr1 = iqr(S1)
+        S1 = S1[S1.between(S1.quantile(0.25) - outlier_threshold * _iqr1, S1.quantile(0.75) + outlier_threshold * _iqr1)]
+        return list(S1)
+
+    def __normaltest(list_meters, alpha=0.05):
+        try:
+            stat, p  = normaltest(list_meters)
+            # stat, p  = shapiro(list_meters)
+        except ValueError:
+            print("Normaltest not executable.")
+            return (None, None)
+        # stat, p  = shapiro(S)
+        # stat, p = kstest(S1, S2)
+        print("p = %.3f" % p)
+        if p > alpha :
+            print("Normal.")
+        else :
+            print("NOT normal.")
+        return (stat, p)
+
+    df4 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2014_%s.csv" % subject)
+    df4_sources = pd.read_csv("scopus/source_2013_%s.csv" % subject, header=0)
+    scopus_2014 = ScopusHandler(df4, df4_sources, "scopus_videos_2014_%s" % subject, verbose=False)
+    scopus_2014.db_handler.sql_handler.list_where_clauses = []
+    df3 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2019_%s.csv" % subject)
+    df3_sources = pd.read_csv("scopus/source_2018_%s.csv" % subject, header=0)
+    scopus_2019 = ScopusHandler(df3, df3_sources, "scopus_videos_2019_%s" % subject, verbose=False)
+    scopus_2019.db_handler.sql_handler.list_where_clauses = []
+
+    _2014_w_videos_cit_exp = get_list_meters(scopus_2014, metric=metric, where=("content", ["paper_explanation", "paper_application", "paper_assessment"], "in"))
+    _2014_w_videos_cit_news = get_list_meters(scopus_2014, metric=metric, where=("content", ["news"], "in"))
+    _2014_w_videos_cit_sup = get_list_meters(scopus_2014, metric=metric, where=("content", ["paper_linked_supplementary", "paper_supplementary"], "in"))
+    _2014_w_videos_cit_ref = get_list_meters(scopus_2014, metric=metric, where=("content", ["paper_reference"], "in"))
+    _2019_w_videos_cit_exp = get_list_meters(scopus_2019, metric=metric, where=("content", ["paper_explanation", "paper_application", "paper_assessment"], "in"))
+    _2019_w_videos_cit_news = get_list_meters(scopus_2019, metric=metric, where=("content", ["news"], "in"))
+    _2019_w_videos_cit_sup = get_list_meters(scopus_2019, metric=metric, where=("content", ["paper_linked_supplementary", "paper_supplementary"], "in"))
+    _2019_w_videos_cit_ref = get_list_meters(scopus_2019, metric=metric, where=("content", ["paper_reference"], "in"))
+    list_list_meters = [
+        _2019_w_videos_cit_exp,
+        _2019_w_videos_cit_news,
+        _2019_w_videos_cit_sup,
+        _2019_w_videos_cit_ref,
+        _2014_w_videos_cit_exp,
+        _2014_w_videos_cit_news,
+        _2014_w_videos_cit_sup,
+        _2014_w_videos_cit_ref
+    ]
+    print("Means:")
+    print("\t".join(list(map(lambda _list_meters: "%.2f" % np.mean(_list_meters), list_list_meters))))
+    list(map(lambda _list_meters: __normaltest(__remove_outliers(_list_meters)), list_list_meters))
+    plt.figure(figsize=(12, 6))
+    plt.title("AAS - Life & Earth")
+    # plt.yscale("log")
+    # plt.ylim([0, 200])
+    plt.ylabel(f"log10(AAS)")
+    plt.boxplot([
+            _2019_w_videos_cit_exp,
+            _2019_w_videos_cit_news,
+            _2019_w_videos_cit_sup,
+            _2019_w_videos_cit_ref,
+            _2014_w_videos_cit_exp,
+            _2014_w_videos_cit_news,
+            _2014_w_videos_cit_sup,
+            _2014_w_videos_cit_ref
+        ],
+        labels=[
+            "2019 w/ exp\n(N=%s)"%len(_2019_w_videos_cit_exp),
+            "2019 w/ news\n(N=%s)"%len(_2019_w_videos_cit_news),
+            "2019 w/ sup\n(N=%s)"%len(_2019_w_videos_cit_sup),
+            "2019 w/ ref\n(N=%s)"%len(_2019_w_videos_cit_ref),
+            "2014 w/ exp\n(N=%s)"%len(_2014_w_videos_cit_exp),
+            "2014 w/ news\n(N=%s)"%len(_2014_w_videos_cit_news),
+            "2014 w/ sup\n(N=%s)"%len(_2014_w_videos_cit_sup),
+            "2014 w/ ref\n(N=%s)"%len(_2014_w_videos_cit_ref),
+        ],
+        showmeans=True
+    )
+    plt.show()
+
+
 if __name__ == '__main__':
+    # 210105
+    _210105(subject="life", metric="AAS")
+
     # 201217
     # _201217(subject="comp", m=2, num_comparisons=1, max_num_trial=1, metric="Cited by", log_scale=True)
     # _201217(subject="comp", m=2, num_comparisons=3, max_num_trial=1, metric="Cited by", log_scale=True)
-    _201217(subject="comp", m=2, num_comparisons=4, max_num_trial=1, metric="AAS", log_scale=True)
+    # _201217(subject="comp", m=2, num_comparisons=4, max_num_trial=1, metric="Cited by", log_scale=True)
     # _201217(subject="life", m=2, num_comparisons=3, max_num_trial=1, metric="num_authors", log_scale=True)
     # _201217(subject="comp", m=2, num_comparisons=3, max_num_trial=1, list_metrics=["num_authors", "Cited by"], list_log_scale=[False, True])
     

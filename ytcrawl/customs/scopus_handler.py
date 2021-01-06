@@ -68,24 +68,19 @@ class ScopusHandler:
         # self._tup_idx_2014_life = sorted(random.sample(range(1, 113), 100))
         # self._tup_idx_2019_life = (2, 3, 6, 10, 12, 17, 18, 38, 43, 50, 55, 56, 59, 67, 72, 73, 78, 86, 88, 90, 93, 94, 101, 108, 109, 110, 113, 116, 120, 122, 124, 128, 129, 130, 139, 140, 142, 145, 150, 153, 158, 159, 161, 163, 165, 166, 171, 175, 178, 181, 184, 190, 195, 199, 208, 209, 214, 217, 222, 223, 230, 232, 233, 238, 246, 247, 254, 256, 258, 264, 267, 270, 271, 275, 277, 281, 284, 286, 291, 292, 297, 298, 299, 300, 303, 305, 310, 311, 314, 316, 317, 318, 324, 326, 327, 330, 333, 334, 340, 343)
         
+        if self.table_name == "scopus_videos_2014_comp":
+            self.tup_idx = self._tup_idx_2014_comp
+        elif self.table_name == "scopus_videos_2019_comp":
+            self.tup_idx = self._tup_idx_2019_comp
+        elif self.table_name == "scopus_videos_2014_life":
+            self.tup_idx = self._tup_idx_2014_life
+        elif self.table_name == "scopus_videos_2019_life":
+            self.tup_idx = self._tup_idx_2019_life
         self.dois_targets = None
         self.dois_counterparts = None
 
         self.dois_targets_2019_comp = ['10.1145/3298981', '10.1371/journal.pcbi.1006826', '10.1016/j.future.2018.01.055', '10.1021/acs.jctc.8b00975', '10.1109/TII.2018.2870662', '10.1016/j.chb.2018.08.022', '10.1016/j.chb.2018.09.023', '10.1016/j.robot.2019.01.013', '10.1093/bib/bby034', '10.1145/3241737', '10.1109/TVCG.2019.2898822', '10.1109/TVCG.2019.2898742', '10.1371/journal.pcbi.1006846', '10.1371/journal.pcbi.1006792', '10.1016/j.ijinfomgt.2018.09.005', '10.1109/TVCG.2018.2865192', '10.1016/j.compedu.2019.02.005', '10.1016/j.ins.2018.08.062', '10.1109/TMI.2018.2856464', '10.1177/0278364919845054', '10.1371/journal.pcbi.1006907', '10.1089/soro.2018.0008', '10.1109/TVCG.2019.2899187', '10.1016/j.cpc.2019.01.017', '10.1016/j.chb.2018.03.001', '10.1371/journal.pcbi.1006922', '10.1016/j.ijhcs.2018.08.002', '10.1016/j.cosrev.2019.01.001', '10.1016/j.chb.2018.10.001', '10.1016/j.ejor.2018.04.039', '10.1109/TII.2018.2847736', '10.1109/TVCG.2018.2808969', '10.1371/journal.pcbi.1006895', '10.1109/TVCG.2018.2864817', '10.25300/MISQ/2019/14812', '10.1002/rob.21857', '10.1021/acs.jctc.8b01176', '10.1016/j.isprsjprs.2019.02.014', '10.1109/TNNLS.2018.2852711', '10.1109/TRO.2018.2868804', '10.1109/TMECH.2019.2909081', '10.1016/j.compind.2019.03.004', '10.1016/j.neunet.2018.11.009', '10.1177/0278364918796267', '10.1016/j.adhoc.2018.11.004', '10.1109/TVCG.2018.2864509', '10.1109/TMECH.2018.2874647', '10.1016/j.ejor.2018.10.005', '10.1109/MSP.2018.2875863', '10.1109/TMECH.2019.2907802', '10.1093/bioinformatics/bty871', '10.1016/j.future.2017.08.009', '10.1007/s11263-018-1138-7', '10.1109/MCOM.2018.1701370', '10.1016/j.compedu.2018.09.012', '10.1109/TRO.2019.2897858', '10.1109/TRO.2018.2887356', '10.1007/s11831-017-9241-4', '10.1109/THMS.2019.2895753', '10.1016/j.plrev.2019.03.003']
-        self.dois_counterparts_2019_comp = ['10.1145/3234464', '10.1145/3319532', '10.1371/journal.pcbi.1007121', '10.1371/journal.pcbi.1006784', '10.1016/j.future.2018.07.004', '10.1016/j.future.2018.10.027', '10.1021/acs.jctc.8b01199', '10.1021/acs.jctc.8b01196', '10.1109/TII.2018.2862912', '10.1109/TII.2018.2820421', '10.1016/j.chb.2018.09.001', '10.1016/j.chb.2017.07.006', '10.1016/j.chb.2018.12.011', '10.1016/j.chb.2018.09.029', '10.1016/j.robot.2019.03.008', '10.1016/j.robot.2018.11.010', '10.1093/bib/bbx071', '10.1093/bib/bby030', '10.1145/3300148', '10.1145/3292652', '10.1109/TVCG.2018.2864826', '10.1109/TVCG.2018.2865117', '10.1109/TVCG.2018.2864844', '10.1109/TVCG.2018.2864846', '10.1371/journal.pcbi.1006962', '10.1371/journal.pcbi.1007015', '10.1371/journal.pcbi.1006768', '10.1371/journal.pcbi.1007023', '10.1016/j.ijinfomgt.2018.10.011', '10.1016/j.ijinfomgt.2018.09.007', '10.1109/TVCG.2019.2903946', '10.1109/TVCG.2018.2865265', '10.1016/j.compedu.2019.02.007', '10.1016/j.compedu.2019.01.002', '10.1016/j.ins.2018.12.020', '10.1016/j.ins.2018.12.041', '10.1109/TMI.2018.2869868', '10.1109/TMI.2018.2858779', '10.1177/0278364919841437', '10.1177/0278364918755924', '10.1371/journal.pcbi.1006865', '10.1371/journal.pcbi.1006899', '10.1089/soro.2018.0028', '10.1089/soro.2018.0075', '10.1109/TVCG.2018.2864899', '10.1109/TVCG.2018.2864847', '10.1016/j.cpc.2018.11.005', '10.1016/j.cpc.2019.01.011', '10.1016/j.chb.2018.11.033', '10.1016/j.chb.2018.11.028', '10.1371/journal.pcbi.1006671', '10.1371/journal.pcbi.1006915', '10.1016/j.ijhcs.2018.11.005', '10.1016/j.ijhcs.2018.05.001', '10.1016/j.cosrev.2019.03.001', '10.1016/j.cosrev.2019.02.001', '10.1016/j.chb.2018.11.034', '10.1016/j.chb.2018.12.026', '10.1016/j.ejor.2018.06.011', '10.1016/j.ejor.2018.07.013', '10.1109/TII.2018.2874159', '10.1109/TII.2018.2873652', '10.1109/TVCG.2018.2865141', '10.1109/TVCG.2018.2816926', '10.1371/journal.pcbi.1007066', '10.1371/journal.pcbi.1006976', '10.1109/TVCG.2018.2864850', '10.1109/TVCG.2018.2808489', '10.25300/MISQ/2019/13717', '10.25300/MISQ/2019/13649', '10.1002/rob.21832', '10.1002/rob.21872', '10.1021/acs.jctc.8b00807', '10.1021/acs.jctc.8b01295', '10.1016/j.isprsjprs.2019.03.006', '10.1016/j.isprsjprs.2018.11.014', '10.1109/TNNLS.2018.2869631', '10.1109/TNNLS.2018.2874432', '10.1109/TRO.2018.2880120', '10.1109/TRO.2018.2883819', '10.1109/TMECH.2019.2891358', '10.1109/TMECH.2019.2894105', '10.1016/j.compind.2019.01.004', '10.1016/j.compind.2019.02.009', '10.1016/j.neunet.2018.10.009', '10.1016/j.neunet.2019.01.013', '10.1177/0278364919835021', '10.1177/0278364918769739', '10.1016/j.adhoc.2018.10.006', '10.1016/j.adhoc.2018.08.005', '10.1109/TVCG.2018.2865194', '10.1109/TVCG.2018.2865021', '10.1109/TMECH.2019.2907656', '10.1109/TMECH.2019.2906918', '10.1016/j.ejor.2018.11.023', '10.1016/j.ejor.2018.10.042', '10.1109/MSP.2018.2890143', '10.1109/MSP.2018.2887214', '10.1109/TMECH.2019.2892609', '10.1109/TMECH.2018.2873620', '10.1093/bioinformatics/bty696', '10.1093/bioinformatics/bty577', '10.1016/j.future.2018.08.045', '10.1016/j.future.2017.09.041', '10.1007/s11263-018-1098-y', '10.1007/s11263-018-1115-1', '10.1109/MCOM.2019.1800475', '10.1109/MCOM.2018.1800179', '10.1016/j.compedu.2018.12.008', '10.1016/j.compedu.2018.11.002', '10.1109/TRO.2019.2894039', '10.1109/TRO.2018.2889577', '10.1109/TRO.2018.2878363', '10.1109/TRO.2018.2872285', '10.1007/s11831-017-9232-5', '10.1007/s11831-017-9230-7', '10.1109/THMS.2018.2878824', '10.1109/THMS.2018.2884811', '10.1016/j.plrev.2019.01.015', '10.1016/j.plrev.2019.01.010']
         self.dois_targets_2014_comp = ['10.1007/s10514-013-9339-y', '10.1016/j.chb.2013.07.014', '10.1016/j.plrev.2013.08.002', '10.1007/s11263-013-0655-7', '10.1016/j.patcog.2013.08.011', '10.1177/0278364913506757', '10.1016/j.plrev.2013.11.003', '10.1371/journal.pcbi.1003542', '10.1016/j.chb.2013.12.009', '10.1371/journal.pcbi.1003619', '10.1016/j.cviu.2013.10.003', '10.1016/j.knosys.2014.01.003', '10.1093/bioinformatics/btu031', '10.1109/TVT.2013.2270315', '10.1007/s10237-013-0491-2', '10.1021/ct4010307', '10.1109/TSE.2013.2295827', '10.1109/TSE.2014.2302433', '10.1371/journal.pcbi.1003496', '10.1109/TPAMI.2013.141', '10.1016/j.chb.2014.03.003', '10.1016/j.chb.2014.02.047', '10.1016/j.chb.2014.01.036', '10.1371/journal.pcbi.1003584', '10.1371/journal.pcbi.1003588', '10.1098/rsta.2013.0285', '10.1021/ct500287c', '10.1177/0278364913518997', '10.1177/0278364913507612', '10.1177/0278364913501212', '10.1177/0278364913507325', '10.1177/0278364913509126', '10.1109/TMC.2013.35', '10.1186/1471-2105-15-182', '10.1109/JBHI.2013.2283268', '10.1098/rsta.2013.0164', '10.1016/j.plrev.2013.11.014', '10.1016/j.patcog.2013.08.008', '10.1109/TMECH.2013.2273435', '10.1109/TIP.2013.2292332', '10.1109/TII.2014.2299233', '10.1109/TPDS.2013.284', '10.1109/JBHI.2013.2282816', '10.1109/TII.2014.2306383', '10.1098/rsta.2013.0090', '10.1109/TPDS.2013.132', '10.1109/TSE.2013.2297712', '10.1109/TKDE.2013.109', '10.1109/TII.2014.2305641', '10.1109/TITS.2013.2291241', '10.1109/MIC.2014.19', '10.1109/TKDE.2013.41', '10.1109/TSC.2013.3', '10.1177/0278364913519148', '10.1177/0278364914522141', '10.1016/j.cviu.2013.12.006', '10.1371/journal.pcbi.1003439', '10.1109/TSE.2013.48', '10.1109/TPDS.2013.122', '10.1109/TKDE.2013.88', '10.1109/TII.2014.2306329', '10.1109/TVT.2014.2310394', '10.1109/JBHI.2013.2282827', '10.1016/j.knosys.2013.12.005', '10.1109/TKDE.2013.124', '10.1109/TNNLS.2013.2285242', '10.1109/TRO.2013.2283927', '10.1371/journal.pcbi.1003446', '10.1109/TPDS.2013.299', '10.1109/TRO.2013.2280831', '10.1016/j.compedu.2013.12.002', '10.1109/TITS.2013.2294723', '10.1109/TKDE.2013.123', '10.1109/TKDE.2013.11']
-        self.dois_counterparts_2014_comp = ['10.1007/s10514-013-9355-y', '10.1007/s10514-013-9370-z', '10.1016/j.chb.2014.01.011', '10.1016/j.chb.2013.08.013', '10.1016/j.plrev.2014.01.007', '10.1016/j.plrev.2013.11.002', '10.1007/s11263-013-0634-z', '10.1007/s11263-013-0678-0', '10.1016/j.patcog.2013.11.002', '10.1016/j.patcog.2013.08.020', '10.1177/0278364913518998', '10.1177/0278364913500543', '10.1016/j.plrev.2013.11.015', '10.1016/j.plrev.2013.10.008', '10.1371/journal.pcbi.1003456', '10.1371/journal.pcbi.1003451', '10.1016/j.chb.2014.01.041', '10.1016/j.chb.2014.02.038', '10.1371/journal.pcbi.1003466', '10.1371/journal.pcbi.1003467', '10.1016/j.cviu.2013.07.011', '10.1016/j.cviu.2013.11.003', '10.1016/j.knosys.2013.08.022', '10.1016/j.knosys.2014.02.003', '10.1093/bioinformatics/btt652', '10.1093/bioinformatics/btt623', '10.1109/TVT.2013.2281367', '10.1109/TVT.2013.2284592', '10.1007/s10237-013-0497-9', '10.1007/s10237-013-0512-1', '10.1021/ct4009766', '10.1021/ct400883m', '10.1109/TSE.2014.2321179', '10.1109/TSE.2013.46', '10.1109/TSE.2013.47', '10.1109/TSE.2014.2316158', '10.1371/journal.pcbi.1003435', '10.1371/journal.pcbi.1003659', '10.1109/TPAMI.2013.45', '10.1109/TPAMI.2013.233', '10.1016/j.chb.2014.02.011', '10.1016/j.chb.2013.11.012', '10.1016/j.chb.2013.07.049', '10.1016/j.chb.2014.03.024', '10.1016/j.chb.2013.04.020', '10.1016/j.chb.2013.04.024', '10.1371/journal.pcbi.1003473', '10.1371/journal.pcbi.1003615', '10.1371/journal.pcbi.1003412', '10.1371/journal.pcbi.1003389', '10.1098/rsta.2013.0313', '10.1098/rsta.2013.0144', '10.1021/ct500031v', '10.1021/ct500075h', '10.1177/0278364913498292', '10.1177/0278364914523689', '10.1177/0278364913507756', '10.1177/0278364913500365', '10.1177/0278364912473169', '10.1177/0278364913498291', '10.1177/0278364913515309', '10.1177/0278364913500542', '10.1177/0278364913507324', '10.1177/0278364913515307', '10.1109/TMC.2012.232', '10.1109/TMC.2012.231', '10.1186/1471-2105-15-23', '10.1186/1471-2105-15-191', '10.1109/JBHI.2013.2281774', '10.1109/JBHI.2013.2261311', '10.1098/rsta.2013.0290', '10.1098/rsta.2012.0508', '10.1016/j.plrev.2014.01.002', '10.1016/j.plrev.2014.03.007', '10.1016/j.patcog.2013.07.011', '10.1016/j.patcog.2013.06.021', '10.1109/TMECH.2013.2261531', '10.1109/TMECH.2013.2264565', '10.1109/TIP.2013.2291319', '10.1109/TIP.2013.2292560', '10.1109/TII.2014.2310634', '10.1109/TII.2014.2306776', '10.1109/TPDS.2013.11', '10.1109/TPDS.2013.17', '10.1109/JBHI.2013.2274211', '10.1109/JBHI.2013.2278473', '10.1109/TII.2014.2306384', '10.1109/TII.2013.2294134', '10.1098/rsta.2013.0113', '10.1098/rsta.2013.0303', '10.1109/TPDS.2013.114', '10.1109/TPDS.2013.98', '10.1109/TSE.2014.2322358', '10.1109/TSE.2014.2300857', '10.1109/TKDE.2013.133', '10.1109/TKDE.2013.53', '10.1109/TII.2014.2300338', '10.1109/TII.2014.2306391', '10.1109/TITS.2013.2283302', '10.1109/TITS.2013.2290310', '10.1109/MIC.2013.26', '10.1109/MIC.2014.12', '10.1109/TKDE.2012.233', '10.1109/TKDE.2013.24', '10.1109/TSC.2013.23', '10.1109/TSC.2013.55', '10.1177/0278364913507006', '10.1177/0278364913519149', '10.1177/0278364913507795', '10.1177/0278364914521306', '10.1016/j.cviu.2014.02.002', '10.1016/j.cviu.2013.12.012', '10.1371/journal.pcbi.1003570', '10.1371/journal.pcbi.1003415', '10.1109/TSE.2013.2297911', '10.1109/TSE.2013.52', '10.1109/TPDS.2013.66', '10.1109/TPDS.2013.167', '10.1109/TKDE.2012.147', '10.1109/TKDE.2013.86', '10.1109/TII.2012.2226594', '10.1109/TII.2013.2261081', '10.1109/TVT.2013.2275912', '10.1109/TVT.2013.2288254', '10.1109/JBHI.2013.2267494', '10.1109/JBHI.2013.2264749', '10.1016/j.knosys.2013.10.018', '10.1016/j.knosys.2014.01.026', '10.1109/TKDE.2013.58', '10.1109/TKDE.2013.140', '10.1109/TNNLS.2013.2276044', '10.1109/TNNLS.2013.2283574', '10.1109/TRO.2013.2293834', '10.1109/TRO.2013.2283929', '10.1371/journal.pcbi.1003654', '10.1371/journal.pcbi.1003574', '10.1109/TPDS.2013.153', '10.1109/TPDS.2013.78', '10.1109/TRO.2013.2294882', '10.1109/TRO.2013.2283416', '10.1016/j.compedu.2013.11.006', '10.1016/j.compedu.2013.11.010', '10.1109/TITS.2013.2296655', '10.1109/TITS.2014.2300870', '10.1109/TKDE.2013.44', '10.1109/TKDE.2013.14', '10.1109/TKDE.2013.33', '10.1109/TKDE.2013.22']
-        if preset_dois:
-            if self.table_name == "scopus_videos_2019_life":
-                pass
-            elif self.table_name == "scopus_videos_2014_life":
-                pass
-            elif self.table_name == "scopus_videos_2019_comp":
-                self.dois_targets = self.dois_targets_2019_comp
-                self.dois_counterparts = self.dois_counterparts_2019_comp
-            elif self.table_name == "scopus_videos_2014_comp":
-                self.dois_targets = self.dois_targets_2014_comp
-                self.dois_counterparts = self.dois_counterparts_2014_comp
 
     def __parse_fetches(self, fetches):
         _new_fetches = list()
@@ -614,7 +609,7 @@ class ScopusHandler:
 
         return self
 
-    def model_metrics(self, paper_metric="Cited by", video_metric="viewCount", method="sum", label_by=None, regression=False, where=None, log_scale=True, xlim=None, ylim=(0, 4)):
+    def model_metrics(self, paper_metric="Cited by", video_metric="viewCount", method="sum", label_by=None, regression=False, where=None, log_scale=True, list_exclude_labels=[], xlim=None, ylim=(0, 4)):
         # label_by: "content-simple", "content-detail", "video_visual", "user_type"
         from paper_score import PaperScore
         self._dict_paper_scores_by_doi = None
@@ -623,7 +618,7 @@ class ScopusHandler:
         # Get videos
         _list_columns = ["idx", "videoId", "content",
                          "idx_paper", "channelId", "viewCount"]
-        self.db_handler.sql_handler.select(self.table_name, _list_columns)
+        self.db_handler.sql_handler.select(self.table_name, _list_columns).where("idx", self.tup_idx, "in")
         if type(where) != type(None):
             self.db_handler.sql_handler.where(*where)
         _list_videos = self.db_handler.execute().fetchall()
@@ -708,6 +703,10 @@ class ScopusHandler:
                     dict_x[_paper_score.label].append(_paper_score.ytscore)
                     dict_y[_paper_score.label].append(_paper_score.paper_meter)
             
+            elif method == "sum":
+                # dict_x, dict_y already ready.
+                pass
+
             # Sort x, y
             for _label in _set_labels_valid:
                 dict_x[_label], dict_y[_label] = self.__sort_xs_ys(dict_x[_label], dict_y[_label])
@@ -716,8 +715,16 @@ class ScopusHandler:
             _list_plts = list()
             _list_colors =  ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
             
+            # Exclude labels?
+            if len(list_exclude_labels):
+                for _label in list_exclude_labels:
+                    _set_labels_valid.remove(_label)
+            
+            # Sort set_labels_vaild
+            _list_labels_valid = sorted(list(_set_labels_valid))
+
             # Plot
-            for _i, _label in enumerate(_set_labels_valid):    
+            for _i, _label in enumerate(_list_labels_valid):    
                 _list_plts.append(plt.scatter(x=dict_x[_label], y=dict_y[_label], s=12, marker="o", c=_list_colors[_i % len(_list_colors)]))
                 _list_legends.append("%s(N=%d, c=%.2f, a=%.2f, b=%.2f)" \
                     % (_label, len(dict_y[_label]), _dict_content_calib_coef[_label], _dict_data_by_label[_label][2] / _b0_target, (_dict_data_by_label[_label][3] - _b1_target) / _b0_target)) \
@@ -735,7 +742,7 @@ class ScopusHandler:
             if regression:
                 _xs = list()
                 _ys = list()
-                for _i, _label in enumerate(_set_labels_valid):
+                for _i, _label in enumerate(_list_labels_valid):
                     _xs += dict_x[_label]
                     _ys += dict_y[_label]
                     
@@ -749,7 +756,7 @@ class ScopusHandler:
                         _corr = np.corrcoef(dict_x[_label], dict_y[_label])[0, 1]
                         plt.plot([dict_x[_label][0], dict_x[_label][-1]], [_poly1d_fn(dict_x[_label])[0], _poly1d_fn(dict_x[_label])[-1]], '--', color=_color)
                         _text = "%s(R=%.2f, b0=%.2f, b1=%.2f, N=%d)" % (_label, _corr, _coef[0], _coef[1], len(dict_x[_label]))
-                        plt.text(dict_x[_label][-1] - len(_text) / 30.0, _poly1d_fn(dict_x[_label])[-1] + .1, _text, c=_color)
+                        plt.text(dict_x[_label][-1] - len(_text) / 25.0, _poly1d_fn(dict_x[_label])[-1] + .1, _text, c=_color)
                         # print("%s: %s" % (_label, _color))
                 
                 # Sort xs, ys
@@ -762,11 +769,14 @@ class ScopusHandler:
                 _corr = np.corrcoef(_xs, _ys)[0, 1]
                 plt.plot([_xs[0], _xs[-1]], [_poly1d_fn(_xs)[0], _poly1d_fn(_xs)[-1]], '--', color=_color)
                 _text = "%s(R=%.2f, b0=%.2f, b1=%.2f, N=%d)" % (_label, _corr, _coef[0], _coef[1], len(_xs))
-                plt.text(_xs[-1] - len(_text) / 40.0, _poly1d_fn(_xs)[-1] + .05, _text, c=_color)
+                plt.text(_xs[-1] - len(_text) / 25.0, _poly1d_fn(_xs)[-1] + .05, _text, c=_color)
 
             _num_total = 0
-            for _label in dict_x:
+            for _label in _list_labels_valid:
                 _num_total += len(dict_x[_label])
+                print(f"{_label}:")
+                print("\txs:", sorted(dict_x[_label]))
+                print("\tys:", sorted(dict_y[_label]))
             plt.title("%s(N=%d)" % (self.title, _num_total))
             
         else:  # No label # No?!
@@ -813,6 +823,36 @@ class ScopusHandler:
         plt.xlabel("YTscore\n(%s, %s)" % (video_metric, method))
         plt.ylabel("log10(%s)" % paper_metric) if log_scale else plt.ylabel(paper_metric)
         plt.show()
+
+        # xs, ys distribution
+        _list_x = [dict_x[_label] for _label in _list_labels_valid]
+        _list_y = [dict_y[_label] for _label in _list_labels_valid]
+        _list_labels = [f"{_label}\n(N={len(dict_x[_label])})" for _label in _list_labels_valid]
+        
+        # plt.figure(figsize=(8,4))
+        # plt.boxplot(
+        #     _list_x,
+        #     labels=_list_labels,
+        #     showmeans=True
+        # )
+        # plt.ylabel("YTscore")
+        # plt.show()
+
+        # plt.figure(figsize=(8,4))
+        # plt.boxplot(
+        #     _list_y,
+        #     labels=_list_labels,
+        #     showmeans=True
+        # )
+        # plt.ylabel("log10(%s)" % paper_metric) if log_scale else plt.ylabel(paper_metric)
+        # plt.show()
+
+        import functools
+        dict_x["total_valid"] = functools.reduce(lambda a, b: a + b, _list_x)
+        dict_y["total_valid"] = functools.reduce(lambda a, b: a + b, _list_y)
+        self.dict_x = dict_x
+        self.dict_y = dict_y
+        self.list_labels_valid = _list_labels_valid
         
         return self
     

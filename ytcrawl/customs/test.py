@@ -1801,23 +1801,23 @@ def _201208():
     df3_sources = pd.read_csv("scopus/source_2013_comp.csv", header=0)
     scopus_2014_comp = ScopusHandler(df3, df3_sources, "scopus_videos_2014_comp", title="2014_comp", verbose=False)
     # fig1
-    scopus_2014_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="sum", label_by=None, regression=True, log_scale=True)
+    # scopus_2014_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="sum", label_by=None, regression=True, log_scale=True)
     # fig2
-    scopus_2014_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="sum", label_by="content-simple", regression=False, log_scale=True)
+    # scopus_2014_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="sum", label_by="content-simple", regression=False, log_scale=True)
     # fig3
     scopus_2014_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="sum", label_by="content-simple", regression=True, log_scale=True)
-    # fig4
-    scopus_2014_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="calibrated-sum", label_by="content-simple", regression=False, log_scale=True)
-    # fig5
-    scopus_2014_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="calibrated-sum", label_by="content-simple", regression=True, log_scale=True)
+    # # fig4
+    # scopus_2014_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="calibrated-sum", label_by="content-simple", regression=False, log_scale=True)
+    # # fig5
+    # scopus_2014_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="calibrated-sum", label_by="content-simple", regression=True, log_scale=True)
     
-    df1 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2019_comp.csv")
-    df1_sources = pd.read_csv("scopus/source_2018_comp.csv", header=0)
-    scopus_2019_comp = ScopusHandler(df1, df1_sources, "scopus_videos_2019_comp", title="2019_comp", verbose=False)
-    # fig6
-    scopus_2019_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="sum", label_by="content-simple", regression=True, log_scale=True)
-    # fig7
-    scopus_2019_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="calibrated-sum", label_by="content-simple", regression=True, log_scale=True)
+    # df1 = pd.read_csv("/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2019_comp.csv")
+    # df1_sources = pd.read_csv("scopus/source_2018_comp.csv", header=0)
+    # scopus_2019_comp = ScopusHandler(df1, df1_sources, "scopus_videos_2019_comp", title="2019_comp", verbose=False)
+    # # fig6
+    # scopus_2019_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="sum", label_by="content-simple", regression=True, log_scale=True)
+    # # fig7
+    # scopus_2019_comp.model_metrics(paper_metric="Cited by", video_metric="viewCount", method="calibrated-sum", label_by="content-simple", regression=True, log_scale=True)
 
 def _201215():
     import numpy as np
@@ -2365,10 +2365,95 @@ def _210106(subject, metric="Cited by"):  # By channels
     )
     plt.show()
 
+def _200107(subject="comp", paper_metric="Cited by", list_exclude_labels=["Mixed"], label_temporal_lag="total_valid"):
+    import numpy as np
+    import pandas as pd
+    from db_handler import DBHandler
+    from matplotlib import pyplot as plt
+    from datetime import datetime, timedelta
+    from calendar import monthrange
+    from scipy.stats import normaltest, iqr, ttest_ind, shapiro, kstest
+    from scopus_handler import ScopusHandler
+
+    def __remove_outliers(list_meters, outlier_threshold=1.5):
+        S1 = pd.Series(list_meters)
+        _iqr1 = iqr(S1)
+        S1 = S1[S1.between(S1.quantile(0.25) - outlier_threshold * _iqr1, S1.quantile(0.75) + outlier_threshold * _iqr1)]
+        return list(S1)
+
+    def __normaltest(list_meters, alpha=0.05):
+        try:
+            stat, p  = normaltest(list_meters)
+            # stat, p  = shapiro(list_meters)
+        except ValueError:
+            print("Normaltest not executable.")
+            return (None, None)
+        # stat, p  = shapiro(S)
+        # stat, p = kstest(S1, S2)
+        print("p = %.3f" % p)
+        if p > alpha :
+            print("Normal.")
+        else :
+            print("NOT normal.")
+        return (stat, p)
+
+    df3 = pd.read_csv(f"/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2014_{subject}.csv")
+    df3_sources = pd.read_csv(f"scopus/source_2013_{subject}.csv", header=0)
+    scopus_handler_2014 = ScopusHandler(df3, df3_sources, f"scopus_videos_2014_{subject}", title=f"2014_{subject}", verbose=False)
+    scopus_handler_2014.db_handler.sql_handler.list_where_clauses = []
+    scopus_handler_2014.model_metrics(paper_metric=paper_metric, video_metric="viewCount", method="sum", label_by="content-simple", regression=True, log_scale=True, list_exclude_labels=list_exclude_labels)
+    
+    df4 = pd.read_csv(f"/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2019_{subject}.csv")
+    df4_sources = pd.read_csv(f"scopus/source_2018_{subject}.csv", header=0)
+    scopus_handler_2019 = ScopusHandler(df4, df4_sources, f"scopus_videos_2019_{subject}", title=f"2019_{subject}", verbose=False)
+    scopus_handler_2019.db_handler.sql_handler.list_where_clauses = []
+    scopus_handler_2019.model_metrics(paper_metric=paper_metric, video_metric="viewCount", method="sum", label_by="content-simple", regression=True, log_scale=True, list_exclude_labels=list_exclude_labels)
+    
+    list_boxs = [
+        scopus_handler_2019.dict_x[label_temporal_lag],
+        scopus_handler_2014.dict_x[label_temporal_lag],
+        scopus_handler_2019.dict_y[label_temporal_lag],
+        scopus_handler_2014.dict_y[label_temporal_lag],
+    ]
+    list_labels = [
+        f"2019 YTscore\n(N={len(scopus_handler_2019.dict_x[label_temporal_lag])})",
+        f"2014 YTscore\n(N={len(scopus_handler_2014.dict_x[label_temporal_lag])})",
+        f"2019 log10(Citation)\n(N={len(scopus_handler_2019.dict_y[label_temporal_lag])})",
+        f"2014 log10(Citation)\n(N={len(scopus_handler_2014.dict_y[label_temporal_lag])})",
+    ]
+    
+    print("Means")
+    print("\t".join(list(map(lambda _list_meters: str(round(np.mean(_list_meters), 2)), list_boxs))))
+    print("Medians")
+    print("\t".join(list(map(lambda _list_meters: str(round(np.median(_list_meters), 2)), list_boxs))))
+    list(map(lambda _list_meters: __normaltest(__remove_outliers(_list_meters)), list_boxs))
+    print("%.3f\t%.3f" % (
+        # ttest_ind(__remove_outliers(scopus_handler_2019.dict_x[label_temporal_lag]), __remove_outliers(scopus_handler_2014.dict_x[label_temporal_lag]))[1],
+        # ttest_ind(__remove_outliers(scopus_handler_2019.dict_y[label_temporal_lag]), __remove_outliers(scopus_handler_2014.dict_y[label_temporal_lag]))[1])
+        # ttest_ind(scopus_handler_2019.dict_x[label_temporal_lag], scopus_handler_2014.dict_x[label_temporal_lag])[1],
+        # ttest_ind(scopus_handler_2019.dict_y[label_temporal_lag], scopus_handler_2014.dict_y[label_temporal_lag])[1])
+        kstest(__remove_outliers(scopus_handler_2019.dict_x[label_temporal_lag]), __remove_outliers(scopus_handler_2014.dict_x[label_temporal_lag]))[1],
+        kstest(__remove_outliers(scopus_handler_2019.dict_y[label_temporal_lag]), __remove_outliers(scopus_handler_2014.dict_y[label_temporal_lag]))[1])
+        # kstest(scopus_handler_2019.dict_x[label_temporal_lag], scopus_handler_2014.dict_x[label_temporal_lag])[1],
+        # kstest(scopus_handler_2019.dict_y[label_temporal_lag], scopus_handler_2014.dict_y[label_temporal_lag])[1])
+    )
+
+    plt.figure(figsize=(8,4))
+    plt.boxplot(
+        list_boxs,
+        labels=list_labels,
+        showmeans=True
+    )
+    plt.title("Math & Computer")
+    plt.show()
+
 
 if __name__ == '__main__':
+    # 200107
+    _200107(subject="life", paper_metric="Cited by", list_exclude_labels=["Mixed"])
+    
     # 210105
-    _210105(subject="life", metric="AAS")
+    # _210105(subject="life", metric="AAS")
 
     # 201217
     # _201217(subject="comp", m=2, num_comparisons=1, max_num_trial=1, metric="Cited by", log_scale=True)

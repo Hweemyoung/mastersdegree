@@ -615,6 +615,7 @@ class ScopusHandler:
         self._dict_paper_scores_by_doi = None
         self._xs = None
         self._ys = None
+        _dict_reg_data_by_label = dict()
         # Get videos
         _list_columns = ["idx", "videoId", "content",
                          "idx_paper", "channelId", "viewCount"]
@@ -723,21 +724,6 @@ class ScopusHandler:
             # Sort set_labels_vaild
             _list_labels_valid = sorted(list(_set_labels_valid))
 
-            # Plot
-            for _i, _label in enumerate(_list_labels_valid):    
-                _list_plts.append(plt.scatter(x=dict_x[_label], y=dict_y[_label], s=12, marker="o", c=_list_colors[_i % len(_list_colors)]))
-                _list_legends.append("%s(N=%d, c=%.2f, a=%.2f, b=%.2f)" \
-                    % (_label, len(dict_y[_label]), _dict_content_calib_coef[_label], _dict_data_by_label[_label][2] / _b0_target, (_dict_data_by_label[_label][3] - _b1_target) / _b0_target)) \
-                        if "calibrated" in method and _label in _dict_data_by_label else \
-                            _list_legends.append("%s(N=%d)" % (_label, len(dict_y[_label])))
-            # Legend
-            plt.legend(tuple(_list_plts),
-                tuple(_list_legends),
-                scatterpoints=1,
-                loc='upper right',
-                fontsize=8,
-                framealpha=0.3
-            )
             # Regression
             if regression:
                 _xs = list()
@@ -755,7 +741,9 @@ class ScopusHandler:
                         _poly1d_fn = np.poly1d(_coef)
                         _corr = np.corrcoef(dict_x[_label], dict_y[_label])[0, 1]
                         plt.plot([dict_x[_label][0], dict_x[_label][-1]], [_poly1d_fn(dict_x[_label])[0], _poly1d_fn(dict_x[_label])[-1]], '--', color=_color)
-                        _text = "%s(R=%.2f, b0=%.2f, b1=%.2f, N=%d)" % (_label, _corr, _coef[0], _coef[1], len(dict_x[_label]))
+                        # _text = "%s(R=%.2f, b0=%.2f, b1=%.2f, N=%d)" % (_label, _corr, _coef[0], _coef[1], len(dict_x[_label]))
+                        _text = _label
+                        _dict_reg_data_by_label[_label] = [len(dict_x[_label]), _corr, _coef[0], _coef[1]]  # [N, R, b0, b1]
                         plt.text(dict_x[_label][-1] - len(_text) / 25.0, _poly1d_fn(dict_x[_label])[-1] + .1, _text, c=_color)
                         # print("%s: %s" % (_label, _color))
                 
@@ -768,7 +756,7 @@ class ScopusHandler:
                 _poly1d_fn = np.poly1d(_coef)
                 _corr = np.corrcoef(_xs, _ys)[0, 1]
                 plt.plot([_xs[0], _xs[-1]], [_poly1d_fn(_xs)[0], _poly1d_fn(_xs)[-1]], '--', color=_color)
-                _text = "%s(R=%.2f, b0=%.2f, b1=%.2f, N=%d)" % (_label, _corr, _coef[0], _coef[1], len(_xs))
+                _text = "%s(N=%d, R=%.2f, b0=%.2f, b1=%.2f)" % (_label, len(_xs), _corr, _coef[0], _coef[1])
                 plt.text(_xs[-1] - len(_text) / 25.0, _poly1d_fn(_xs)[-1] + .05, _text, c=_color)
 
             _num_total = 0
@@ -777,7 +765,9 @@ class ScopusHandler:
                 print(f"{_label}:")
                 print("\txs:", sorted(dict_x[_label]))
                 print("\tys:", sorted(dict_y[_label]))
-            plt.title("%s(N=%d)" % (self.title, _num_total))
+            # plt.title("%s(N=%d)" % (self.title, _num_total))
+            # plt.title("Math & Computer\n(N=%d)" % _num_total)
+            plt.title("Life & Earth 2014")
             
         else:  # No label # No?!
             # Calc paper scores
@@ -816,18 +806,42 @@ class ScopusHandler:
             # Show
             plt.title("%s(N=%d)" % (self.title, len(self._xs)))
         
+        # Plot
+        for _i, _label in enumerate(_list_labels_valid):    
+            _list_plts.append(plt.scatter(x=dict_x[_label], y=dict_y[_label], s=12, marker="o", c=_list_colors[_i % len(_list_colors)]))
+            
+            _legend = "%s(N=%d, R=%.2f, b0=%.2f, b1=%.2f)" % tuple([_label] + _dict_reg_data_by_label[_label]) if _label in _dict_reg_data_by_label else\
+                "%s(N=%d)" % (_label, len(dict_x[_label]))
+            _list_legends.append(_legend)
+            # _list_legends.append("%s(N=%d, c=%.2f, a=%.2f, b=%.2f)" \
+            #     % (_label, len(dict_y[_label]), _dict_content_calib_coef[_label], _dict_data_by_label[_label][2] / _b0_target, (_dict_data_by_label[_label][3] - _b1_target) / _b0_target)) \
+            #         if "calibrated" in method and _label in _dict_data_by_label else \
+            #             _list_legends.append("%s(N=%d)" % (_label, len(dict_y[_label])))
+        
+        # Legend
+        plt.legend(tuple(_list_plts),
+            tuple(_list_legends),
+            scatterpoints=1,
+            loc='upper right',
+            fontsize=8,
+            framealpha=0.3
+        )
+
         if type(xlim) != type(None):
             plt.xlim(*xlim)
         if type(ylim) != type(None):
             plt.ylim(*ylim)
-        plt.xlabel("YTscore\n(%s, %s)" % (video_metric, method))
-        plt.ylabel("log10(%s)" % paper_metric) if log_scale else plt.ylabel(paper_metric)
+        plt.xlabel("YTscore")
+        if log_scale:
+            plt.ylabel("log10(Citation)") if paper_metric == "Cited by" else plt.ylabel(f"log10({paper_metric})")
+        else:
+            plt.ylabel("Citation") if paper_metric == "Cited by" else plt.ylabel(paper_metric)
         plt.show()
 
         # xs, ys distribution
         _list_x = [dict_x[_label] for _label in _list_labels_valid]
         _list_y = [dict_y[_label] for _label in _list_labels_valid]
-        _list_labels = [f"{_label}\n(N={len(dict_x[_label])})" for _label in _list_labels_valid]
+        _list_labels = [f"{_label}\n(N={len(dict_x[_label])}" for _label in _list_labels_valid]
         
         # plt.figure(figsize=(8,4))
         # plt.boxplot(

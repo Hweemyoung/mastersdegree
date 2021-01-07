@@ -43,7 +43,7 @@ class ScopusHandler:
     }
     
 
-    def __init__(self, df_scopus, df_sources, table_name, title=None, verbose=True, preset_dois=True):
+    def __init__(self, df_scopus, df_sources, table_name, title=None, verbose=True, preset_dois=True, preset_videos=True):
         self.df_scopus = df_scopus.drop_duplicates(subset=["DOI"])
         print("[+]Duplicates have been dropped from df_scopus.\tBefore: %d\tAfter: %d" %
               (len(df_scopus), len(self.df_scopus)))
@@ -68,14 +68,16 @@ class ScopusHandler:
         # self._tup_idx_2014_life = sorted(random.sample(range(1, 113), 100))
         # self._tup_idx_2019_life = (2, 3, 6, 10, 12, 17, 18, 38, 43, 50, 55, 56, 59, 67, 72, 73, 78, 86, 88, 90, 93, 94, 101, 108, 109, 110, 113, 116, 120, 122, 124, 128, 129, 130, 139, 140, 142, 145, 150, 153, 158, 159, 161, 163, 165, 166, 171, 175, 178, 181, 184, 190, 195, 199, 208, 209, 214, 217, 222, 223, 230, 232, 233, 238, 246, 247, 254, 256, 258, 264, 267, 270, 271, 275, 277, 281, 284, 286, 291, 292, 297, 298, 299, 300, 303, 305, 310, 311, 314, 316, 317, 318, 324, 326, 327, 330, 333, 334, 340, 343)
         
-        if self.table_name == "scopus_videos_2014_comp":
-            self.tup_idx = self._tup_idx_2014_comp
-        elif self.table_name == "scopus_videos_2019_comp":
-            self.tup_idx = self._tup_idx_2019_comp
-        elif self.table_name == "scopus_videos_2014_life":
-            self.tup_idx = self._tup_idx_2014_life
-        elif self.table_name == "scopus_videos_2019_life":
-            self.tup_idx = self._tup_idx_2019_life
+        self.tup_idx = None
+        if preset_videos:
+            if self.table_name == "scopus_videos_2014_comp":
+                self.tup_idx = self._tup_idx_2014_comp
+            elif self.table_name == "scopus_videos_2019_comp":
+                self.tup_idx = self._tup_idx_2019_comp
+            elif self.table_name == "scopus_videos_2014_life":
+                self.tup_idx = self._tup_idx_2014_life
+            elif self.table_name == "scopus_videos_2019_life":
+                self.tup_idx = self._tup_idx_2019_life
         self.dois_targets = None
         self.dois_counterparts = None
 
@@ -101,19 +103,16 @@ class ScopusHandler:
                 if type(_where) == tuple:
                     self.db_handler.sql_handler.where(*_where)
         
-        # For 2019_life
-        if self.table_name == "scopus_videos_2019_life":
-            self.db_handler.sql_handler.where("idx", self._tup_idx_2019_life, "in")
-        elif self.table_name == "scopus_videos_2014_life":
-            self.db_handler.sql_handler.where("idx", self._tup_idx_2014_life, "in")
-        elif self.table_name == "scopus_videos_2019_comp":
-            self.db_handler.sql_handler.where("idx", self._tup_idx_2019_comp, "in")
-            self.dois_targets = self.dois_targets_2019_comp
-            self.dois_counterparts = self.dois_counterparts_2019_comp
-        elif self.table_name == "scopus_videos_2014_comp":
-            self.db_handler.sql_handler.where("idx", self._tup_idx_2014_comp, "in")
-            self.dois_targets = self.dois_targets_2014_comp
-            self.dois_counterparts = self.dois_counterparts_2014_comp
+        if self.tup_idx != None:
+            self.db_handler.sql_handler.where("idx", self.tup_idx, "in")
+        # if self.table_name == "scopus_videos_2019_life":
+        #     self.db_handler.sql_handler.where("idx", self._tup_idx_2019_life, "in")
+        # elif self.table_name == "scopus_videos_2014_life":
+        #     self.db_handler.sql_handler.where("idx", self._tup_idx_2014_life, "in")
+        # elif self.table_name == "scopus_videos_2019_comp":
+        #     self.db_handler.sql_handler.where("idx", self._tup_idx_2019_comp, "in")
+        # elif self.table_name == "scopus_videos_2014_comp":
+        #     self.db_handler.sql_handler.where("idx", self._tup_idx_2014_comp, "in")
 
         self.list_videos_total = self.db_handler.execute().fetchall()
         # self.list_videos_total = self.__parse_fetches(self.list_videos_total)
@@ -619,7 +618,8 @@ class ScopusHandler:
         # Get videos
         _list_columns = ["idx", "videoId", "content",
                          "idx_paper", "channelId", "viewCount"]
-        self.db_handler.sql_handler.select(self.table_name, _list_columns).where("idx", self.tup_idx, "in")
+        if self.tup_idx != None:
+            self.db_handler.sql_handler.select(self.table_name, _list_columns).where("idx", self.tup_idx, "in")
         if type(where) != type(None):
             self.db_handler.sql_handler.where(*where)
         _list_videos = self.db_handler.execute().fetchall()

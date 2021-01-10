@@ -2365,7 +2365,7 @@ def _210106(subject, metric="Cited by"):  # By channels
     )
     plt.show()
 
-def _200107(subject="comp", paper_metric="Cited by", list_exclude_labels=["Mixed"], label_temporal_lag="total_valid"):
+def _210107(subject="comp", paper_metric="Cited by", list_exclude_labels=["Mixed"], label_temporal_lag="total_valid"):
     import numpy as np
     import pandas as pd
     from db_handler import DBHandler
@@ -2447,10 +2447,31 @@ def _200107(subject="comp", paper_metric="Cited by", list_exclude_labels=["Mixed
     plt.title("Math & Computer")
     plt.show()
 
+def _210110(subject):
+    import numpy as np
+    import pandas as pd
+    from db_handler import DBHandler
+    from matplotlib import pyplot as plt
+    from datetime import datetime, timedelta
+    from calendar import monthrange
+    from scipy.stats import normaltest, iqr, ttest_ind, shapiro, kstest
+    from scopus_handler import ScopusHandler
+
+    df = pd.read_csv(f"/home/hweem/git/mastersdegree/ytcrawl/customs/scopus/scopus_2014_{subject}.csv")
+    df_sources = pd.read_csv(f"scopus/source_2013_{subject}.csv", header=0)
+    scopus_handler_2014 = ScopusHandler(df, df_sources, f"scopus_videos_2014_{subject}", title=f"2014_{subject}", verbose=False)
+    scopus_handler_2014.db_handler.sql_handler.list_where_clauses = []
+    # scopus_handler_2014.plot_sub_subjects_chart(figsize=(6, 6), labelsize=8)
+    # scopus_handler_2014.plot_journals_papers(figsize=(10, 6), labelsize=6)
+    scopus_handler_2014.plot_journals_scores(figsize=(10, 6), labelsize=6)
+
 
 if __name__ == '__main__':
-    # 200107
-    _200107(subject="life", paper_metric="Cited by", list_exclude_labels=["Mixed"])
+    # 210110
+    _210110(subject="comp")
+
+    # 210107
+    # _210107(subject="life", paper_metric="Cited by", list_exclude_labels=["Mixed"])
     
     # 210105
     # _210105(subject="life", metric="AAS")

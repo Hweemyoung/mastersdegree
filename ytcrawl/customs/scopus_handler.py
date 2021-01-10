@@ -47,6 +47,10 @@ class ScopusHandler:
         self.df_scopus = df_scopus.drop_duplicates(subset=["DOI"])
         print("[+]Duplicates have been dropped from df_scopus.\tBefore: %d\tAfter: %d" %
               (len(df_scopus), len(self.df_scopus)))
+        # self.df_scopus.loc[self.df_scopus["Abbreviated Source Title"].isna(), "Abbreviated Source Title"] = self.df_scopus.loc[self.df_scopus["Abbreviated Source Title"].isna()]["Source title"]
+        self.df_scopus.loc[self.df_scopus["Source title"] == "International Journal of Mechatronics and Automation", "Abbreviated Source Title"] = "Int. J. Mecha. Auto."
+        self.df_scopus.loc[self.df_scopus["Source title"] == "International Journal of Bio-Inspired Computation", "Abbreviated Source Title"] = "Int. J. Bio-inspired. Comput."
+        # print("[+]NaN replaced: Abbreviated Source Title")
         self.df_sources = df_sources
         self.table_name = table_name
         self.dict_key_clusters = {
@@ -195,6 +199,8 @@ class ScopusHandler:
             set(self.df_scopus["Source title"]))]
 
         self.journals_total = self.df_scopus["Source title"].value_counts()
+        # self.journals_total_abbr = self.df_scopus["Abbreviated Source Title"].value_counts()
+        self.journals_total_abbr = self.df_scopus.loc[self.df_scopus["Source title"].isin(self.df_sources_in_scopus["Source title"]), "Abbreviated Source Title"].value_counts()
         self.journals_w_videos = self.df_scopus[self.df_scopus["DOI"].isin(
             self.idx_papers)]["Source title"].value_counts()
         self.journals_total_w_videos = self.journals_w_videos.reindex(
@@ -417,12 +423,12 @@ class ScopusHandler:
 
         return self
 
-    def plot_sub_subjects_chart(self, where=None, days_from=None, days_until=None):
+    def plot_sub_subjects_chart(self, where=None, days_from=None, days_until=None, figsize=(12, 8), labelsize=12):
         # self.set_videos()
         # self.set_idx_papers(where, days_from, days_until)
         self.set_target_videos(self.df_scopus, where, days_from, days_until)
 
-        plt.figure(figsize=(12, 6))
+        plt.figure(figsize=figsize)
 
         plt.fill_between(
             np.arange(len(self.subjects_total)),
@@ -463,26 +469,28 @@ class ScopusHandler:
     #         linewidth=2
     #     )
 
-        plt.tick_params(labelsize=12)
+        plt.tick_params(labelsize=labelsize)
         plt.xticks(np.arange(len(self.subjects_total)),
                    self.subjects_total.index, rotation=90)
-        plt.xlabel('Sub-Subject', size=12)
-        plt.ylabel('Count', size=12)
+        plt.xlabel('Sub-Subject', size=labelsize)
+        plt.ylabel('Count', size=labelsize)
         plt.yscale("log")
+
+        plt.tight_layout()
         # plt.ylim(bottom=0)
     #     plt.legend(labels=['# Papers(Total)', '# Papers(w/ videos)'])
-        plt.legend()
+        plt.legend(prop={'size': labelsize})
 
         plt.show()
 
         return self
 
-    def plot_journals_papers(self, where=None, days_from=None, days_until=None):
+    def plot_journals_papers(self, where=None, days_from=None, days_until=None, figsize=(6, 6), labelsize=8):
         # self.set_videos()
         # self.set_idx_papers(where, days_from, days_until)
         self.set_target_videos(self.df_scopus, where, days_from, days_until)
 
-        plt.figure(figsize=(12, 6))
+        plt.figure(figsize=figsize)
 
         plt.fill_between(
             np.arange(len(self.journals_total)),
@@ -499,26 +507,28 @@ class ScopusHandler:
             label='# Papers(w/ videos)'
         )
 
-        plt.tick_params(labelsize=12)
+        plt.tick_params(labelsize=labelsize)
         plt.xticks(np.arange(len(self.journals_total)),
-                   self.journals_total.index, rotation=90)
-        plt.xlabel('Journal', size=12)
-        plt.ylabel('Count', size=12)
+                   self.journals_total_abbr.index, rotation=90)
+        plt.xlabel('Source', size=labelsize)
+        plt.ylabel('Count', size=labelsize)
         plt.yscale("log")
+        
+        plt.tight_layout()
         # plt.ylim(bottom=0)
     #     plt.legend(labels=['# Papers(Total)', '# Papers(w/ videos)'])
-        plt.legend()
+        plt.legend(prop={'size': labelsize})
 
         plt.show()
 
         return self
 
-    def plot_journals_scores(self, where=None, days_from=None, days_until=None, figsize=(12, 6)):
+    def plot_journals_scores(self, where=None, days_from=None, days_until=None, figsize=(12, 6), labelsize=8):
         # self.set_videos()
         # self.set_idx_papers(where, days_from, days_until)
         self.set_target_videos(self.df_scopus, where, days_from, days_until)
 
-        self.__desc_journals_scores()
+        self.__desc_journals_scores(partition=2)
 
     #     plt.figure(figsize=figsize)
 
@@ -554,13 +564,13 @@ class ScopusHandler:
             self.journals_scores,
             color="skyblue",
             alpha=0.4,
-            label='Journal CiteScores(Left)'
+            label='Source CiteScores(Left)'
         )
-        ax1.tick_params(labelsize=12)
+        ax1.tick_params(labelsize=labelsize)
         ax1.set_xticks(np.arange(len(self.journals_scores)))
-        ax1.set_xticklabels(self.journals_scores.index, size=12, rotation=90)
-        ax1.set_xlabel('Journal', size=12)
-        ax1.set_ylabel('Score', size=12)
+        ax1.set_xticklabels(self.journals_total_abbr.index, size=labelsize, rotation=90)
+        ax1.set_xlabel('Source', size=labelsize)
+        ax1.set_ylabel('Score', size=labelsize)
         ax1.set_ylim(1)
         ax1.set_yscale("log")
 
@@ -572,15 +582,16 @@ class ScopusHandler:
             width=0.4,
             label='# Papers w/ videos(Right)'
         )
-        ax2.tick_params(labelsize=12)
-        ax2.set_ylabel('Count', size=12)
+        ax2.tick_params(labelsize=labelsize)
+        ax2.set_ylabel('Count', size=labelsize)
         ax2.set_yscale("log")
         ax2.set_ylim(0.9, 30)
 
         # fig.tight_layout()  # otherwise the right y-label is slightly clipped
         # _plots = _fill + _bar
-        ax1.legend([_fill, _bar], [_fill.get_label(), _bar.get_label()])
+        ax1.legend([_fill, _bar], [_fill.get_label(), _bar.get_label()], prop={"size": labelsize})
         # ax2.legend()
+        plt.tight_layout()
         plt.show()
 
         return self

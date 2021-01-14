@@ -1,0 +1,14 @@
+@article{10.2307/2334794,
+ ISSN = {00063444},
+ URL = {http://www.jstor.org/stable/2334794},
+ abstract = {A transformation to approximate normality of the null distribution of g1, the standardized third sample moment, is given. Monte Carlo simulations and checks with an existing table indicate it is very accurate. It is suggested it can be used in performing tests of normality against skewed alternatives.},
+ author = {Ralph B. D'Agostino},
+ journal = {Biometrika},
+ number = {3},
+ pages = {679--681},
+ publisher = {[Oxford University Press, Biometrika Trust]},
+ title = {Transformation to Normality of the Null Distribution of g1},
+ volume = {57},
+ year = {1970}
+}
+

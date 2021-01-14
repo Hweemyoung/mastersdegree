@@ -1,0 +1,14 @@
+@article{10.2307/2335960,
+ ISSN = {00063444},
+ URL = {http://www.jstor.org/stable/2335960},
+ abstract = {D'Agostino & Pearson (1973) gave percentage points of the distribution of b2 for independent observations from a common univariate normal distribution. Their results can be adequately approximated, when the first three moments of the distribution of b2 have been determined, by fitting a linear function of the reciprocal of a χ2 variable and then using the Wilson-Hilferty transformation. Evidence is presented suggesting that the same method of approximation is satisfactory for the b2 statistic calculated from any set of linear-least-squares residuals, on the hypothesis of normal homoscedastic errors.},
+ author = {F. J. Anscombe and William J. Glynn},
+ journal = {Biometrika},
+ number = {1},
+ pages = {227--234},
+ publisher = {[Oxford University Press, Biometrika Trust]},
+ title = {Distribution of the Kurtosis Statistic b2 for Normal Samples},
+ volume = {70},
+ year = {1983}
+}
+
